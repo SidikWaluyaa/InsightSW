@@ -23,8 +23,8 @@ class SleekflowService
      */
     public function getAnalyticsData(?string $startDate = null, ?string $endDate = null): array
     {
-        $startDate = $startDate ?: Carbon::today()->toDateString();
-        $endDate = $endDate ?: Carbon::today()->toDateString();
+        $startDate = $startDate ? Carbon::parse($startDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
+        $endDate = $endDate ? Carbon::parse($endDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
 
         $baseQuery = SleekflowContact::query()
             ->whereBetween('created_at_sleekflow', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
@@ -83,17 +83,15 @@ class SleekflowService
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today()->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today()->endOfDay();
         
-        $maxRecordsToScan = 3000; // Increased even further to ensure no data loss during high traffic
-        $scannedCount = 0;
+        $stop = false;
 
-        while ($scannedCount < $maxRecordsToScan) {
+        while (!$stop) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
             ])->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
-                'sort' => 'updatedAt desc',      // Try standard sort
-                '$orderby' => 'updatedAt desc', // Try OData sort
+                // 'sort' => 'updatedAt desc', // AppScript doesn't use sort, we match its default
                 'include' => 'custom_fields'
             ]);
             
@@ -111,14 +109,18 @@ class SleekflowService
             foreach ($data as $contact) {
                 if (empty($contact['CreatedAt'])) continue;
 
-                $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
-                $updatedAt = Carbon::parse($contact['UpdatedAt'] ?? $contact['CreatedAt'])->timezone('Asia/Jakarta');
+                $createdAtWib = $this->parseToWib($contact['CreatedAt']);
+                $createdDateWibString = $createdAtWib->toDateString();
+                $updatedAtWib = $this->parseToWib($contact['UpdatedAt'] ?? $contact['CreatedAt']);
                 
-                // We DONT stop anymore. We scan ALL 1000 records.
-                
-                // Append to collection if within range
-                // We use UpdatedAt for the dashboard range logic now
-                if ($updatedAt->gte(Carbon::parse($startDate)->startOfDay()) && $updatedAt->lte(Carbon::parse($endDate)->endOfday())) {
+                // 🔥 APP SCRIPT STOP LOGIC: if (createdWIB < startDate) stop = true;
+                if ($createdDateWibString < $startDate->toDateString()) {
+                    $stop = true;
+                    break;
+                }
+
+                // 🔥 APP SCRIPT FILTER: if (createdWIB >= startDate && createdWIB <= endDate)
+                if ($createdDateWibString >= $startDate->toDateString() && $createdDateWibString <= $endDate->toDateString()) {
                     $allContacts[] = [
                         'sleekflow_id' => $contact['id'],
                         'first_name' => $contact['FirstName'] ?? null,
@@ -132,7 +134,12 @@ class SleekflowService
                         'assigned_team' => $contact['AssignedTeam'] ?? null,
                         
                         'status_chat' => $contact['status_chat'] ?? $contact['custom_fields']['status_chat'] ?? null,
-                        'lifecycle_stage' => $contact['lifecycleStage']['name'] ?? $contact['custom_fields']['lifecycle_stage'] ?? null,
+                        
+                        // 🔥 APP SCRIPT MAPPING for lifecycle_stage
+                        'lifecycle_stage' => $contact['lifecycleStage']['name'] ?? 
+                                             (is_string($contact['lifecycleStage'] ?? null) ? $contact['lifecycleStage'] : null) ?? 
+                                             ($contact['customFields']['lifecycle_stage'] ?? $contact['custom_fields']['lifecycle_stage'] ?? null),
+                        
                         'lead_stage' => $contact['LeadStage'] ?? null,
                         'priority' => $contact['Priority'] ?? null,
                         
@@ -158,9 +165,9 @@ class SleekflowService
                         'wechat_openid' => $contact['WeChatOpenId'] ?? null,
                         'line_chatid' => $contact['LineChatId'] ?? null,
                         
-                        'created_at_sleekflow' => $this->parseToWib($contact['CreatedAt'] ?? null)?->toDateTimeString(),
-                        'updated_at_sleekflow' => $this->parseToWib($contact['UpdatedAt'] ?? null)?->toDateTimeString(),
-                        'waktu_awal' => $this->parseToWib($contact['CreatedAt'] ?? null)?->toDateString(),
+                        'created_at_sleekflow' => $createdAtWib->toDateTimeString(),
+                        'updated_at_sleekflow' => $updatedAtWib->toDateTimeString(),
+                        'waktu_awal' => $createdDateWibString,
                         'created_at' => now()->toDateTimeString(),
                         'updated_at' => now()->toDateTimeString(),
                     ];
@@ -168,7 +175,6 @@ class SleekflowService
             }
 
             $offset += $limit;
-            $scannedCount += count($data);
         }
 
         if (!empty($allContacts)) {
@@ -246,7 +252,7 @@ class SleekflowService
     {
         if (!$val) return null;
         try {
-            return Carbon::parse($val);
+            return Carbon::parse($val)->timezone('Asia/Jakarta');
         } catch (\Exception $e) {
             return null;
         }
