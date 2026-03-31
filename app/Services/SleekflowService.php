@@ -80,8 +80,8 @@ class SleekflowService
         $offset = 0;
         $allContacts = [];
         
-        $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
-        $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
+        $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today()->startOfDay();
+        $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today()->endOfDay();
         
         $maxRecordsToScan = 3000; // Increased even further to ensure no data loss during high traffic
         $scannedCount = 0;
@@ -246,7 +246,7 @@ class SleekflowService
     {
         if (!$val) return null;
         try {
-            return Carbon::parse($val)->timezone('Asia/Jakarta');
+            return Carbon::parse($val);
         } catch (\Exception $e) {
             return null;
         }
