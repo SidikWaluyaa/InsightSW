@@ -83,7 +83,7 @@ class SleekflowService
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
-        $maxRecordsToScan = 1000; // Force scan at least 1000 to be absolutely sure
+        $maxRecordsToScan = 3000; // Increased even further to ensure no data loss during high traffic
         $scannedCount = 0;
 
         while ($scannedCount < $maxRecordsToScan) {
