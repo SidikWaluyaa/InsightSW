@@ -27,7 +27,7 @@ class SleekflowService
         $endDate = $endDate ?: Carbon::today()->toDateString();
 
         $baseQuery = SleekflowContact::query()
-            ->whereBetween('updated_at_sleekflow', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            ->whereBetween('created_at_sleekflow', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
 
         $totalContacts = (clone $baseQuery)->count();
         $totalGreeting = (clone $baseQuery)->where('status_chat', 'Greeting')->count();

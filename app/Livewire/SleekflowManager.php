@@ -108,7 +108,7 @@ class SleekflowManager extends Component
         // Query for table (honors all filters)
         $query = SleekflowContact::query()
             ->when($this->startDate && $this->endDate, function($q) {
-                $q->whereBetween('updated_at_sleekflow', [$this->startDate . ' 00:00:00', $this->endDate . ' 23:59:59']);
+                $q->whereBetween('created_at_sleekflow', [$this->startDate . ' 00:00:00', $this->endDate . ' 23:59:59']);
             })
             ->when($this->search, function ($q) {
                 $q->where(function($inner) {
@@ -121,7 +121,7 @@ class SleekflowManager extends Component
             ->when($this->statusFilter, function($q) {
                 $q->where('status_chat', $this->statusFilter);
             })
-            ->orderBy('updated_at_sleekflow', 'desc');
+            ->orderBy('created_at_sleekflow', 'desc');
 
         return view('livewire.sleekflow-manager', array_merge($analytics, [
             'contacts' => $query->paginate(20),
