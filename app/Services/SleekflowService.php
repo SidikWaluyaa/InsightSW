@@ -80,8 +80,8 @@ class SleekflowService
         $offset = 0;
         $allContacts = [];
         
-        $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
-        $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
+        $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::now()->startOfMonth();
+        $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::now()->endOfDay();
         
         $stop = false;
 
