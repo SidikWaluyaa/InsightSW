@@ -76,16 +76,14 @@ class SleekflowService
      */
     public function syncContacts(?string $startDate = null, ?string $endDate = null): array
     {
-        $limit = 50;
+        $limit = 100;
         $offset = 0;
         $allContacts = [];
         
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
-        $stop = false;
-
-        while (!$stop) {
+        while (true) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
             ])->get("{$this->baseUrl}/contact", [
@@ -93,27 +91,25 @@ class SleekflowService
                 'offset' => $offset,
                 'include' => 'custom_fields'
             ]);
-
+            
             if (!$response->successful()) {
                 Log::error('Sleekflow API Error: ' . $response->body());
                 break;
             }
 
             $data = $response->json();
-            if (empty($data)) break;
+            
+            // Stop if no more data is returned from API
+            if (empty($data) || count($data) === 0) {
+                break;
+            }
 
             foreach ($data as $contact) {
                 if (empty($contact['CreatedAt'])) continue;
 
                 $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
                 
-                // If it's too old, we can stop (assuming API result is sorted by creation time desc)
-                if ($createdAt->lt($startDate)) {
-                    $stop = true;
-                    break;
-                }
-
-                // Only take if within range
+                // Only take if within range, but keep scanning all pages
                 if ($createdAt->gte($startDate) && $createdAt->lte($endDate)) {
                     $allContacts[] = [
                         'sleekflow_id' => $contact['id'],
