@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin',
             'email' => 'admin@algoritma.com',
             'password' => bcrypt('password'),
+            'role' => 'Admin',
         ]);
 
         $this->call(MarketingSeeder::class);

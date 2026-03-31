@@ -12,11 +12,24 @@ Route::redirect('/', '/dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', Dashboard::class)->name('dashboard');
-    Route::get('daily-report', DailyReportForm::class)->name('daily-report');
-    Route::get('budget-transfer', BudgetTransferManager::class)->name('budget-transfer');
-    Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
-    Route::get('monthly-settings', MonthlySettingForm::class)->name('monthly-settings');
     Route::get('meta-ads', MetaAdsIndex::class)->name('meta-ads');
+
+    // Admin & Editor
+    Route::middleware(['role:Admin,Editor'])->group(function () {
+        Route::get('daily-report', DailyReportForm::class)->name('daily-report');
+        Route::get('budget-transfer', BudgetTransferManager::class)->name('budget-transfer');
+        Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
+    });
+
+    // Admin Only
+    Route::middleware(['role:Admin'])->group(function () {
+        Route::get('monthly-settings', MonthlySettingForm::class)->name('monthly-settings');
+        Route::get('users', \App\Livewire\UserManager::class)->name('users');
+    });
+
+    // Customer Service
+    Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
+    Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
 });
 
 Route::view('profile', 'profile')

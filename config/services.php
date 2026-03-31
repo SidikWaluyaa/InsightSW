@@ -39,4 +39,9 @@ return [
         'access_token' => env('META_ADS_ACCESS_TOKEN'),
     ],
 
+    'sleekflow' => [
+        'key' => env('SLEEKFLOW_API_KEY'),
+        'base_url' => env('SLEEKFLOW_BASE_URL', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api'),
+    ],
+
 ];
