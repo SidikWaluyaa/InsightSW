@@ -15,14 +15,16 @@ class MarketingSeeder extends Seeder
     {
         $month = Carbon::now()->startOfMonth();
 
-        // Monthly Setting (Base for Current Month)
-        MonthlySetting::create([
-            'month' => $month->format('Y-m-01'),
-            'target_revenue' => 500000000,
-            'total_budget' => 75000000,
-            'total_days' => $month->daysInMonth,
-            'total_holidays' => 5,
-        ]);
+        // Monthly Setting (Base for Current Month) - Using updateOrCreate for idempotency
+        MonthlySetting::updateOrCreate(
+            ['month' => $month->format('Y-m-01')],
+            [
+                'target_revenue' => 500000000,
+                'total_budget' => 75000000,
+                'total_days' => $month->daysInMonth,
+                'total_holidays' => 5,
+            ]
+        );
 
         // Weekly Targets (Base for Weeks 1-4)
         $weeklyTargets = [
@@ -33,7 +35,10 @@ class MarketingSeeder extends Seeder
         ];
 
         foreach ($weeklyTargets as $wt) {
-            WeeklyTarget::create(array_merge($wt, ['month' => $month->format('Y-m-01')]));
+            WeeklyTarget::updateOrCreate(
+                ['month' => $month->format('Y-m-01'), 'week' => $wt['week']],
+                $wt
+            );
         }
     }
 }
