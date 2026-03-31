@@ -84,7 +84,7 @@ class SleekflowService
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
         $stop = false;
-        $maxRecordsToScan = 1000; // Safety limit to prevent infinite loops but cover all your current data
+        $maxRecordsToScan = 2000; // Increased to be very thorough
         $scannedCount = 0;
 
         while (!$stop && $scannedCount < $maxRecordsToScan) {
@@ -93,7 +93,7 @@ class SleekflowService
             ])->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
-                'sort' => 'CreatedAt desc',
+                'sort' => 'UpdatedAt desc', // Use UpdatedAt to catch ANY recent activity
                 'include' => 'custom_fields'
             ]);
             
@@ -112,9 +112,11 @@ class SleekflowService
                 if (empty($contact['CreatedAt'])) continue;
 
                 $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
+                $updatedAt = Carbon::parse($contact['UpdatedAt'] ?? $contact['CreatedAt'])->timezone('Asia/Jakarta');
                 
-                // Allow a 1-day buffer before stopping to catch timezone mismatches
-                if ($createdAt->lt(Carbon::parse($startDate)->subDay())) {
+                // Only stop if we have scanned at least 500 records AND the records are getting old
+                // This ensures we catch everything recently changed today
+                if ($scannedCount > 500 && $updatedAt->lt(Carbon::parse($startDate)->subDay())) {
                     $stop = true;
                     break;
                 }
