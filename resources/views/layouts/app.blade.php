@@ -22,7 +22,10 @@ new class extends Component
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Marketing Budget Control') }}</title>
+        <title>{{ config('app.name', 'Shoe Workshop - Marketing Analytics') }}</title>
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -52,14 +55,15 @@ new class extends Component
                 <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 border-r border-slate-700/50"></div>
 
                 {{-- Logo --}}
-                <div class="relative flex items-center h-16 px-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
+                <div class="relative flex items-center h-20 px-4 mb-4">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                            <img src="{{ asset('assets/logo.png') }}" class="w-full h-full object-contain filter drop-shadow-sm" alt="Shoe Workshop Logo">
                         </div>
-                        <span x-show="open" x-transition class="text-white font-bold text-lg tracking-tight">Algoritma</span>
+                        <div x-show="open" x-transition class="flex flex-col">
+                            <span class="text-white font-black text-[10px] uppercase tracking-[0.3em] leading-none mb-0.5">SHOE</span>
+                            <span class="text-emerald-400 font-black text-[10px] uppercase tracking-[0.3em] leading-none">WORKSHOP</span>
+                        </div>
                     </div>
                 </div>
 
