@@ -83,12 +83,14 @@ class SleekflowService
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
-        while (true) {
+        $stop = false;
+        while (!$stop) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
             ])->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
+                'sort' => 'CreatedAt desc', // Sort newest first
                 'include' => 'custom_fields'
             ]);
             
@@ -109,7 +111,13 @@ class SleekflowService
 
                 $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
                 
-                // Only take if within range, but keep scanning all pages
+                // Since data is sorted desc, once we go past the startDate, we can safely stop everything
+                if ($createdAt->lt($startDate)) {
+                    $stop = true;
+                    break;
+                }
+
+                // Append to collection if within range
                 if ($createdAt->gte($startDate) && $createdAt->lte($endDate)) {
                     $allContacts[] = [
                         'sleekflow_id' => $contact['id'],
