@@ -15,12 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@algoritma.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'Admin',
-        ]);
+        // Using updateOrCreate ensures we can run the seeder multiple times safely
+        User::updateOrCreate(
+            ['email' => 'admin@algoritma.com'],
+            [
+                'name' => 'Admin',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'role' => 'Admin',
+            ]
+        );
 
         $this->call(MarketingSeeder::class);
     }
