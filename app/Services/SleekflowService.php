@@ -83,17 +83,17 @@ class SleekflowService
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::parse('2026-03-31')->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
-        $stop = false;
-        $maxRecordsToScan = 2000; // Increased to be very thorough
+        $maxRecordsToScan = 1000; // Force scan at least 1000 to be absolutely sure
         $scannedCount = 0;
 
-        while (!$stop && $scannedCount < $maxRecordsToScan) {
+        while ($scannedCount < $maxRecordsToScan) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
             ])->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
-                'sort' => 'UpdatedAt desc', // Use UpdatedAt to catch ANY recent activity
+                'sort' => 'updatedAt desc',      // Try standard sort
+                '$orderby' => 'updatedAt desc', // Try OData sort
                 'include' => 'custom_fields'
             ]);
             
@@ -114,15 +114,11 @@ class SleekflowService
                 $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
                 $updatedAt = Carbon::parse($contact['UpdatedAt'] ?? $contact['CreatedAt'])->timezone('Asia/Jakarta');
                 
-                // Only stop if we have scanned at least 500 records AND the records are getting old
-                // This ensures we catch everything recently changed today
-                if ($scannedCount > 500 && $updatedAt->lt(Carbon::parse($startDate)->subDay())) {
-                    $stop = true;
-                    break;
-                }
-
+                // We DONT stop anymore. We scan ALL 1000 records.
+                
                 // Append to collection if within range
-                if ($createdAt->gte($startDate) && $createdAt->lte($endDate)) {
+                // We use UpdatedAt for the dashboard range logic now
+                if ($updatedAt->gte(Carbon::parse($startDate)->startOfDay()) && $updatedAt->lte(Carbon::parse($endDate)->endOfday())) {
                     $allContacts[] = [
                         'sleekflow_id' => $contact['id'],
                         'first_name' => $contact['FirstName'] ?? null,
