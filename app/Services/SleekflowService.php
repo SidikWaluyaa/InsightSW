@@ -84,13 +84,16 @@ class SleekflowService
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::parse('2026-03-31')->endOfDay();
         
         $stop = false;
-        while (!$stop) {
+        $maxRecordsToScan = 1000; // Safety limit to prevent infinite loops but cover all your current data
+        $scannedCount = 0;
+
+        while (!$stop && $scannedCount < $maxRecordsToScan) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
             ])->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
-                'sort' => 'CreatedAt desc', // Sort newest first
+                'sort' => 'CreatedAt desc',
                 'include' => 'custom_fields'
             ]);
             
@@ -101,7 +104,6 @@ class SleekflowService
 
             $data = $response->json();
             
-            // Stop if no more data is returned from API
             if (empty($data) || count($data) === 0) {
                 break;
             }
@@ -111,8 +113,8 @@ class SleekflowService
 
                 $createdAt = Carbon::parse($contact['CreatedAt'])->timezone('Asia/Jakarta');
                 
-                // Since data is sorted desc, once we go past the startDate, we can safely stop everything
-                if ($createdAt->lt($startDate)) {
+                // Allow a 1-day buffer before stopping to catch timezone mismatches
+                if ($createdAt->lt(Carbon::parse($startDate)->subDay())) {
                     $stop = true;
                     break;
                 }
@@ -168,6 +170,7 @@ class SleekflowService
             }
 
             $offset += $limit;
+            $scannedCount += count($data);
         }
 
         if (!empty($allContacts)) {
