@@ -18,6 +18,7 @@ class DailyReportForm extends Component
     public string $chat_in = '';
     public string $chat_consul = '';
     public bool $isSyncing = false;
+    public float $rawSpent = 0;
 
     public $reports;
     public string $selectedMonth;
@@ -59,7 +60,8 @@ class DailyReportForm extends Component
             ]);
             
             if ($metaData) {
-                $this->spent = (string)round($metaData['spend'] ?? 0);
+                $this->rawSpent = (float) ($metaData['spend'] ?? 0);
+                $this->spent = (string) round($this->rawSpent * 1.11);
             }
 
             // 2. Fetch Sleekflow Metrics
