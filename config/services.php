@@ -44,4 +44,9 @@ return [
         'base_url' => env('SLEEKFLOW_BASE_URL', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api'),
     ],
 
+    'dashboard' => [
+        'key' => env('DASHBOARD_API_KEY'),
+        'base_url' => env('DASHBOARD_API_URL'),
+    ],
+
 ];

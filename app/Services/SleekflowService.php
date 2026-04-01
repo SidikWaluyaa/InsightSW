@@ -54,10 +54,22 @@ class SleekflowService
             ->orderByDesc('total_closing')
             ->get()
             ->map(function($stat) {
-                $stat->conversion_rate = $stat->total_greeting > 0 ? round(($stat->total_konsul / $stat->total_greeting) * 100, 1) : 0;
-                $stat->display_name = $stat->contact_owner_name ?: 'Belum Ditentukan';
-                return $stat;
-            });
+                return [
+                    'contact_owner_name' => $stat->contact_owner_name,
+                    'total_contacts' => (int)$stat->total_contacts,
+                    'total_greeting' => (int)$stat->total_greeting,
+                    'total_closing' => (int)$stat->total_closing,
+                    'total_konsul' => (int)$stat->total_konsul,
+                    'consultation_rate' => ($stat->total_konsul + $stat->total_greeting) > 0 
+                        ? round(($stat->total_konsul / ($stat->total_konsul + $stat->total_greeting)) * 100, 1) 
+                        : 0,
+                    'conversion_rate' => $stat->total_greeting > 0 ? round(($stat->total_konsul / $stat->total_greeting) * 100, 1) : 0,
+                    'display_name' => $stat->contact_owner_name ?: 'Belum Ditentukan'
+                ];
+            })
+            ->sortByDesc('consultation_rate')
+            ->values()
+            ->toArray();
 
         return [
             'totalContacts' => $totalContacts,
