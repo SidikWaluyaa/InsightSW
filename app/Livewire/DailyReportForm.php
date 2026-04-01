@@ -17,6 +17,7 @@ class DailyReportForm extends Component
     public string $revenue = '';
     public string $chat_in = '';
     public string $chat_consul = '';
+    public bool $isSyncing = false;
 
     public $reports;
     public string $selectedMonth;
@@ -36,6 +37,45 @@ class DailyReportForm extends Component
         $this->date = Carbon::now()->format('Y-m-d');
         $this->selectedMonth = Carbon::now()->format('Y-m');
         $this->loadReports();
+        $this->syncApiData();
+    }
+
+    public function updatedDate(): void
+    {
+        $this->syncApiData();
+    }
+
+    public function syncApiData(): void
+    {
+        $this->isSyncing = true;
+        
+        try {
+            // 1. Fetch Meta Ads Spend
+            $metaService = app(\App\Services\MetaAdsService::class);
+            $adAccountId = 'act_1922369221497688';
+            $metaData = $metaService->fetchSummary($adAccountId, [
+                'startDate' => $this->date,
+                'endDate' => $this->date
+            ]);
+            
+            if ($metaData) {
+                $this->spent = (string)round($metaData['spend'] ?? 0);
+            }
+
+            // 2. Fetch Sleekflow Metrics
+            $sleekflowService = app(\App\Services\SleekflowService::class);
+            $sleekflowData = $sleekflowService->getAnalyticsData($this->date, $this->date);
+            
+            if ($sleekflowData) {
+                $this->chat_in = (string)($sleekflowData['totalContacts'] ?? 0);
+                $this->chat_consul = (string)($sleekflowData['totalKonsul'] ?? 0);
+            }
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("DailyReportForm Sync Error: " . $e->getMessage());
+        }
+
+        $this->isSyncing = false;
     }
 
     public function updatedSelectedMonth(): void

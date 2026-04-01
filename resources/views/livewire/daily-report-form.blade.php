@@ -11,9 +11,20 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                     {{-- Date Field --}}
                     <div class="space-y-2">
-                        <label for="date" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Tanggal Laporan</label>
-                        <input type="date" wire:model="date" id="date" 
-                            class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5">
+                        <div class="flex items-center justify-between">
+                            <label for="date" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Tanggal Laporan</label>
+                            <div wire:loading wire:target="date, syncApiData" class="flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Syncing API...</span>
+                            </div>
+                        </div>
+                        <div class="relative flex items-center gap-2">
+                            <input type="date" wire:model.live="date" id="date" 
+                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5">
+                            <button type="button" wire:click="syncApiData" class="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-emerald-500 hover:text-white transition-all group" title="Sync from API">
+                                <svg class="w-5 h-5 group-active:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </div>
                         <x-input-error :messages="$errors->get('date')" class="mt-2" />
                     </div>
 
@@ -34,9 +45,12 @@
                         <label for="spent" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Biaya Terpakai (Spent)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input type="number" wire:model="spent" id="spent" step="0.01"
-                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12"
+                            <input type="number" wire:model="spent" id="spent" step="0.01" readonly
+                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12 cursor-not-allowed opacity-80"
                                 placeholder="0">
+                            <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
+                                <div class="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
                         </div>
                         <x-input-error :messages="$errors->get('spent')" class="mt-2" />
                     </div>
@@ -56,18 +70,28 @@
                     {{-- Chat In Field --}}
                     <div class="space-y-2">
                         <label for="chat_in" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Chat Masuk</label>
-                        <input type="number" wire:model="chat_in" id="chat_in"
-                            class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5"
-                            placeholder="0">
+                        <div class="relative">
+                            <input type="number" wire:model="chat_in" id="chat_in" readonly
+                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 cursor-not-allowed opacity-80"
+                                placeholder="0">
+                            <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
+                                <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        </div>
                         <x-input-error :messages="$errors->get('chat_in')" class="mt-2" />
                     </div>
 
                     {{-- Chat Consul Field --}}
                     <div class="space-y-2">
                         <label for="chat_consul" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Chat Konsul</label>
-                        <input type="number" wire:model="chat_consul" id="chat_consul"
-                            class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5"
-                            placeholder="0">
+                        <div class="relative">
+                            <input type="number" wire:model="chat_consul" id="chat_consul" readonly
+                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 cursor-not-allowed opacity-80"
+                                placeholder="0">
+                            <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
+                                <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        </div>
                         <x-input-error :messages="$errors->get('chat_consul')" class="mt-2" />
                     </div>
                 </div>
