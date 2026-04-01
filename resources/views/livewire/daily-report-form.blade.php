@@ -5,7 +5,12 @@
         </h2>
     </x-slot>
 
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-4xl mx-auto" x-data="{ 
+        formatNumber(val) {
+            if (!val) return '';
+            return val.toString().replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+    }">
         <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
             <form wire:submit="save" class="p-4 sm:p-6 lg:p-8 space-y-6 md:space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
@@ -33,7 +38,8 @@
                         <label for="budgeting" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Anggaran (Budgeting)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input type="number" wire:model="budgeting" id="budgeting" step="0.01"
+                            <input type="text" wire:model="budgeting" id="budgeting"
+                                x-on:input="$event.target.value = formatNumber($event.target.value)"
                                 class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12"
                                 placeholder="0">
                         </div>
@@ -45,7 +51,7 @@
                         <label for="spent" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Biaya Terpakai (Spent)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input type="number" wire:model="spent" id="spent" step="0.01" readonly
+                            <input type="text" wire:model="spent" id="spent" readonly
                                 class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12 cursor-not-allowed opacity-80"
                                 placeholder="0">
                             <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
@@ -54,7 +60,7 @@
                         </div>
                         <div class="flex items-center gap-1.5 px-1">
                             <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Termasuk PPN 11% (Base: Rp {{ number_format($rawSpent ?? 0) }})</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Termasuk PPN 11% (Base: Rp {{ number_format($rawSpent ?? 0, 0, ',', '.') }})</p>
                         </div>
                         <x-input-error :messages="$errors->get('spent')" class="mt-2" />
                     </div>
@@ -64,7 +70,8 @@
                         <label for="revenue" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Omset (Revenue)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input type="number" wire:model="revenue" id="revenue" step="0.01"
+                            <input type="text" wire:model="revenue" id="revenue"
+                                x-on:input="$event.target.value = formatNumber($event.target.value)"
                                 class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12"
                                 placeholder="0">
                         </div>
@@ -75,7 +82,7 @@
                     <div class="space-y-2">
                         <label for="chat_in" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Chat Masuk</label>
                         <div class="relative">
-                            <input type="number" wire:model="chat_in" id="chat_in" readonly
+                            <input type="text" wire:model="chat_in" id="chat_in" readonly
                                 class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 cursor-not-allowed opacity-80"
                                 placeholder="0">
                             <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
@@ -89,7 +96,7 @@
                     <div class="space-y-2">
                         <label for="chat_consul" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Chat Konsul</label>
                         <div class="relative">
-                            <input type="number" wire:model="chat_consul" id="chat_consul" readonly
+                            <input type="text" wire:model="chat_consul" id="chat_consul" readonly
                                 class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 cursor-not-allowed opacity-80"
                                 placeholder="0">
                             <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">

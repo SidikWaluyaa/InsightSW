@@ -61,7 +61,7 @@ class DailyReportForm extends Component
             
             if ($metaData) {
                 $this->rawSpent = (float) ($metaData['spend'] ?? 0);
-                $this->spent = (string) round($this->rawSpent * 1.11);
+                $this->spent = number_format(round($this->rawSpent * 1.11), 0, ',', '.');
             }
 
             // 2. Fetch Sleekflow Metrics
@@ -69,8 +69,8 @@ class DailyReportForm extends Component
             $sleekflowData = $sleekflowService->getAnalyticsData($this->date, $this->date);
             
             if ($sleekflowData) {
-                $this->chat_in = (string)($sleekflowData['totalContacts'] ?? 0);
-                $this->chat_consul = (string)($sleekflowData['totalKonsul'] ?? 0);
+                $this->chat_in = number_format(($sleekflowData['totalContacts'] ?? 0), 0, ',', '.');
+                $this->chat_consul = number_format(($sleekflowData['totalKonsul'] ?? 0), 0, ',', '.');
             }
 
         } catch (\Exception $e) {
@@ -98,6 +98,13 @@ class DailyReportForm extends Component
 
     public function save(): void
     {
+        // Clean separators before validation
+        $this->budgeting = str_replace('.', '', $this->budgeting);
+        $this->spent = str_replace('.', '', $this->spent);
+        $this->revenue = str_replace('.', '', $this->revenue);
+        $this->chat_in = str_replace('.', '', $this->chat_in);
+        $this->chat_consul = str_replace('.', '', $this->chat_consul);
+
         $this->validate();
 
         DailyReport::updateOrCreate(
