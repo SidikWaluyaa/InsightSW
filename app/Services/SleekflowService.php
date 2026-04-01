@@ -48,7 +48,8 @@ class SleekflowService
                 COUNT(*) as total_contacts,
                 SUM(CASE WHEN status_chat = 'Greeting' THEN 1 ELSE 0 END) as total_greeting,
                 SUM(CASE WHEN status_chat = 'Closing' THEN 1 ELSE 0 END) as total_closing,
-                SUM(CASE WHEN status_chat = 'Konsultasi' THEN 1 ELSE 0 END) as total_konsul
+                SUM(CASE WHEN status_chat = 'Konsultasi' THEN 1 ELSE 0 END) as total_konsul,
+                SUM(CASE WHEN (status_chat IS NULL OR status_chat = '') THEN 1 ELSE 0 END) as total_unhandled
             ")
             ->groupBy('contact_owner_name')
             ->orderByDesc('total_closing')
@@ -60,6 +61,7 @@ class SleekflowService
                     'total_greeting' => (int)$stat->total_greeting,
                     'total_closing' => (int)$stat->total_closing,
                     'total_konsul' => (int)$stat->total_konsul,
+                    'total_unhandled' => (int)$stat->total_unhandled,
                     'consultation_rate' => ($stat->total_konsul + $stat->total_greeting) > 0 
                         ? round(($stat->total_konsul / ($stat->total_konsul + $stat->total_greeting)) * 100, 1) 
                         : 0,

@@ -110,6 +110,7 @@
                         <th class="px-10 py-6">Customer Service Agent</th>
                         <th class="px-6 py-6">Greeting</th>
                         <th class="px-6 py-6">Konsultasi</th>
+                        <th class="px-6 py-6 text-rose-500">Unhandle</th>
                         <th class="px-6 py-6 text-center">Persentase</th>
                         <th class="px-10 py-6 text-center">Closing</th>
                     </tr>
@@ -128,6 +129,7 @@
                                 </td>
                                 <td class="px-6 py-6 text-sm font-black text-slate-600 dark:text-slate-400">{{ number_format($stat['total_greeting'] ?? 0) }}</td>
                                 <td class="px-6 py-6 text-sm font-black text-slate-600 dark:text-slate-400">{{ number_format($stat['total_konsul'] ?? 0) }}</td>
+                                <td class="px-6 py-6 text-sm font-black text-rose-500 bg-rose-500/5">{{ number_format($stat['total_unhandled'] ?? 0) }}</td>
                                 <td class="px-6 py-6 text-center">
                                     <div class="flex flex-col items-center">
                                         <span class="text-sm font-black text-emerald-500 tracking-tighter">{{ $stat['consultation_rate'] ?? 0 }}%</span>
@@ -139,7 +141,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-xs">No active chat sessions</td></tr>
+                            <tr><td colspan="6" class="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-xs">No active chat sessions</td></tr>
                         @endforelse
                     </tbody>
             </table>
