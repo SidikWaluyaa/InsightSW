@@ -50,12 +50,7 @@ class CsTracking extends Component
                 $start, $end, // closing fu
                 $start, $end  // total closing
             ])
-            ->where(function($q) use ($start, $end) {
-                $q->whereBetween('greeting_at', [$start, $end])
-                  ->orWhereBetween('konsul_at', [$start, $end])
-                  ->orWhereBetween('followed_up_at', [$start, $end])
-                  ->orWhereBetween('closing_at', [$start, $end]);
-            })
+            ->whereBetween('waktu_awal', [$this->startDate, $this->endDate])
             ->groupBy('contact_owner_name')
             ->orderByRaw('total_closing_all DESC')
             ->get()
