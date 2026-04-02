@@ -44,6 +44,11 @@ class SleekflowContact extends Model
         'created_at_sleekflow',
         'updated_at_sleekflow',
         'waktu_awal',
+        'greeting_at',
+        'konsul_at',
+        'followed_up_at',
+        'closing_at',
+        'penerimaan_at',
     ];
 
     protected $casts = [
@@ -54,6 +59,11 @@ class SleekflowContact extends Model
         'created_at_sleekflow' => 'datetime',
         'updated_at_sleekflow' => 'datetime',
         'waktu_awal' => 'date',
+        'greeting_at' => 'datetime',
+        'konsul_at' => 'datetime',
+        'followed_up_at' => 'datetime',
+        'closing_at' => 'datetime',
+        'penerimaan_at' => 'datetime',
         'subscriber' => 'boolean',
         'labels' => 'array',
         'lists' => 'array',

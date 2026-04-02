@@ -192,13 +192,42 @@ class SleekflowService
         }
 
         if (!empty($allContacts)) {
-            $chunks = array_chunk($allContacts, 100);
-            foreach ($chunks as $chunk) {
-                SleekflowContact::upsert(
-                    $chunk,
-                    ['sleekflow_id'],
-                    array_diff(array_keys($allContacts[0]), ['sleekflow_id', 'created_at'])
-                );
+            foreach ($allContacts as $data) {
+                // Determine which timestamp to set based on current status
+                $status = $data['status_chat'];
+                $now = now()->toDateTimeString();
+                
+                $updateData = $data;
+                unset($updateData['sleekflow_id']); // Don't update the ID
+
+                // Check and set timestamps only if they are NULL in the DB
+                $contact = SleekflowContact::where('sleekflow_id', $data['sleekflow_id'])->first();
+                
+                if ($contact) {
+                    if ($status === 'Greeting' && !$contact->greeting_at) $updateData['greeting_at'] = $now;
+                    if ($status === 'Konsultasi' && !$contact->konsul_at) $updateData['konsul_at'] = $now;
+                    if ($status === 'Follow Up Konsultasi' && !$contact->followed_up_at) $updateData['followed_up_at'] = $now;
+                    if ($status === 'Closing' && !$contact->closing_at) $updateData['closing_at'] = $now;
+                    if ($status === 'Before Penerimaan' && !$contact->penerimaan_at) $updateData['penerimaan_at'] = $now;
+                    
+                    // Don't overwrite existing timestamps if we already have them in the DB
+                    if ($contact->greeting_at) unset($updateData['greeting_at']);
+                    if ($contact->konsul_at) unset($updateData['konsul_at']);
+                    if ($contact->followed_up_at) unset($updateData['followed_up_at']);
+                    if ($contact->closing_at) unset($updateData['closing_at']);
+                    if ($contact->penerimaan_at) unset($updateData['penerimaan_at']);
+
+                    $contact->update($updateData);
+                } else {
+                    // New contact - set the first timestamp if status matches
+                    if ($status === 'Greeting') $updateData['greeting_at'] = $now;
+                    if ($status === 'Konsultasi') $updateData['konsul_at'] = $now;
+                    if ($status === 'Follow Up Konsultasi') $updateData['followed_up_at'] = $now;
+                    if ($status === 'Closing') $updateData['closing_at'] = $now;
+                    if ($status === 'Before Penerimaan') $updateData['penerimaan_at'] = $now;
+                    
+                    SleekflowContact::create(array_merge($updateData, ['sleekflow_id' => $data['sleekflow_id']]));
+                }
             }
         }
 

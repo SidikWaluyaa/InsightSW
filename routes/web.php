@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Customer Service
     Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
     Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
+    Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
 });
 
 Route::view('profile', 'profile')
