@@ -6,6 +6,8 @@ use App\Livewire\Dashboard;
 use App\Livewire\MetaAds\Index as MetaAdsIndex;
 use App\Livewire\MonthlySettingForm;
 use App\Livewire\WeeklyReportTable;
+use App\Livewire\FinanceDashboard;
+use App\Livewire\FinanceSyncHistory;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -19,6 +21,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('daily-report', DailyReportForm::class)->name('daily-report');
         Route::get('budget-transfer', BudgetTransferManager::class)->name('budget-transfer');
         Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
+        Route::get('finance-sync', FinanceDashboard::class)->name('finance-sync');
+        Route::get('finance-history', FinanceSyncHistory::class)->name('finance-history');
     });
 
     // Admin Only

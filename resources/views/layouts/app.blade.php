@@ -170,6 +170,47 @@ new class extends Component
                         </div>
                     </div>
 
+                    {{-- Finance (Collapsible Container) --}}
+                    @php
+                        $financeSubItems = [
+                            ['route' => 'finance-sync', 'label' => 'Financial Dashboard', 'icon' => '...'],
+                            ['route' => 'finance-history', 'label' => 'Riwayat Sync', 'icon' => '...'],
+                        ];
+                        $isFinanceActive = request()->routeIs(['finance-sync', 'finance-history']);
+                    @endphp
+                    @if (auth()->user()->isAdmin() || auth()->user()->hasRole('Editor'))
+                    <div x-data="{ financeOpen: {{ $isFinanceActive ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="financeOpen = !financeOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
+                            {{ $isFinanceActive ? 'bg-gradient-to-r from-indigo-500/10 to-blue-500/10 text-indigo-400 border border-indigo-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Finance</span>
+                            </div>
+                            <svg x-show="open" class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': financeOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div x-show="financeOpen && open" 
+                            x-transition:enter="transition ease-out duration-300" 
+                            class="pl-4 pr-2 py-2 space-y-1">
+                            @foreach ($financeSubItems as $item)
+                                <a href="{{ route($item['route']) }}" 
+                                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 group
+                                    {{ request()->routeIs($item['route']) ? 'text-white bg-indigo-500/20 shadow-lg shadow-indigo-500/10' : 'text-slate-500 hover:text-white hover:bg-white/5' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 {{ request()->routeIs($item['route']) ? 'bg-indigo-400 scale-125' : 'bg-slate-700 group-hover:bg-slate-400' }}"></div>
+                                    <span class="truncate">{{ $item['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- Manajemen Pengguna (Standalone) --}}
                     @if (auth()->user()->isAdmin())
                     <div class="space-y-1">
