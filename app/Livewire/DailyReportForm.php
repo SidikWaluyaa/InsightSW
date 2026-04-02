@@ -73,6 +73,14 @@ class DailyReportForm extends Component
                 $this->chat_consul = number_format(($sleekflowData['totalKonsul'] ?? 0), 0, ',', '.');
             }
 
+            // 3. Fetch Finance Revenue (New Automation)
+            $financeTotal = \App\Models\FinanceSync::whereBetween('source_created_at', [
+                $this->date . ' 00:00:00', 
+                $this->date . ' 23:59:59'
+            ])->sum('amount_paid');
+            
+            $this->revenue = number_format($financeTotal, 0, ',', '.');
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("DailyReportForm Sync Error: " . $e->getMessage());
         }

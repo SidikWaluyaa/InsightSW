@@ -67,15 +67,18 @@
 
                     {{-- Revenue Field --}}
                     <div class="space-y-2">
-                        <label for="revenue" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Omset (Revenue)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input type="text" wire:model="revenue" id="revenue"
-                                x-on:input="$event.target.value = formatNumber($event.target.value)"
-                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12"
-                                placeholder="0">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Omset (Revenue)</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <span class="text-sm font-bold text-slate-500 group-focus-within:text-indigo-500 transition-colors">Rp</span>
                         </div>
-                        <x-input-error :messages="$errors->get('revenue')" class="mt-2" />
+                        <input type="text" wire:model="revenue" readonly
+                            class="block w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold cursor-not-allowed opacity-75"
+                            placeholder="0">
+                    </div>
+                </div>
+        <x-input-error :messages="$errors->get('revenue')" class="mt-2" />
                     </div>
 
                     {{-- Chat In Field --}}
