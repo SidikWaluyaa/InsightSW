@@ -83,16 +83,16 @@
     </div>
 
     {{-- KPI Cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {{-- Revenue Card --}}
         <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
             <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                 <svg class="w-16 h-16 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9z" clip-rule="evenodd" /></svg>
             </div>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Omset</p>
-            <h3 class="text-2xl font-black text-slate-800 dark:text-white leading-none">{{ $this->formatCurrency($stats['total_bill']) }}</h3>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Omset <small class="lowercase font-normal opacity-70">(nett)</small></p>
+            <h3 class="text-2xl font-black text-slate-800 dark:text-white leading-none">Rp {{ number_format($stats['total_net_revenue'], 0, ',', '.') }}</h3>
             <div class="mt-4 flex items-center gap-2">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">Total SPK: {{ $stats['total_count'] }}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 font-mono tracking-tight">SPK: {{ $stats['total_count'] }}</span>
             </div>
         </div>
 
@@ -102,7 +102,7 @@
                 <svg class="w-16 h-16 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
             </div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Terbayar</p>
-            <h3 class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{{ $this->formatCurrency($stats['total_paid']) }}</h3>
+            <h3 class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">Rp {{ number_format($stats['total_paid'], 0, ',', '.') }}</h3>
             <div class="mt-4 space-y-1">
                 <div class="flex justify-between text-[10px] font-bold">
                     <span class="text-slate-400 uppercase">Collection Rate</span>
@@ -114,15 +114,27 @@
             </div>
         </div>
 
+        {{-- NEW: Shipping Card --}}
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <svg class="w-16 h-16 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Ongkir</p>
+            <h3 class="text-2xl font-black text-amber-600 dark:text-amber-500 leading-none">Rp {{ number_format($stats['total_shipping'], 0, ',', '.') }}</h3>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500 font-mono tracking-tight">Total Gabungan: Rp {{ number_format($stats['total_bill'], 0, ',', '.') }}</span>
+            </div>
+        </div>
+
         {{-- Debt Card --}}
         <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
             <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                 <svg class="w-16 h-16 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
             </div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Piutang (Hutang CS)</p>
-            <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 leading-none">{{ $this->formatCurrency($stats['total_remaining']) }}</h3>
+            <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 leading-none">Rp {{ number_format($stats['total_remaining'], 0, ',', '.') }}</h3>
             <div class="mt-4 flex items-center gap-2">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">Rasio: {{ round(100 - $stats['collection_rate'], 1) }}%</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 font-mono tracking-tight">Rasio: {{ round(100 - $stats['collection_rate'], 1) }}%</span>
             </div>
         </div>
 
@@ -139,12 +151,10 @@
                     <div class="w-6 h-6 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900"></div>
                     <div class="w-6 h-6 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900"></div>
                 </div>
-                <span class="text-[10px] font-bold text-slate-500">Mencapai Target</span>
+                <span class="text-[10px] font-bold text-slate-400 tracking-tighter">Mencapai Target</span>
             </div>
         </div>
     </div>
-
-    {{-- Main Activity Table --}}
 
     {{-- Main Activity Table --}}
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -161,54 +171,53 @@
                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">SPK & Tanggal</th>
                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stat Pembayaran</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Tagihan</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Terbayar</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Sisa</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tagihan</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ongkir</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Terbayar</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sisa</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                     @forelse($transactions as $trx)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="font-black text-slate-800 dark:text-white text-sm group-hover:text-indigo-600 transition-colors">{{ $trx->spk_number }}</div>
-                                <div class="text-[10px] text-slate-400 font-medium">{{ $trx->source_created_at?->format('d M Y, H:i') }}</div>
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors group">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-indigo-500 transition-colors tracking-tight">{{ $trx->spk_number }}</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                        {{ $trx->source_created_at ? \Carbon\Carbon::parse($trx->source_created_at)->format('d M Y, H:i') : '-' }}
+                                    </span>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ $trx->customer_name }}</div>
-                                <div class="text-[10px] text-slate-500">{{ $trx->customer_phone }}</div>
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">
+                                {{ $trx->customer_name }}
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
                                 @php
-                                    $statusClass = match($trx->status_pembayaran) {
-                                        'L' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-                                        'DP' => 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-                                        default => 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
-                                    };
-                                    $statusLabel = match($trx->status_pembayaran) {
-                                        'L' => 'Lunas',
-                                        'DP' => 'DP',
-                                        'BL' => 'Blm Lunas',
-                                        'BB' => 'Blm Bayar',
-                                        default => $trx->status_pembayaran,
-                                    };
+                                    $isLunas = $trx->status_pembayaran === 'L';
+                                    $isPartial = in_array($trx->status_pembayaran, ['C', 'BL', 'DP']);
+                                    $colorClass = $isLunas ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : ($isPartial ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20');
+                                    $labelText = $isLunas ? 'LUNAS' : ($isPartial ? 'DP/CICIL' : 'BLM BAYAR');
                                 @endphp
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ $statusClass }}">
-                                    {{ $statusLabel }}
+                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border {{ $colorClass }}">
+                                    {{ $labelText }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-right text-xs font-bold text-slate-800 dark:text-white">
-                                {{ $this->formatCurrency($trx->total_bill) }}
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Rp {{ number_format($trx->total_bill - $trx->shipping_cost, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-right text-xs font-black text-emerald-600 dark:text-emerald-400">
-                                {{ $this->formatCurrency($trx->amount_paid) }}
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-indigo-500">
+                                Rp {{ number_format($trx->shipping_cost, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-right text-xs font-black text-rose-600 dark:text-rose-400">
-                                {{ $this->formatCurrency($trx->remaining_balance) }}
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-emerald-500">
+                                Rp {{ number_format($trx->amount_paid, 0, ',', '.') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-black text-rose-500">
+                                Rp {{ number_format($trx->remaining_balance, 0, ',', '.') }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="7" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <svg class="w-12 h-12 text-slate-200 dark:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
                                     <p class="text-slate-400 text-sm italic">Tidak ada data transaksi ditemukan.</p>

@@ -131,6 +131,9 @@ class FinanceDashboard extends Component
         $baseQuery = FinanceSync::whereBetween('source_created_at', [$start, $end]);
 
         $totalBill = $baseQuery->sum('total_bill');
+        $totalShipping = $baseQuery->sum('shipping_cost');
+        $totalNetRevenue = $totalBill - $totalShipping;
+        
         $totalPaid = $baseQuery->sum('amount_paid');
         $totalRemaining = $baseQuery->sum('remaining_balance');
 
@@ -138,6 +141,8 @@ class FinanceDashboard extends Component
 
         return [
             'total_bill' => $totalBill,
+            'total_net_revenue' => $totalNetRevenue,
+            'total_shipping' => $totalShipping,
             'total_paid' => $totalPaid,
             'total_remaining' => $totalRemaining,
             'collection_rate' => $collectionRate,
