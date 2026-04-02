@@ -16,7 +16,7 @@ class CsTracking extends Component
 
     public function mount()
     {
-        $this->startDate = $this->startDate ?: now()->startOfMonth()->format('Y-m-d');
+        $this->startDate = $this->startDate ?: now()->format('Y-m-d');
         $this->endDate = $this->endDate ?: now()->format('Y-m-d');
         $this->loadStats();
     }
