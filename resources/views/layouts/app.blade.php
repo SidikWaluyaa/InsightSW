@@ -170,6 +170,44 @@ new class extends Component
                         </div>
                     </div>
 
+                    {{-- Customer Experience (Collapsible Container) --}}
+                    @php
+                        $cxSubItems = [
+                            ['route' => 'cx-upsell', 'label' => 'Upsell Report', 'icon' => '...'],
+                        ];
+                        $isCxActive = request()->routeIs(['cx-upsell']);
+                    @endphp
+                    <div x-data="{ cxOpen: {{ $isCxActive ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="cxOpen = !cxOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
+                            {{ $isCxActive ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-400 border border-emerald-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">CX</span>
+                            </div>
+                            <svg x-show="open" class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': cxOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div x-show="cxOpen && open" 
+                            x-transition:enter="transition ease-out duration-300" 
+                            class="pl-4 pr-2 py-2 space-y-1">
+                            @foreach ($cxSubItems as $item)
+                                <a href="{{ route($item['route']) }}" 
+                                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 group
+                                    {{ request()->routeIs($item['route']) ? 'text-white bg-emerald-500/20 shadow-lg shadow-emerald-500/10' : 'text-slate-500 hover:text-white hover:bg-white/5' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 {{ request()->routeIs($item['route']) ? 'bg-emerald-400 scale-125' : 'bg-slate-700 group-hover:bg-slate-400' }}"></div>
+                                    <span class="truncate">{{ $item['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
                     {{-- Finance (Collapsible Container) --}}
                     @php
                         $financeSubItems = [
