@@ -1,4 +1,18 @@
-<div class="p-4 sm:p-6 md:p-8 space-y-8 bg-slate-50 dark:bg-slate-950 min-h-screen transition-all duration-500 ease-in-out" wire:poll.60s>
+<div class="p-4 sm:p-6 md:p-8 space-y-8 bg-slate-50 dark:bg-slate-950 min-h-screen transition-all duration-500 ease-in-out" 
+     wire:poll.10s="checkSync"
+     x-data="{ 
+        seconds: 0,
+        lastSync: @entangle('lastSyncTimestamp'),
+        isSyncing: @entangle('isSyncing'),
+        init() {
+            setInterval(() => {
+                if (this.lastSync) {
+                    let now = Math.floor(Date.now() / 1000);
+                    this.seconds = Math.max(0, 60 - (now - this.lastSync));
+                }
+            }, 1000);
+        }
+     }">
     {{-- Header Section --}}
     <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -8,20 +22,30 @@
                     <div class="absolute inset-0 bg-white/20 group-hover:translate-y-full transition-transform duration-500"></div>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Finance Center</h1>
-                    <div class="flex items-center gap-3 mt-1">
-                        <span class="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none">Finance Center</h1>
+                    <div class="flex items-center gap-3 mt-3">
+                        <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-500 uppercase tracking-widest leading-none">
                             <span class="relative flex h-2 w-2">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            Live Monitoring
+                            Live
                         </span>
-                        @if($lastSync)
-                            <span class="text-[10px] bg-slate-200/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">
-                                Last Sync: {{ $lastSync->diffForHumans() }}
-                            </span>
-                        @endif
+                        
+                        <div class="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 ml-2 pl-4">
+                            <template x-if="isSyncing">
+                                <div class="flex items-center gap-2">
+                                    <svg class="animate-spin h-3 w-3 text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
+                                </div>
+                            </template>
+                            <template x-if="!isSyncing && seconds > 0">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Auto-update: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
+                            </template>
+                            <template x-if="!isSyncing && seconds <= 0">
+                                <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Menunggu Antrian...</span>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>

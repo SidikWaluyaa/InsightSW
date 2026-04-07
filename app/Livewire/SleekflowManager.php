@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\SleekflowContact;
 use App\Services\SleekflowService;
+use App\Services\SyncService;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -19,6 +20,7 @@ class SleekflowManager extends Component
     public $startDate;
     public $endDate;
     public $statusFilter = '';
+    public $lastSyncTimestamp;
     public $isSyncing = false;
 
     protected $queryString = ['search', 'startDate', 'endDate', 'statusFilter'];
@@ -27,23 +29,29 @@ class SleekflowManager extends Component
     {
         $this->startDate = $this->startDate ?: Carbon::today()->format('Y-m-d');
         $this->endDate = $this->endDate ?: Carbon::today()->format('Y-m-d');
+        $this->updateSyncState();
+        $this->checkSync(); // Force initial check
     }
 
-    public function updatingSearch()
+    public function updateSyncState()
     {
-        $this->resetPage();
+        $this->lastSyncTimestamp = app(SyncService::class)->getLastSyncTime('sleekflow_manager_sync');
     }
 
-    public function updatingStatusFilter()
+    public function checkSync()
     {
-        $this->resetPage();
-    }
+        // Auto sync only for today
+        if ($this->startDate !== now()->format('Y-m-d')) {
+            return;
+        }
 
-    #[On('set-status-filter')]
-    public function setStatusFilter($status)
-    {
-        $this->statusFilter = $status;
-        $this->resetPage();
+        $this->isSyncing = true;
+        app(SyncService::class)->syncIfAllowed('sleekflow_manager_sync', function() {
+            app(SleekflowService::class)->syncContacts(now()->format('Y-m-d'), now()->format('Y-m-d'));
+        }, 60);
+
+        $this->updateSyncState();
+        $this->isSyncing = false;
     }
 
     #[On('set-date-filters')]
@@ -57,13 +65,10 @@ class SleekflowManager extends Component
     #[On('sync-sleekflow')]
     public function sync(SleekflowService $service)
     {
-        \Illuminate\Support\Facades\Log::info('Sleekflow Sync Triggered');
         $this->isSyncing = true;
         
         try {
             $result = $service->syncContacts($this->startDate, $this->endDate);
-            
-            \Illuminate\Support\Facades\Log::info('Sync result: ' . json_encode($result));
 
             if (($result['synced'] ?? 0) === 0) {
                 $this->dispatch('swal', [

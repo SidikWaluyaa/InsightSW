@@ -1,5 +1,20 @@
-<div class="px-6 py-6 pb-20">
-    {{-- Header & Universal Filter Bar (Moved out of slot for stability) --}}
+<div class="px-6 py-6 pb-20" 
+     wire:poll.10s="checkSync"
+     x-data="{ 
+        chatSeconds: 0,
+        apiSeconds: 0,
+        lastChat: @entangle('lastSyncChat'),
+        lastApi: @entangle('lastSyncOperational'),
+        isSyncing: @entangle('isSyncing'),
+        init() {
+            setInterval(() => {
+                let now = Math.floor(Date.now() / 1000);
+                if (this.lastChat) this.chatSeconds = Math.max(0, 60 - (now - this.lastChat));
+                if (this.lastApi) this.apiSeconds = Math.max(0, 60 - (now - this.lastApi));
+            }, 1000);
+        }
+     }">
+    {{-- Header & Universal Filter Bar --}}
     <div class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
         <div class="flex items-center gap-5">
             <div class="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 group">
@@ -9,10 +24,34 @@
                 <div class="flex items-center gap-3">
                     <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Unified Analytics</h1>
                     <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
+                    
+                    <div class="flex items-center gap-4 border-l border-slate-100 dark:border-slate-800 ml-4 pl-4">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sleekflow Chat</span>
+                            <template x-if="isSyncing && chatSeconds <= 0">
+                                <span class="text-[9px] font-bold text-indigo-500 animate-pulse">Syncing...</span>
+                            </template>
+                            <template x-if="!isSyncing || chatSeconds > 0">
+                                <span class="text-[9px] font-bold text-slate-500"><span x-text="chatSeconds" class="text-indigo-500 font-mono"></span>s</span>
+                            </template>
+                        </div>
+                        <div class="flex flex-col gap-0.5 border-l border-slate-100 dark:border-slate-800 pl-4">
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Master API</span>
+                            <template x-if="isSyncing && apiSeconds <= 0">
+                                <span class="text-[9px] font-bold text-emerald-500 animate-pulse">Syncing...</span>
+                            </template>
+                            <template x-if="!isSyncing || apiSeconds > 0">
+                                <span class="text-[9px] font-bold text-slate-500"><span x-text="apiSeconds" class="text-emerald-500 font-mono"></span>s</span>
+                            </template>
+                        </div>
+                    </div>
                 </div>
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-                    <span class="w-2h-2 rounded-full bg-slate-300"></span>
-                    Terminal Sync: {{ $lastSynced->format('H:i:s') }} • Sleekflow + Master API
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Real-time Operational & Communication Insights
                 </p>
             </div>
         </div>
@@ -67,7 +106,7 @@
             Chat Metrics (Sleekflow)
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-10" wire:poll.30s="autoRefresh">
+        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-10">
             {{-- Total Contacts --}}
             <div class="bg-indigo-600 rounded-[40px] p-8 shadow-2xl shadow-indigo-500/30 text-white relative overflow-hidden group">
                 <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>

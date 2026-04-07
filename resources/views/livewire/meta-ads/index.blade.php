@@ -1,4 +1,17 @@
-<div>
+<div wire:poll.10s="checkSync"
+     x-data="{ 
+        seconds: 0,
+        lastSync: @entangle('lastSyncTimestamp'),
+        isSyncing: @entangle('isSyncing'),
+        init() {
+            setInterval(() => {
+                if (this.lastSync) {
+                    let now = Math.floor(Date.now() / 1000);
+                    this.seconds = Math.max(0, 60 - (now - this.lastSync));
+                }
+            }, 1000);
+        }
+     }">
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
@@ -11,8 +24,25 @@
         {{-- Control Bar --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all duration-300 mb-2">
             <div>
-                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none mb-1">Kontrol Iklan Meta</h2>
-                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest">Live Sync from Meta Graph API</p>
+                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none mb-2">Kontrol Iklan Meta</h2>
+                <div class="flex items-center gap-3">
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest leading-none">Live Sync from Meta Graph API</p>
+                    
+                    <div class="flex items-center gap-2 border-l border-gray-100 dark:border-gray-800 ml-2 pl-3">
+                        <template x-if="isSyncing">
+                            <div class="flex items-center gap-2 animate-pulse">
+                                <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
+                            </div>
+                        </template>
+                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Auto-update: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
+                        </template>
+                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
+                        </template>
+                    </div>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <button wire:click="sync" 

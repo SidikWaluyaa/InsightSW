@@ -15,8 +15,8 @@ class FinanceDashboard extends Component
 {
     use \Livewire\WithPagination;
 
+    public $lastSyncTimestamp;
     public $isSyncing = false;
-    public $lastSync;
     public $startDate;
     public $endDate;
     public $search = '';
@@ -29,31 +29,30 @@ class FinanceDashboard extends Component
         'statusFilter' => ['except' => ''],
     ];
 
-    public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedStartDate()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedEndDate()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedStatusFilter()
-    {
-        $this->resetPage();
-    }
-
     public function mount()
     {
         $this->startDate = now()->format('Y-m-d');
         $this->endDate = now()->format('Y-m-d');
-        $this->lastSync = FinanceSync::latest('updated_at')->first()?->updated_at;
+        $this->updateSyncState();
+        $this->checkSync(); // Force initial check
+    }
+
+    public function updateSyncState()
+    {
+        $this->lastSyncTimestamp = app(\App\Services\SyncService::class)->getLastSyncTime('finance_sync');
+    }
+
+    public function checkSync()
+    {
+        // Polling logic
+        $this->isSyncing = true;
+        
+        app(\App\Services\SyncService::class)->syncIfAllowed('finance_sync', function() {
+            app(FinanceSyncService::class)->syncRolling(60, \Illuminate\Support\Facades\Auth::id());
+        }, 60);
+
+        $this->updateSyncState();
+        $this->isSyncing = false;
     }
 
     public function syncPusat(FinanceSyncService $service)
@@ -64,6 +63,10 @@ class FinanceDashboard extends Component
         $result = $service->syncRolling(60, \Illuminate\Support\Facades\Auth::id());
         
         if ($result['success']) {
+            // Update timestamp manually since we forced it
+            \Illuminate\Support\Facades\Cache::put("sync_last_time_finance_sync", time(), now()->addDays(1));
+            $this->updateSyncState();
+
             $this->dispatch('swal', [
                 'title' => 'Sinkronisasi Berhasil',
                 'text' => $result['message'] . ' (60 Hari Terakhir)',
@@ -79,7 +82,6 @@ class FinanceDashboard extends Component
             ]);
         }
 
-        $this->lastSync = FinanceSync::latest('updated_at')->first()?->updated_at;
         $this->isSyncing = false;
     }
 

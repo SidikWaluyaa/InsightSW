@@ -5,6 +5,8 @@ namespace App\Livewire\MetaAds;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\MetaAdsReport;
+use App\Services\MetaAdsService;
+use App\Services\SyncService;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Layout;
 
@@ -56,10 +58,38 @@ class Index extends Component
     public bool $showDetail = false;
     public ?array $viewingData = null;
 
+    public $lastSyncTimestamp;
+    public $isSyncing = false;
+
     public function mount()
     {
         $this->startDate = now()->format('Y-m-d');
         $this->endDate = now()->format('Y-m-d');
+        $this->updateSyncState();
+        $this->checkSync(); // Force initial check
+    }
+
+    public function updateSyncState()
+    {
+        $this->lastSyncTimestamp = app(SyncService::class)->getLastSyncTime('meta_ads_sync');
+    }
+
+    public function checkSync()
+    {
+        // Auto sync only for today
+        if ($this->startDate !== now()->format('Y-m-d')) {
+            return;
+        }
+
+        $this->isSyncing = true;
+        app(SyncService::class)->syncIfAllowed('meta_ads_sync', function() {
+            $adAccountId = 'act_1922369221497688';
+            app(MetaAdsService::class)->fetchAndSync($adAccountId, 'today');
+        }, 60);
+
+        $this->updateSyncState();
+        $this->loadSummary();
+        $this->isSyncing = false;
     }
 
     public function updated($property)
@@ -111,9 +141,10 @@ class Index extends Component
     /**
      * Synchronize statistics with Meta API
      */
-    public function sync(\App\Services\MetaAdsService $service)
+    public function sync(MetaAdsService $service)
     {
         $adAccountId = 'act_1922369221497688';
+        $this->isSyncing = true;
         
         try {
             // Sync for the selected start date or default to today
@@ -121,6 +152,10 @@ class Index extends Component
             $result = $service->fetchAndSync($adAccountId, $syncDate);
 
             if ($result) {
+                // Update timestamp manually since we forced it
+                \Illuminate\Support\Facades\Cache::put("sync_last_time_meta_ads_sync", time(), now()->addDays(1));
+                $this->updateSyncState();
+
                 $this->loadSummary();
                 $this->dispatch('swal', [
                     'icon' => 'success',
@@ -137,6 +172,8 @@ class Index extends Component
                 'text' => 'Gagal sinkronisasi: ' . $e->getMessage(),
             ]);
         }
+
+        $this->isSyncing = false;
     }
 
     public function showDetail($id)

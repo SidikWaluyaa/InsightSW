@@ -1,4 +1,18 @@
-<div class="px-6 py-6 pb-20">
+<div class="px-6 py-6 pb-20"
+     wire:poll.10s="checkSync"
+     x-data="{ 
+        seconds: 0,
+        lastSync: @entangle('lastSyncTimestamp'),
+        isSyncing: @entangle('isSyncing'),
+        init() {
+            setInterval(() => {
+                if (this.lastSync) {
+                    let now = Math.floor(Date.now() / 1000);
+                    this.seconds = Math.max(0, 60 - (now - this.lastSync));
+                }
+            }, 1000);
+        }
+     }">
     {{-- Header & Filter Bar --}}
     <div class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
         <div class="flex items-center gap-5">
@@ -8,12 +22,30 @@
             <div>
                 <div class="flex items-center gap-3">
                     <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Konsol Produktivitas</h1>
-                    <span class="px-2 py-1 rounded-lg bg-amber-500 text-white text-[10px] font-black tracking-[0.2em]">TRACKING</span>
+                    <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
                 </div>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-                    <span class="w-2h-2 rounded-full bg-slate-300"></span>
-                    Mode Atribusi: Tanggal Kejadian (`_at`) • Akurasi Historis Aktif
-                </p>
+                <div class="flex items-center gap-4 mt-2">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 leading-none">
+                        Mode Atribusi: Tanggal Kejadian (`_at`)
+                    </p>
+                    
+                    <div class="h-3 w-px bg-slate-200 dark:bg-slate-800"></div>
+                    
+                    <div class="flex items-center gap-2">
+                        <template x-if="isSyncing">
+                            <div class="flex items-center gap-2">
+                                <svg class="animate-spin h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest">Update Data...</span>
+                            </div>
+                        </template>
+                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Refresh: <span x-text="seconds" class="text-amber-500 font-mono"></span>s</span>
+                        </template>
+                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
 

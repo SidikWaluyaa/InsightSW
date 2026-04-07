@@ -5,6 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Http;
+use App\Services\CxService;
+use App\Services\SyncService;
 use Carbon\Carbon;
 
 class CxUpsellReport extends Component
@@ -22,12 +24,44 @@ class CxUpsellReport extends Component
     public $isLoading = false;
     public $errorMessage = null;
     public $activePreset = 'bulan_ini';
+    public $lastSyncTimestamp;
+    public $isSyncing = false;
 
     public function mount()
     {
         $this->startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
         $this->endDate = Carbon::now()->format('Y-m-d');
+        
+        $this->updateSyncState();
+        $this->checkSync(); // Force check on mount
         $this->fetchData();
+    }
+
+    /**
+     * Update the sync timestamps from Cache for the UI to use.
+     */
+    public function updateSyncState()
+    {
+        $this->lastSyncTimestamp = app(SyncService::class)->getLastSyncTime('cx_upsell');
+    }
+
+    /**
+     * Method triggered by wire:poll every 10s.
+     */
+    public function checkSync()
+    {
+        $this->isSyncing = true;
+        
+        $synced = app(SyncService::class)->syncIfAllowed('cx_upsell', function() {
+            app(CxService::class)->fetchAndCache($this->startDate, $this->endDate, true);
+        }, 60);
+
+        if ($synced) {
+            $this->fetchData(); // Refresh local properties from cache
+        }
+
+        $this->updateSyncState();
+        $this->isSyncing = false;
     }
 
     public function setPreset($preset)
@@ -79,22 +113,18 @@ class CxUpsellReport extends Component
         $this->resetError();
 
         try {
-            $apiUrl = config('services.dashboard.base_url');
-            $apiKey = config('services.dashboard.key');
+            $cxService = app(CxService::class);
+            
+            // Get data - if forceRefresh is true, we hit API.
+            // Otherwise, we try to get from cache first.
+            $data = $cxService->getCachedData($this->startDate, $this->endDate);
 
-            $params = [
-                'start' => $this->startDate,
-                'end' => $this->endDate,
-                'refresh' => $forceRefresh ? 1 : 0,
-            ];
+            if (!$data || $forceRefresh) {
+                $data = $cxService->fetchAndCache($this->startDate, $this->endDate, $forceRefresh);
+                $this->updateSyncState();
+            }
 
-            $response = Http::withHeaders([
-                'X-API-KEY' => $apiKey,
-                'Accept' => 'application/json',
-            ])->withoutVerifying()->timeout(30)->get($apiUrl . '/cx-summary', $params);
-
-            if ($response->successful()) {
-                $data = $response->json();
+            if ($data) {
                 $result = data_get($data, 'result', $data);
                 
                 // 1. KPI Stats
@@ -102,14 +132,14 @@ class CxUpsellReport extends Component
                     'total' => 0,
                     'open' => 0,
                     'resolved' => 0,
+                    'cancelled' => 0,
                     'resolution_rate' => 0,
                     'avg_response_time_hours' => 0
                 ]);
 
-                // 2. MAPPING DATA UPSELL (TABEL DASAR)
+                // 2. MAPPING DATA UPSELL
                 $upsellData = data_get($result, 'data.upsell', []);
 
-                // Tambah Jasa Mapping
                 $this->upsellItems = (array)data_get($upsellData, 'tambah_jasa_items', []);
                 $this->summary = [
                     'total_nominal' => (float)data_get($upsellData, 'total_nominal', 0),
@@ -117,7 +147,6 @@ class CxUpsellReport extends Component
                     'combined_arpu' => (float)data_get($upsellData, 'arpu_tambah_jasa', 0),
                 ];
 
-                // OTO Mapping
                 $this->otoItems = (array)data_get($upsellData, 'oto_items', []);
                 $this->otoSummary = [
                     'total_nominal' => (float)data_get($upsellData, 'oto_nominal', 0),
@@ -125,15 +154,7 @@ class CxUpsellReport extends Component
                     'combined_arpu' => (float)data_get($upsellData, 'arpu_oto', 0),
                 ];
 
-                // 3. Fallback: Jika data upsell block kosong, coba ambil dari items utama (biasanya Tambah Jasa)
-                if (empty($this->upsellItems) && empty($this->otoItems)) {
-                    $this->upsellItems = (array)data_get($result, 'data.items', []);
-                    $this->summary['total_nominal'] = collect($this->upsellItems)->sum(fn($i) => (float)data_get($i, 'total_revenue', 0));
-                    $this->summary['total_volume'] = count($this->upsellItems);
-                    $this->summary['combined_arpu'] = $this->summary['total_volume'] > 0 ? $this->summary['total_nominal'] / $this->summary['total_volume'] : 0;
-                }
-
-                // 4. Agregasi Kategori untuk Chart (Standardisasi 'Lainnya' untuk null)
+                // Standardize categories for Chart
                 $standardize = function($items) {
                     return collect($items)->map(function($i) {
                         $cat = data_get($i, 'category_name');
@@ -148,22 +169,14 @@ class CxUpsellReport extends Component
                 $this->categories = $cleanUpsell->groupBy('category_name')->map(fn($g) => count($g))->toArray();
                 $this->otoCategories = $cleanOto->groupBy('category_name')->map(fn($g) => count($g))->toArray();
 
-                // 5. Dispatch Event dengan Data Teragregasi untuk Chart
-                $allLabels = $cleanUpsell->concat($cleanOto)
-                    ->pluck('category_name')
-                    ->unique()
-                    ->values()
-                    ->toArray();
+                // Dispatch for Chart
+                $allLabels = $cleanUpsell->concat($cleanOto)->pluck('category_name')->unique()->values()->toArray();
 
                 $this->dispatch('analytics-updated', [
                     'barChartData' => [
                         'labels' => $allLabels,
-                        'jasaRev' => $cleanUpsell->groupBy('category_name')
-                            ->map(fn($g) => $g->sum('total_revenue'))
-                            ->toArray(),
-                        'otoRev' => $cleanOto->groupBy('category_name')
-                            ->map(fn($g) => $g->sum('total_revenue'))
-                            ->toArray(),
+                        'jasaRev' => $cleanUpsell->groupBy('category_name')->map(fn($g) => $g->sum('total_revenue'))->toArray(),
+                        'otoRev' => $cleanOto->groupBy('category_name')->map(fn($g) => $g->sum('total_revenue'))->toArray(),
                     ],
                     'donutChartData' => [
                         'labels' => array_keys(array_merge($this->categories, $this->otoCategories)),
@@ -172,11 +185,9 @@ class CxUpsellReport extends Component
                         })->toArray(),
                     ]
                 ]);
-            } else {
-                $this->handleError($response);
             }
         } catch (\Exception $e) {
-            $this->errorMessage = 'Koneksi ke API Gagal: ' . $e->getMessage();
+            $this->errorMessage = 'Data Gagal Dimuat: ' . $e->getMessage();
         }
 
         $this->isLoading = false;
@@ -186,6 +197,7 @@ class CxUpsellReport extends Component
     {
         $this->fetchData(true);
     }
+
 
     public function applyFilter()
     {

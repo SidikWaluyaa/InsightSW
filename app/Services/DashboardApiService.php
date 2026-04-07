@@ -18,7 +18,7 @@ class DashboardApiService
     }
 
     /**
-     * Get dashboard summary from external API.
+     * Get dashboard summary from external API with Caching.
      * 
      * @param string $startDate Format: YYYY-MM-DD
      * @param string $endDate Format: YYYY-MM-DD
@@ -27,18 +27,26 @@ class DashboardApiService
      */
     public function getDashboardSummary(string $startDate, string $endDate, bool $forceRefresh = false): array
     {
+        $cacheKey = "dashboard_summary_{$startDate}_{$endDate}";
+
+        if (!$forceRefresh && \Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            return \Illuminate\Support\Facades\Cache::get($cacheKey);
+        }
+
         try {
             $response = Http::withHeaders([
                 'X-API-KEY' => $this->apiKey,
                 'Accept' => 'application/json',
-            ])->get("{$this->baseUrl}/dashboard-summary", [
+            ])->withoutVerifying()->timeout(60)->get("{$this->baseUrl}/dashboard-summary", [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'force_refresh' => $forceRefresh ? 1 : 0,
             ]);
 
             if ($response->successful()) {
-                return $response->json();
+                $data = $response->json();
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $data, now()->addHour());
+                return $data;
             }
 
             Log::error('Dashboard API Error: ' . $response->status() . ' - ' . $response->body());

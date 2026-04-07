@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\SleekflowContact;
+use App\Services\SleekflowService;
+use App\Services\SyncService;
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.app')]
@@ -13,12 +15,39 @@ class CsTracking extends Component
     public $endDate;
     public $stats = [];
     public $isLoading = false;
+    public $lastSyncTimestamp;
+    public $isSyncing = false;
 
     public function mount()
     {
         $this->startDate = $this->startDate ?: now()->format('Y-m-d');
         $this->endDate = $this->endDate ?: now()->format('Y-m-d');
+        $this->updateSyncState();
+        $this->checkSync(); // Force initial check
         $this->loadStats();
+    }
+
+    public function updateSyncState()
+    {
+        $this->lastSyncTimestamp = app(SyncService::class)->getLastSyncTime('cs_tracking_sync');
+    }
+
+    public function checkSync()
+    {
+        // Auto sync only for today
+        if ($this->startDate !== now()->format('Y-m-d')) {
+            return;
+        }
+
+        $this->isSyncing = true;
+        app(SyncService::class)->syncIfAllowed('cs_tracking_sync', function() {
+            // Re-sync sleekflow contacts for today
+            app(SleekflowService::class)->syncContacts(now()->format('Y-m-d'), now()->format('Y-m-d'));
+        }, 60);
+
+        $this->updateSyncState();
+        $this->loadStats();
+        $this->isSyncing = false;
     }
 
     public function applyFilter()

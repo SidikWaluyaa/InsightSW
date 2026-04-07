@@ -1,11 +1,41 @@
-<div>
+<div wire:poll.10s="checkSync"
+     x-data="{ 
+        seconds: 0,
+        lastSync: @entangle('lastSyncTimestamp'),
+        isSyncing: @entangle('isSyncing'),
+        init() {
+            setInterval(() => {
+                if (this.lastSync) {
+                    let now = Math.floor(Date.now() / 1000);
+                    this.seconds = Math.max(0, 60 - (now - this.lastSync));
+                }
+            }, 1000);
+        }
+     }">
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h2 class="font-black text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
                     Chat Masuk (Sleekflow)
                 </h2>
-                <p class="text-xs font-bold text-slate-400 dark:text-gray-500 mt-1 uppercase tracking-widest text-indigo-500">Customer Service • Real-time Sync</p>
+                <div class="flex items-center gap-3 mt-1">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-500 leading-none">Customer Service • Real-time Sync</p>
+                    
+                    <div class="flex items-center gap-2 border-l border-gray-100 dark:border-gray-800 ml-2 pl-3">
+                        <template x-if="isSyncing">
+                            <div class="flex items-center gap-2">
+                                <svg class="animate-spin h-3 w-3 text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
+                            </div>
+                        </template>
+                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Auto-refresh: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
+                        </template>
+                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
+                        </template>
+                    </div>
+                </div>
             </div>
             
             <div class="flex items-center gap-3">
