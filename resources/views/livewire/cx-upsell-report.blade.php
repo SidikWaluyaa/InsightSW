@@ -4,10 +4,13 @@
         seconds: 0,
         lastSync: @entangle('lastSyncTimestamp'),
         isSyncing: @entangle('isSyncing'),
+        serverTime: {{ time() }},
+        browserTime: Math.floor(Date.now() / 1000),
+        get drift() { return this.serverTime - this.browserTime; },
         init() {
             setInterval(() => {
                 if (this.lastSync) {
-                    let now = Math.floor(Date.now() / 1000);
+                    let now = Math.floor(Date.now() / 1000) + this.drift;
                     this.seconds = Math.max(0, 60 - (now - this.lastSync));
                 }
             }, 1000);

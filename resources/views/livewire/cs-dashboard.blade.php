@@ -6,9 +6,12 @@
         lastChat: @entangle('lastSyncChat'),
         lastApi: @entangle('lastSyncOperational'),
         isSyncing: @entangle('isSyncing'),
+        serverTime: {{ time() }},
+        browserTime: Math.floor(Date.now() / 1000),
+        get drift() { return this.serverTime - this.browserTime; },
         init() {
             setInterval(() => {
-                let now = Math.floor(Date.now() / 1000);
+                let now = Math.floor(Date.now() / 1000) + this.drift;
                 if (this.lastChat) this.chatSeconds = Math.max(0, 60 - (now - this.lastChat));
                 if (this.lastApi) this.apiSeconds = Math.max(0, 60 - (now - this.lastApi));
             }, 1000);
