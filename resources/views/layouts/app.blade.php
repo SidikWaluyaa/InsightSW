@@ -174,8 +174,10 @@ new class extends Component
                     @php
                         $cxSubItems = [
                             ['route' => 'cx-upsell', 'label' => 'Upsell Report', 'icon' => '...'],
+                            ['route' => 'quality-control', 'label' => 'AFTER', 'icon' => '...'],
+                            ['route' => 'cx-konfirmasi-after', 'label' => 'Konfirmasi After', 'icon' => '...'],
                         ];
-                        $isCxActive = request()->routeIs(['cx-upsell']);
+                        $isCxActive = request()->routeIs(['cx-upsell', 'quality-control', 'cx-konfirmasi-after']);
                     @endphp
                     <div x-data="{ cxOpen: {{ $isCxActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="cxOpen = !cxOpen"

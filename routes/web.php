@@ -36,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
     Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
     Route::get('customer-service/cx-upsell', \App\Livewire\CxUpsellReport::class)->name('cx-upsell');
+    Route::get('customer-service/quality-control', \App\Livewire\QualityControlIndex::class)->name('quality-control');
+    Route::get('cx/konfirmasi-after', \App\Livewire\CxKonfirmasiAfter::class)->name('cx-konfirmasi-after');
 });
 
 Route::view('profile', 'profile')
