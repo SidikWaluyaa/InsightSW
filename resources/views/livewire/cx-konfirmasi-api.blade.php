@@ -8,13 +8,13 @@
 
             {{-- Segmented Tab Navigation --}}
             <div class="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl shadow-inner border border-slate-200/50 dark:border-slate-700/50">
-                <a href="{{ route('cx-konfirmasi-after') }}" class="px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm border border-slate-200/40 dark:border-slate-600/40">
+                <a href="{{ route('cx-konfirmasi-after') }}" class="px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
                     <div class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         Spreadsheet Sync
                     </div>
                 </a>
-                <a href="{{ route('cx-konfirmasi-api') }}" class="px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                <a href="{{ route('cx-konfirmasi-api') }}" class="px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm border border-slate-200/40 dark:border-slate-600/40">
                     <div class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         System API Load
@@ -32,8 +32,8 @@
             <div class="relative flex flex-col h-full justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-[10px] font-black text-teal-500 uppercase tracking-[0.2em]">Total Data</span>
-                        @if(array_filter($filters) || $startDate || $endDate)
+                        <span class="text-[10px] font-black text-teal-500 uppercase tracking-[0.2em]">Total Fetch Data</span>
+                        @if(array_filter($filters))
                             <span class="px-2 py-0.5 bg-teal-500/10 text-teal-500 text-[8px] font-black uppercase rounded-lg tracking-widest">Filtered</span>
                         @endif
                     </div>
@@ -44,7 +44,7 @@
                 </div>
                 <div class="mt-4 flex items-center gap-2">
                     <span class="flex h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span>
-                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Live Sync Data</span>
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Workshop System Validated</span>
                 </div>
             </div>
         </div>
@@ -128,8 +128,8 @@
                 <button wire:click="fetch" 
                         wire:loading.attr="disabled"
                         class="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.1em] shadow-lg shadow-teal-500/30 transition-all active:scale-95 flex items-center gap-3">
-                    <span wire:loading.remove wire:target="fetch">TARIK DATA LIVE</span>
-                    <span wire:loading wire:target="fetch">SYNCING...</span>
+                    <span wire:loading.remove wire:target="fetch">REQUEST API DATA</span>
+                    <span wire:loading wire:target="fetch">REQUESTING...</span>
                     <svg wire:loading.remove wire:target="fetch" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <svg wire:loading wire:target="fetch" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </button>
@@ -137,7 +137,7 @@
 
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Last Sync: {{ now()->format('H:i:s') }}
+                API Source: info.shoeworkshop.id
             </div>
         </div>
 
@@ -146,7 +146,7 @@
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 -translate-y-4"
              x-transition:enter-end="opacity-100 translate-y-0"
-             class="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 space-y-8">
+             class="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 space-y-8" style="display: none;">
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {{-- Search --}}
@@ -160,29 +160,29 @@
 
                 {{-- Start Date --}}
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mulai Tanggal</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mulai Tanggal (API Req)</label>
                     <input type="date" 
-                           wire:model.live="startDate"
+                           wire:model.defer="startDate"
                            class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                 </div>
 
                 {{-- End Date --}}
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sampai Tanggal</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sampai Tanggal (API Req)</label>
                     <input type="date" 
-                           wire:model.live="endDate"
+                           wire:model.defer="endDate"
                            class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {{-- Filter: PIC --}}
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category: PIC</label>
-                    <select wire:model.live="filters.pic" 
+                    <select wire:model.live="filters.pic_name" 
                             class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                         <option value="">SEMUA PIC</option>
-                        @foreach($availableOptions['pic'] as $opt)
+                        @foreach($availableOptions['pic_name'] as $opt)
                             <option value="{{ $opt }}">{{ strtoupper($opt) }}</option>
                         @endforeach
                     </select>
@@ -191,22 +191,10 @@
                 {{-- Filter: Respon --}}
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category: Status Respon</label>
-                    <select wire:model.live="filters.respon_customer" 
+                    <select wire:model.live="filters.response" 
                             class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                         <option value="">SEMUA STATUS</option>
-                        @foreach($availableOptions['respon_customer'] as $opt)
-                            <option value="{{ $opt }}">{{ strtoupper($opt) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Filter: Tahap Lanjutan --}}
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category: Tahap Lanjutan</label>
-                    <select wire:model.live="filters.tahap_lanjutan" 
-                            class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
-                        <option value="">SEMUA TAHAP</option>
-                        @foreach($availableOptions['tahap_lanjutan'] as $opt)
+                        @foreach($availableOptions['response'] as $opt)
                             <option value="{{ $opt }}">{{ strtoupper($opt) }}</option>
                         @endforeach
                     </select>
@@ -215,10 +203,10 @@
                 {{-- Filter: No SPK --}}
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quick Select: SPK ID</label>
-                    <select wire:model.live="filters.no_spk" 
+                    <select wire:model.live="filters.spk_number" 
                             class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                         <option value="">SEMUA SPK</option>
-                        @foreach($availableOptions['no_spk'] as $opt)
+                        @foreach($availableOptions['spk_number'] as $opt)
                             <option value="{{ $opt }}">{{ strtoupper($opt) }}</option>
                         @endforeach
                     </select>
@@ -227,8 +215,8 @@
 
             <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/20 p-5 rounded-3xl">
                 <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    * Dynamic options apply based on live sheet data. Minimum range: Jan 2026.
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    * Merubah tanggal wajib menekan tombol REQUEST API DATA.
                 </div>
                 <button wire:click="resetFilters" 
                         class="px-6 py-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm">
@@ -248,7 +236,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                 </div>
                 <div>
-                    <h3 class="text-[15px] font-black text-slate-800 dark:text-white uppercase tracking-wider leading-none mb-1">Daftar Konfirmasi</h3>
+                    <h3 class="text-[15px] font-black text-slate-800 dark:text-white uppercase tracking-wider leading-none mb-1">Daftar Konfirmasi (System API)</h3>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                         Displaying {{ number_format($paginatedItems ? count($paginatedItems) : 0) }} of {{ number_format($totalResults) }} Results
                     </p>
@@ -262,11 +250,18 @@
                 <input type="text" 
                        wire:model.live.debounce.300ms="searchTerm"
                        class="w-full pl-12 pr-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl text-[13px] font-bold focus:ring-4 focus:ring-teal-500/10 transition-all dark:text-white shadow-sm"
-                       placeholder="Cari Nama, No SPK, atau Deskripsi...">
+                       placeholder="Cari Nama, No SPK, atau Notes...">
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto relative">
+            <div wire:loading wire:target="fetch" class="absolute inset-0 z-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm flex justify-center items-center">
+                <div class="flex items-center gap-3 px-6 py-3 bg-teal-500 text-white rounded-full font-bold shadow-lg shadow-teal-500/20">
+                    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Fetching API Data...</span>
+                </div>
+            </div>
+
             <table class="w-full text-left border-collapse min-w-[1200px]">
                 <thead>
                     <tr class="bg-slate-50/70 dark:bg-slate-800/40 border-b border-gray-100 dark:border-gray-800">
@@ -274,7 +269,7 @@
                         <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Waktu & SPK</th>
                         <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informasi Customer</th>
                         <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Handled By</th>
-                        <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tahap Lanjutan</th>
+                        <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Waktu Kontak</th>
                         <th class="px-6 py-7 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Respon</th>
                     </tr>
                 </thead>
@@ -286,31 +281,40 @@
                             </td>
                             <td class="px-6 py-6">
                                 <div class="flex flex-col gap-1.5">
-                                    <span class="text-[13px] font-black text-slate-800 dark:text-white">{{ $item['tanggal'] }}</span>
-                                    <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-500 text-[10px] font-black rounded-md w-fit tracking-wider">{{ $item['no_spk'] }}</span>
+                                    <span class="text-[13px] font-black text-slate-800 dark:text-white">{{ \Carbon\Carbon::parse($item['entered_at'])->format('d M Y') }}</span>
+                                    <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-500 text-[10px] font-black rounded-md w-fit tracking-wider">{{ $item['spk_number'] }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-6 font-semibold">
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{{ $item['nama_customer'] }}</span>
+                                    <span class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{{ $item['customer_name'] }}</span>
                                     <div class="flex items-center gap-2">
                                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                        <span class="text-[11px] font-black text-slate-400">{{ $item['kontak_customer'] }}</span>
+                                        <span class="text-[11px] font-black text-slate-400">{{ $item['customer_phone'] }}</span>
                                     </div>
+                                    <span class="text-[10px] text-slate-500 mt-0.5 font-medium">{{ $item['brand_color'] }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-6">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-600 font-black text-[10px] border border-teal-500/20 shadow-sm">
-                                        {{ strtoupper(substr($item['pic'] ?? '?', 0, 1)) }}
+                                        {{ strtoupper(substr($item['pic_name'] ?? '?', 0, 1)) }}
                                     </div>
-                                    <span class="text-xs font-black text-slate-600 dark:text-gray-300 uppercase tracking-tighter">{{ $item['pic'] }}</span>
+                                    <span class="text-xs font-black text-slate-600 dark:text-gray-300 uppercase tracking-tighter">{{ $item['pic_name'] }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-6">
-                                <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-black rounded-xl uppercase tracking-widest border border-slate-200 dark:border-slate-700">
-                                    {{ $item['tahap_lanjutan'] }}
-                                </span>
+                            <td class="px-6 py-6 font-semibold">
+                                @if($item['contacted_at'])
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[13px] font-black text-slate-800 dark:text-white">{{ \Carbon\Carbon::parse($item['contacted_at'])->format('d M Y') }}</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">{{ \Carbon\Carbon::parse($item['contacted_at'])->format('H:i') }} WIB</span>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-[11px] font-bold text-slate-400 italic">Belum Dihubungi</span>
+                                @endif
                             </td>
                             <td class="px-6 py-6">
                                 @if($item['has_respon'])
@@ -319,8 +323,8 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         </div>
                                         <div class="flex flex-col">
-                                            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">{{ $item['respon_customer'] }}</span>
-                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[150px]">{{ $item['catatan_gudang'] }}</span>
+                                            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">{{ $item['response'] }}</span>
+
                                         </div>
                                     </div>
                                 @else
@@ -346,7 +350,7 @@
                                     <div class="space-y-3">
                                         <p class="text-xl font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">No Data Discovered</p>
                                         <p class="text-sm font-bold text-slate-400 dark:text-slate-500 max-w-md mx-auto leading-relaxed">
-                                            {{ $searchTerm ? "We couldn't find any results for '$searchTerm'. Try adjusting your filters or checking the date range." : "Please click 'Tarik Data Live' to synchronize your dashboard with the Google Sheet." }}
+                                            {{ $searchTerm ? "We couldn't find any results for '$searchTerm'. Try adjusting your filters or checking the date range." : "Please click 'REQUEST API DATA' to fetch data from the operational system." }}
                                         </p>
                                         <button wire:click="resetFilters" class="text-teal-500 font-black text-[11px] uppercase tracking-widest hover:underline mt-4">Reset all filters</button>
                                     </div>
