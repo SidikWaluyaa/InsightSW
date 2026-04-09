@@ -37,7 +37,7 @@ class MarketingSyncService
         // 1. BULK SYNC: Meta Ads (Whole Month)
         $metaDailyTotals = [];
         try {
-            $adAccountId = 'act_1922369221497688';
+            $adAccountId = env('META_AD_ACCOUNT_ID', 'act_1922369221497688');
             $range = ['since' => $startDateStr, 'until' => $end];
             
             // Sync ad-level (DISABLED: Overkill for dashboard, causes timeouts)
@@ -90,14 +90,16 @@ class MarketingSyncService
             } elseif ($useLocalOnly) {
                 $rawSpent = MetaAdsReport::where('date', $date)->sum('spend');
             } else {
-                $adAccountId = 'act_1922369221497688';
+                $adAccountId = env('META_AD_ACCOUNT_ID', 'act_1922369221497688');
                 $metaData = $this->metaService->fetchSummary($adAccountId, [
                     'startDate' => $date,
                     'endDate' => $date
                 ]);
                 $rawSpent = $metaData ? (float) ($metaData['spend'] ?? 0) : 0;
             }
-            $spent = $rawSpent * 1.11;
+            
+            $taxRate = (float) env('META_TAX_RATE', 1.11);
+            $spent = $rawSpent * $taxRate;
 
             // 2. Fetch Revenue (Local or API)
             if ($useLocalOnly) {
