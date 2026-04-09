@@ -67,18 +67,21 @@
 
                     {{-- Revenue Field --}}
                     <div class="space-y-2">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Omset (Revenue)</label>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-sm font-bold text-slate-500 group-focus-within:text-indigo-500 transition-colors">Rp</span>
+                        <label for="revenue" class="block text-sm font-bold text-slate-700 dark:text-gray-300">Omset (Revenue)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                            <input type="text" wire:model="revenue" id="revenue" readonly
+                                class="w-full rounded-xl md:rounded-2xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-200 focus:ring-emerald-500 py-2.5 pl-12 cursor-not-allowed opacity-80"
+                                placeholder="0">
+                            <div wire:loading wire:target="date, syncApiData" class="absolute right-4 top-1/2 -translate-y-1/2">
+                                <div class="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
                         </div>
-                        <input type="text" wire:model="revenue" readonly
-                            class="block w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold cursor-not-allowed opacity-75"
-                            placeholder="0">
-                    </div>
-                </div>
-        <x-input-error :messages="$errors->get('revenue')" class="mt-2" />
+                        <div class="flex items-center gap-1.5 px-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Sinkronisasi Otomatis</p>
+                        </div>
+                        <x-input-error :messages="$errors->get('revenue')" class="mt-2" />
                     </div>
 
                     {{-- Chat In Field --}}

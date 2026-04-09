@@ -51,35 +51,33 @@ class DailyReportForm extends Component
         $this->isSyncing = true;
         
         try {
-            // 1. Fetch Meta Ads Spend
-            $metaService = app(\App\Services\MetaAdsService::class);
+            $marketingSyncService = app(\App\Services\MarketingSyncService::class);
+            
+            // Re-use logic from MarketingSyncService for single day
+            // We need the data but not necessarily the DB update here yet (or we can update it)
+            // For now, let's keep it reactive in the form
+            
+            // 1. Spent
             $adAccountId = 'act_1922369221497688';
-            $metaData = $metaService->fetchSummary($adAccountId, [
+            $metaData = app(\App\Services\MetaAdsService::class)->fetchSummary($adAccountId, [
                 'startDate' => $this->date,
                 'endDate' => $this->date
             ]);
-            
-            if ($metaData) {
-                $this->rawSpent = (float) ($metaData['spend'] ?? 0);
-                $this->spent = number_format(round($this->rawSpent * 1.11), 0, ',', '.');
-            }
+            $this->rawSpent = $metaData ? (float) ($metaData['spend'] ?? 0) : 0;
+            $this->spent = number_format(round($this->rawSpent * 1.11), 0, ',', '.');
 
-            // 2. Fetch Sleekflow Metrics
-            $sleekflowService = app(\App\Services\SleekflowService::class);
-            $sleekflowData = $sleekflowService->getAnalyticsData($this->date, $this->date);
-            
-            if ($sleekflowData) {
-                $this->chat_in = number_format(($sleekflowData['totalContacts'] ?? 0), 0, ',', '.');
-                $this->chat_consul = number_format(($sleekflowData['totalKonsul'] ?? 0), 0, ',', '.');
+            // 2. Revenue from Shoeworkshop API
+            $apiResult = app(\App\Services\DashboardApiService::class)->getDashboardSummary($this->date, $this->date, true);
+            $revValue = 0;
+            if (isset($apiResult['status']) && $apiResult['status'] === 'success') {
+                $revValue = (float) ($apiResult['data']['summary']['revenue'] ?? 0);
             }
+            $this->revenue = number_format($revValue, 0, ',', '.');
 
-            // 3. Fetch Finance Revenue (New Automation)
-            $financeTotal = \App\Models\FinanceSync::whereBetween('source_created_at', [
-                $this->date . ' 00:00:00', 
-                $this->date . ' 23:59:59'
-            ])->sum('amount_paid');
-            
-            $this->revenue = number_format($financeTotal, 0, ',', '.');
+            // 3. Chats
+            $sleekflowData = app(\App\Services\SleekflowService::class)->getAnalyticsData($this->date, $this->date);
+            $this->chat_in = number_format(($sleekflowData['totalContacts'] ?? 0), 0, ',', '.');
+            $this->chat_consul = number_format(($sleekflowData['totalKonsul'] ?? 0), 0, ',', '.');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("DailyReportForm Sync Error: " . $e->getMessage());

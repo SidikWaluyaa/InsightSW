@@ -8,14 +8,30 @@
     </x-slot>
 
     <div class="space-y-6 relative" wire:poll.10s x-cloak>
-        <div class="flex items-center justify-between bg-white dark:bg-gray-900 p-3 md:p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
-            <h3 class="font-bold text-[15px] md:text-lg text-slate-800 dark:text-gray-200 tracking-tight">Pilih Periode:</h3>
-            <div class="flex items-center gap-3 relative">
-                <div wire:loading wire:target="selectedMonth" class="absolute -left-10 top-1/2 -translate-y-1/2">
-                    <div class="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-3 md:p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
+            <div class="flex items-center gap-3">
+                <h3 class="font-bold text-[15px] md:text-lg text-slate-800 dark:text-gray-200 tracking-tight">Pilih Periode:</h3>
                 <input type="month" wire:model.live="selectedMonth" wire:key="dashboard-month-filter"
                     class="rounded-lg md:rounded-xl text-sm md:text-base border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 focus:ring-emerald-500 font-medium">
+            </div>
+
+            <div class="flex items-center gap-4">
+                @if($lastSyncTime)
+                    <div class="flex flex-col items-end hidden md:flex">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
+                        <span class="text-xs font-semibold text-slate-600 dark:text-gray-300">{{ $lastSyncTime }}</span>
+                    </div>
+                @endif
+
+                <button wire:click="syncAll" wire:loading.attr="disabled"
+                    class="relative overflow-hidden group px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl md:rounded-2xl shadow-md transition-all active:scale-95 disabled:opacity-70 disabled:pointer-events-none">
+                    <div class="relative z-10 flex items-center gap-2">
+                        <div wire:loading wire:target="syncAll" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <svg wire:loading.remove wire:target="syncAll" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        <span class="text-sm font-bold tracking-tight">TARIK DATA LIVE</span>
+                    </div>
+                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                </button>
             </div>
         </div>
         {{-- Loading Overlay --}}
@@ -280,8 +296,26 @@
                                 <td class="px-6 py-4 text-sm font-medium text-slate-600 dark:text-gray-300">
                                     {{ $report->date->translatedFormat('d M Y') }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-slate-500 dark:text-gray-400">
-                                    {{ $this->formatCurrency($report->budgeting) }}
+                                <td class="px-6 py-3">
+                                    <div class="relative group/input max-w-[150px]" 
+                                        x-data="{ 
+                                            value: '{{ number_format($report->budgeting, 0, ',', '.') }}',
+                                            format() {
+                                                let raw = this.value.replace(/[^0-9]/g, '');
+                                                this.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                            }
+                                        }">
+                                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-emerald-500 transition-colors">
+                                            <span class="text-xs font-bold">Rp</span>
+                                        </div>
+                                        <input type="text" 
+                                            x-model="value"
+                                            x-on:input="format()"
+                                            onblur="@this.updateBudget({{ $report->id }}, this.value)"
+                                            onkeydown="if(event.key==='Enter') this.blur()"
+                                            class="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-lg text-xs font-bold text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 outline-none transition-all hover:border-gray-300 dark:hover:border-gray-600 shadow-inner"
+                                            placeholder="0" />
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-900 dark:text-gray-100 font-semibold text-right">
                                     {{ $this->formatCurrency($report->spent) }}

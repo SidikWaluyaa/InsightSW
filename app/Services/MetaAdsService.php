@@ -22,7 +22,7 @@ class MetaAdsService
     /**
      * Main Sync Function for a specific account
      */
-    public function fetchAndSync(string $adAccountId, string $datePreset = 'last_30d')
+    public function fetchAndSync(string $adAccountId, string|array $datePreset = 'last_30d')
     {
         if (!$this->accessToken) {
             Log::error("Meta Ads API Error: Access Token is missing.");
@@ -52,6 +52,9 @@ class MetaAdsService
 
         if ($datePreset === 'full_sync') {
             $params['time_range'] = json_encode(['since' => '2026-03-01', 'until' => date('Y-m-d')]);
+        } elseif (is_array($datePreset) && isset($datePreset['since'], $datePreset['until'])) {
+            // Custom range array
+            $params['time_range'] = json_encode($datePreset);
         } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePreset)) {
             // It's a specific date (YYYY-MM-DD), use time_range
             $params['time_range'] = json_encode(['since' => $datePreset, 'until' => $datePreset]);
@@ -278,9 +281,8 @@ class MetaAdsService
 
         $params = [
             'access_token' => $this->accessToken,
-            'level' => 'ad',
+            'level' => 'account', // Account level is 100% accurate and faster
             'fields' => 'reach,frequency,impressions,spend,actions,unique_actions',
-            'limit' => 500,
         ];
 
         if (!empty($filters['startDate']) && !empty($filters['endDate'])) {
@@ -295,16 +297,50 @@ class MetaAdsService
         $data = $res->json()['data'] ?? [];
         $summary = ['reach' => 0, 'frequency' => 0, 'impressions' => 0, 'spend' => 0, 'results' => 0, 'link_click_unique' => 0];
 
-        foreach ($data as $item) {
-            $summary['reach'] += $item['reach'] ?? 0;
-            $summary['impressions'] += $item['impressions'] ?? 0;
-            $summary['spend'] += $item['spend'] ?? 0;
-            $summary['results'] += $this->findResultsValue($item['actions'] ?? []);
-            $summary['link_click_unique'] += $this->getActionValue($item['unique_actions'] ?? [], 'link_click');
+        if (!empty($data)) {
+            $item = $data[0]; // At account level, there's usually just one row for the range
+            $summary['reach'] = (int) ($item['reach'] ?? 0);
+            $summary['impressions'] = (int) ($item['impressions'] ?? 0);
+            $summary['spend'] = (float) ($item['spend'] ?? 0);
+            $summary['results'] = $this->findResultsValue($item['actions'] ?? []);
+            $summary['link_click_unique'] = $this->getActionValue($item['unique_actions'] ?? [], 'link_click');
+            
+            if ($summary['reach'] > 0) {
+                $summary['frequency'] = $summary['impressions'] / $summary['reach'];
+            }
         }
 
-        if ($summary['reach'] > 0) $summary['frequency'] = $summary['impressions'] / $summary['reach'];
-
         return $summary;
+    }
+
+    /**
+     * Fetch Daily Account-Level Insights for a range
+     * This is the "Absolute Truth" for daily totals
+     */
+    public function fetchDailyAccountInsights(string $adAccountId, array $range)
+    {
+        if (!$this->accessToken) return [];
+
+        $params = [
+            'access_token' => $this->accessToken,
+            'level' => 'account',
+            'time_increment' => 1,
+            'fields' => 'spend',
+            'time_range' => json_encode($range),
+            'limit' => 1000
+        ];
+
+        $res = Http::timeout(60)->get("{$this->baseUrl}/{$adAccountId}/insights", $params);
+        if ($res->failed()) return [];
+
+        $data = $res->json()['data'] ?? [];
+        $dailyTotals = [];
+
+        foreach ($data as $item) {
+            $date = $item['date_start'];
+            $dailyTotals[$date] = (float) ($item['spend'] ?? 0);
+        }
+
+        return $dailyTotals;
     }
 }
