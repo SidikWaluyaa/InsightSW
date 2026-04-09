@@ -251,6 +251,22 @@ new class extends Component
                     </div>
                     @endif
 
+                    {{-- Gudang (Standalone) --}}
+                    <div class="space-y-1">
+                        <a href="{{ route('warehouse-dashboard') }}" 
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
+                            {{ request()->routeIs('warehouse-dashboard') ? 'bg-gradient-to-r from-[#22AF85]/10 to-teal-500/10 text-[#22AF85] border border-[#22AF85]/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg {{ request()->routeIs('warehouse-dashboard') ? 'bg-[#22AF85]/20 text-[#22AF85]' : 'bg-slate-700/30 text-slate-400 group-hover:text-white transition-colors' }} flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Gudang</span>
+                            </div>
+                        </a>
+                    </div>
+
                     {{-- Manajemen Pengguna (Standalone) --}}
                     @if (auth()->user()->isAdmin())
                     <div class="space-y-1">

@@ -39,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('customer-service/quality-control', \App\Livewire\QualityControlIndex::class)->name('quality-control');
     Route::get('cx/konfirmasi-after', \App\Livewire\CxKonfirmasiAfter::class)->name('cx-konfirmasi-after');
     Route::get('cx/konfirmasi-api', \App\Livewire\CxKonfirmasiApi::class)->name('cx-konfirmasi-api');
+    Route::get('gudang', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
 });
 
 Route::view('profile', 'profile')
