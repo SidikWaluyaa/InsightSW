@@ -40,10 +40,10 @@ class MarketingSyncService
             $adAccountId = 'act_1922369221497688';
             $range = ['since' => $startDateStr, 'until' => $end];
             
-            // Sync ad-level for reporting table
-            $this->metaService->fetchAndSync($adAccountId, $range); 
+            // Sync ad-level (DISABLED: Overkill for dashboard, causes timeouts)
+            // $this->metaService->fetchAndSync($adAccountId, $range); 
             
-            // Sync account-level for "Absolute Truth" totals
+            // Sync account-level for "Absolute Truth" totals (FAST & STABLE)
             $metaDailyTotals = $this->metaService->fetchDailyAccountInsights($adAccountId, $range);
         } catch (\Exception $e) {
             Log::error("Meta Bulk Sync Error: " . $e->getMessage());
