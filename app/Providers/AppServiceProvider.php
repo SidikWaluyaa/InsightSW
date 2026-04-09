@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,17 +22,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         Schema::defaultStringLength(191);
 
-        \Illuminate\Support\Facades\Gate::define('manage-users', function (\App\Models\User $user) {
+        Gate::define('manage-users', function (\App\Models\User $user) {
             return $user->isAdmin();
         });
 
-        \Illuminate\Support\Facades\Gate::define('access-cs-dashboard', function (\App\Models\User $user) {
+        Gate::define('access-cs-dashboard', function (\App\Models\User $user) {
             return $user->isAdmin() || $user->isEditor();
         });
 
-        \Illuminate\Support\Facades\Gate::define('sync-sleekflow', function (\App\Models\User $user) {
+        Gate::define('sync-sleekflow', function (\App\Models\User $user) {
             return $user->isAdmin() || $user->isEditor();
         });
     }
