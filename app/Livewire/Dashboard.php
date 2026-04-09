@@ -45,15 +45,14 @@ class Dashboard extends Component
             return;
         }
 
-        // 1. Notify Start
+        // 1. Notify Start with a persistent modal
         $this->dispatch('swal', [
-            'title' => 'Sinkronisasi Dimulai',
-            'text' => 'Sedang menarik data Meta, Shoeworkshop, dan Sleekflow. Mohon tunggu...',
+            'title' => 'Menyinkronkan Data',
+            'text' => 'Sedang menarik data terupdate dari Meta, Shoeworkshop, dan Sleekflow. Mohon tunggu...',
             'icon' => 'info',
-            'timer' => 3000,
-            'toast' => true,
-            'position' => 'top-end',
-            'showConfirmButton' => false
+            'allowOutsideClick' => false,
+            'showConfirmButton' => false,
+            'willOpen' => true, // Flag for frontend to handle showLoading()
         ]);
 
         $this->isSyncing = true;
@@ -65,12 +64,12 @@ class Dashboard extends Component
 
         if ($synced) {
             $this->dispatch('swal', [
-                'title' => 'Data Berhasil Ditarik',
-                'text' => 'Seluruh performa iklan, omset, dan chat berhasil disinkronkan.',
+                'title' => 'Sinkronisasi Berhasil',
+                'text' => 'Seluruh performa iklan, omset, dan chat telah diperbarui.',
                 'icon' => 'success',
                 'timer' => 3000,
-                'toast' => true,
-                'position' => 'top-end'
+                'showConfirmButton' => true,
+                'confirmButtonColor' => '#10b981',
             ]);
         }
 
