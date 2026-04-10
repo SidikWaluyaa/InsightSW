@@ -120,12 +120,10 @@
     </div>
 
     {{-- Detailed Tracking Table --}}
-    <div class="bg-white dark:bg-slate-900 rounded-[40px] border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden relative" wire:loading.class="opacity-50">
-        <div wire:loading class="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px]">
-            <div class="flex flex-col items-center gap-4">
-                <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-[0.3em]">Menganalisis Riwayat...</span>
-            </div>
+    <div class="bg-white dark:bg-slate-900 rounded-[40px] border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden relative transition-all" wire:loading.class="opacity-60 saturate-[0.8]">
+        {{-- Slim Top Loading Bar --}}
+        <div wire:loading class="absolute top-0 left-0 right-0 h-1 z-20">
+            <div class="h-full bg-amber-500 animate-[loading_1.5s_infinite_linear] origin-left shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
         </div>
 
         <table class="w-full text-left">
@@ -225,11 +223,10 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-[40px] border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden relative min-h-[400px]" wire:loading.class="opacity-50">
-            <div wire:loading class="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px]">
-                <div class="flex flex-col items-center gap-4">
-                    <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
+        <div class="bg-white dark:bg-slate-900 rounded-[40px] border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden relative min-h-[400px] transition-all" wire:loading.class="opacity-60 saturate-[0.8]">
+            {{-- Slim Top Loading Bar --}}
+            <div wire:loading class="absolute top-0 left-0 right-0 h-1 z-20">
+                <div class="h-full bg-emerald-500 animate-[loading_1.5s_infinite_linear] origin-left shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
             </div>
 
             <table class="w-full text-left">
@@ -318,5 +315,11 @@
             width: auto;
         }
         input[type="date"] { position: relative; }
+
+        @keyframes loading {
+            0% { transform: scaleX(0); opacity: 0; }
+            50% { transform: scaleX(0.5); opacity: 1; }
+            100% { transform: scaleX(1); opacity: 0; }
+        }
     </style>
 </div>

@@ -25,34 +25,53 @@ class SleekflowService
     {
         $startDate = $startDate ? Carbon::parse($startDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
         $endDate = $endDate ? Carbon::parse($endDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
+        $start = $startDate . ' 00:00:00';
+        $end = $endDate . ' 23:59:59';
 
-        $baseQuery = SleekflowContact::query()
-            ->whereBetween('created_at_sleekflow', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        // Calculate all totals in one optimized query
+        $totals = SleekflowContact::query()
+            ->selectRaw("
+                COUNT(CASE WHEN created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_contacts,
+                COUNT(CASE WHEN greeting_at BETWEEN ? AND ? THEN 1 END) as total_greeting,
+                COUNT(CASE WHEN konsul_at BETWEEN ? AND ? THEN 1 END) as total_konsul,
+                COUNT(CASE WHEN closing_at BETWEEN ? AND ? THEN 1 END) as total_closing,
+                COUNT(CASE WHEN (status_chat IS NULL OR status_chat = '') AND created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_unhandled
+            ", [
+                $start, $end, // total contacts
+                $start, $end, // greeting
+                $start, $end, // konsul
+                $start, $end, // closing
+                $start, $end  // unhandled (based on chat entry)
+            ])
+            ->first();
 
-        $totalContacts = (clone $baseQuery)->count();
-        $totalGreeting = (clone $baseQuery)->where('status_chat', 'Greeting')->count();
-        $totalClosing = (clone $baseQuery)->where('status_chat', 'Closing')->count();
-        $totalKonsul = (clone $baseQuery)->where('status_chat', 'Konsultasi')->count();
-        
-        $unhandledCount = (clone $baseQuery)->where(function($q) {
-            $q->whereNull('status_chat')->orWhere('status_chat', '');
-        })->count();
+        $totalContacts = (int)$totals->total_contacts;
+        $totalGreeting = (int)$totals->total_greeting;
+        $totalClosing = (int)$totals->total_closing;
+        $totalKonsul = (int)$totals->total_konsul;
+        $unhandledCount = (int)$totals->total_unhandled;
 
         $greetingToKonsulRate = $totalGreeting > 0 ? round(($totalKonsul / $totalGreeting) * 100, 1) : 0;
         $unhandledRate = $totalContacts > 0 ? round(($unhandledCount / $totalContacts) * 100, 1) : 0;
 
-        // Leaderboard stats (per owner)
-        $ownerStats = (clone $baseQuery)
+        // Leaderboard stats (per owner) 
+        // We filter the base query to owners who had ANY activity in the range to keep it efficient
+        $ownerStats = SleekflowContact::query()
             ->selectRaw("
                 contact_owner_name,
-                COUNT(*) as total_contacts,
-                SUM(CASE WHEN status_chat = 'Greeting' THEN 1 ELSE 0 END) as total_greeting,
-                SUM(CASE WHEN status_chat = 'Closing' THEN 1 ELSE 0 END) as total_closing,
-                SUM(CASE WHEN status_chat = 'Konsultasi' THEN 1 ELSE 0 END) as total_konsul,
-                SUM(CASE WHEN (status_chat IS NULL OR status_chat = '') THEN 1 ELSE 0 END) as total_unhandled
-            ")
+                COUNT(CASE WHEN created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_contacts,
+                COUNT(CASE WHEN greeting_at BETWEEN ? AND ? THEN 1 END) as total_greeting,
+                COUNT(CASE WHEN closing_at BETWEEN ? AND ? THEN 1 END) as total_closing,
+                COUNT(CASE WHEN konsul_at BETWEEN ? AND ? THEN 1 END) as total_konsul,
+                COUNT(CASE WHEN (status_chat IS NULL OR status_chat = '') AND created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_unhandled
+            ", [
+                $start, $end, // total contacts
+                $start, $end, // greeting
+                $start, $end, // closing
+                $start, $end, // konsul
+                $start, $end  // unhandled
+            ])
             ->groupBy('contact_owner_name')
-            ->orderByDesc('total_closing')
             ->get()
             ->map(function($stat) {
                 return [
@@ -65,11 +84,12 @@ class SleekflowService
                     'consultation_rate' => ($stat->total_konsul + $stat->total_greeting) > 0 
                         ? round(($stat->total_konsul / ($stat->total_konsul + $stat->total_greeting)) * 100, 1) 
                         : 0,
-                    'conversion_rate' => $stat->total_greeting > 0 ? round(($stat->total_konsul / $stat->total_greeting) * 100, 1) : 0,
+                    'conversion_rate' => $stat->total_greeting > 0 ? round(($stat->total_closing / $stat->total_greeting) * 100, 1) : 0,
                     'display_name' => $stat->contact_owner_name ?: 'Belum Ditentukan'
                 ];
             })
-            ->sortByDesc('consultation_rate')
+            ->filter(fn($s) => ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul']) > 0)
+            ->sortByDesc('total_closing')
             ->values()
             ->toArray();
 
