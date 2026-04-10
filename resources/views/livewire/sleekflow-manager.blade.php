@@ -43,9 +43,19 @@
             
             <div class="flex items-center gap-3">
                 <div class="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-1 shadow-sm transition-colors duration-300">
+                    <select onchange="Livewire.dispatch('set-gap-filter', { gap: this.value })" 
+                        class="bg-transparent border-none text-[10px] font-black text-slate-600 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8 uppercase tracking-widest appearance-none">
+                        <option value="" class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">Response Gap: Semua</option>
+                        <option value="1" {{ $gapFilter == '1' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 1 Hari</option>
+                        <option value="3" {{ $gapFilter == '3' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 3 Hari</option>
+                        <option value="7" {{ $gapFilter == '7' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 7 Hari</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-1 shadow-sm transition-colors duration-300">
                     <select onchange="Livewire.dispatch('set-status-filter', { status: this.value })" 
                         class="bg-transparent border-none text-[10px] font-black text-slate-600 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8 uppercase tracking-widest appearance-none">
-                        <option value="" class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">Semua Status</option>
+                        <option value="" class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">Status: Semua</option>
                         @foreach($uniqueStatuses as $status)
                             <option value="{{ $status }}" {{ $statusFilter == $status ? 'selected' : '' }} 
                                 class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">
@@ -176,6 +186,8 @@
                         <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] uppercase font-black text-slate-400 dark:text-gray-500 tracking-[0.2em]">
                             <th class="px-8 py-5">Nama & Kontak</th>
                             <th class="px-6 py-5">Status Chat</th>
+                            <th class="px-6 py-5">Customer Sent</th>
+                            <th class="px-6 py-5">You Sent</th>
                             <th class="px-6 py-5">Owner / Team</th>
                             <th class="px-6 py-5">Stage / Source</th>
                             <th class="px-6 py-5">Dibuat (WIB)</th>
@@ -204,6 +216,49 @@
                                         <span class="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-200/50 dark:border-emerald-500/20">
                                             {{ $contact->status_chat }}
                                         </span>
+                                    @else
+                                        <span class="text-[10px] font-bold text-slate-300 dark:text-gray-600">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-5">
+                                    @if($contact->last_contact_from_customers)
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-1.5">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 anim-pulse-slow"></div>
+                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $contact->last_contact_from_customers->format('d M Y') }}</span>
+                                            </div>
+                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{{ $contact->last_contact_from_customers->format('H:i') }} WIB</span>
+                                        </div>
+                                    @else
+                                        <span class="text-[10px] font-bold text-slate-300 dark:text-gray-600">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-5">
+                                    @php
+                                        $lastYou = $contact->last_contacted_from_company ?? $contact->last_contacted_from_user;
+                                        $dotClass = 'bg-slate-300';
+                                        
+                                        if ($lastYou) {
+                                            $hours = $lastYou->diffInHours(now());
+                                            if ($hours < 2) {
+                                                $dotClass = 'bg-emerald-500';
+                                            } elseif ($hours < 8) {
+                                                $dotClass = 'bg-amber-500';
+                                            } elseif ($hours < 24) {
+                                                $dotClass = 'bg-orange-500';
+                                            } else {
+                                                $dotClass = 'bg-rose-500 animate-pulse';
+                                            }
+                                        }
+                                    @endphp
+                                    @if($lastYou)
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-1.5">
+                                                <div class="w-1.5 h-1.5 rounded-full {{ $dotClass }}"></div>
+                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $lastYou->format('d M Y') }}</span>
+                                            </div>
+                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{{ $lastYou->format('H:i') }} WIB</span>
+                                        </div>
                                     @else
                                         <span class="text-[10px] font-bold text-slate-300 dark:text-gray-600">—</span>
                                     @endif

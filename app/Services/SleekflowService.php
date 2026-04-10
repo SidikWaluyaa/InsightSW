@@ -92,26 +92,27 @@ class SleekflowService
     {
         $limit = 100;
         $offset = 0;
-        $allContacts = [];
         
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today()->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today()->endOfDay();
         
         $stop = false;
+        $totalSynced = 0;
 
         while (!$stop) {
             $response = Http::withHeaders([
                 'X-Sleekflow-Api-Key' => $this->apiKey
-            ])->get("{$this->baseUrl}/contact", [
+            ])->timeout(45)->retry(3, 2000)->get("{$this->baseUrl}/contact", [
                 'limit' => $limit,
                 'offset' => $offset,
-                // 'sort' => 'updatedAt desc', // AppScript doesn't use sort, we match its default
+                'sort' => 'createdAt desc',
                 'include' => 'custom_fields'
             ]);
             
             if (!$response->successful()) {
-                Log::error('Sleekflow API Error: ' . $response->body());
-                break;
+                $errorMsg = 'Sleekflow API Error: ' . ($response->json('message') ?? $response->body());
+                Log::error($errorMsg);
+                throw new \Exception($errorMsg);
             }
 
             $data = $response->json();
@@ -120,23 +121,31 @@ class SleekflowService
                 break;
             }
 
+            $batchData = [];
+            $batchIds = [];
+
             foreach ($data as $contact) {
                 if (empty($contact['CreatedAt'])) continue;
 
                 $createdAtWib = $this->parseToWib($contact['CreatedAt']);
                 $createdDateWibString = $createdAtWib->toDateString();
-                $updatedAtWib = $this->parseToWib($contact['UpdatedAt'] ?? $contact['CreatedAt']);
                 
-                // 🔥 APP SCRIPT STOP LOGIC: if (createdWIB < startDate) stop = true;
+                // 🔥 APP SCRIPT STOP LOGIC: only stop if we are past the date range 
+                // and we've already synced the relevant ones.
                 if ($createdDateWibString < $startDate->toDateString()) {
                     $stop = true;
-                    break;
+                    // We don't break yet, finish the current batch in case it's unsorted
                 }
 
                 // 🔥 APP SCRIPT FILTER: if (createdWIB >= startDate && createdWIB <= endDate)
                 if ($createdDateWibString >= $startDate->toDateString() && $createdDateWibString <= $endDate->toDateString()) {
-                    $allContacts[] = [
-                        'sleekflow_id' => $contact['id'],
+                    $contactId = (string) $contact['id'];
+                    $batchIds[] = $contactId;
+                    
+                    $updatedAtWib = $this->parseToWib($contact['UpdatedAt'] ?? $contact['CreatedAt']);
+                    
+                    $batchData[$contactId] = [
+                        'sleekflow_id' => $contactId,
                         'first_name' => $contact['FirstName'] ?? null,
                         'last_name' => $contact['LastName'] ?? null,
                         'phone_number' => $contact['PhoneNumber'] ?? null,
@@ -149,7 +158,6 @@ class SleekflowService
                         
                         'status_chat' => $contact['status_chat'] ?? $contact['custom_fields']['status_chat'] ?? null,
                         
-                        // 🔥 APP SCRIPT MAPPING for lifecycle_stage
                         'lifecycle_stage' => $contact['lifecycleStage']['name'] ?? 
                                              (is_string($contact['lifecycleStage'] ?? null) ? $contact['lifecycleStage'] : null) ?? 
                                              ($contact['customFields']['lifecycle_stage'] ?? $contact['custom_fields']['lifecycle_stage'] ?? null),
@@ -188,50 +196,82 @@ class SleekflowService
                 }
             }
 
-            $offset += $limit;
-        }
+            // Process Batch
+            if (!empty($batchIds)) {
+                $existingContacts = SleekflowContact::whereIn('sleekflow_id', $batchIds)
+                    ->get()
+                    ->keyBy('sleekflow_id');
 
-        if (!empty($allContacts)) {
-            foreach ($allContacts as $data) {
-                // Determine which timestamp to set based on current status
-                $status = $data['status_chat'];
+                $finalUpsertData = [];
                 $now = now()->toDateTimeString();
-                
-                $updateData = $data;
-                unset($updateData['sleekflow_id']); // Don't update the ID
 
-                // Check and set timestamps only if they are NULL in the DB
-                $contact = SleekflowContact::where('sleekflow_id', $data['sleekflow_id'])->first();
-                
-                if ($contact) {
-                    if ($status === 'Greeting' && !$contact->greeting_at) $updateData['greeting_at'] = $now;
-                    if ($status === 'Konsultasi' && !$contact->konsul_at) $updateData['konsul_at'] = $now;
-                    if ($status === 'Follow Up Konsultasi' && !$contact->followed_up_at) $updateData['followed_up_at'] = $now;
-                    if ($status === 'Closing' && !$contact->closing_at) $updateData['closing_at'] = $now;
-                    if ($status === 'Before Penerimaan' && !$contact->penerimaan_at) $updateData['penerimaan_at'] = $now;
-                    
-                    // Don't overwrite existing timestamps if we already have them in the DB
-                    if ($contact->greeting_at) unset($updateData['greeting_at']);
-                    if ($contact->konsul_at) unset($updateData['konsul_at']);
-                    if ($contact->followed_up_at) unset($updateData['followed_up_at']);
-                    if ($contact->closing_at) unset($updateData['closing_at']);
-                    if ($contact->penerimaan_at) unset($updateData['penerimaan_at']);
+                foreach ($batchData as $id => $data) {
+                    $existing = $existingContacts->get($id);
+                    $status = $data['status_chat'];
+                    $record = $data;
 
-                    $contact->update($updateData);
-                } else {
-                    // New contact - set the first timestamp if status matches
-                    if ($status === 'Greeting') $updateData['greeting_at'] = $now;
-                    if ($status === 'Konsultasi') $updateData['konsul_at'] = $now;
-                    if ($status === 'Follow Up Konsultasi') $updateData['followed_up_at'] = $now;
-                    if ($status === 'Closing') $updateData['closing_at'] = $now;
-                    if ($status === 'Before Penerimaan') $updateData['penerimaan_at'] = $now;
-                    
-                    SleekflowContact::create(array_merge($updateData, ['sleekflow_id' => $data['sleekflow_id']]));
+                    // 🔥 CRITICAL: Initialize all tracking columns to null to ensure 
+                    // consistent column count for the batch upsert (avoids SQL Column Count error)
+                    $record['greeting_at'] = $existing ? $existing->greeting_at : null;
+                    $record['konsul_at'] = $existing ? $existing->konsul_at : null;
+                    $record['followed_up_at'] = $existing ? $existing->followed_up_at : null;
+                    $record['closing_at'] = $existing ? $existing->closing_at : null;
+                    $record['penerimaan_at'] = $existing ? $existing->penerimaan_at : null;
+
+                    if ($status === 'Greeting' && empty($record['greeting_at'])) $record['greeting_at'] = $now;
+                    if ($status === 'Konsultasi' && empty($record['konsul_at'])) $record['konsul_at'] = $now;
+                    if ($status === 'Follow Up Konsultasi' && empty($record['followed_up_at'])) $record['followed_up_at'] = $now;
+                    if ($status === 'Closing' && empty($record['closing_at'])) $record['closing_at'] = $now;
+                    if ($status === 'Before Penerimaan' && empty($record['penerimaan_at'])) $record['penerimaan_at'] = $now;
+
+                    $finalUpsertData[] = $record;
+                }
+
+                if (!empty($finalUpsertData)) {
+                    // Laravel upsert: records, unique columns, columns to update
+                    SleekflowContact::upsert($finalUpsertData, ['sleekflow_id'], [
+                        'first_name', 'last_name', 'phone_number', 'email', 
+                        'contact_owner_name', 'contact_owner_email', 'contact_owner_id', 'assigned_team',
+                        'status_chat', 'lifecycle_stage', 'lead_stage', 'priority',
+                        'last_contact', 'last_contact_from_customers', 'last_contacted_from_company', 'last_contacted_from_user',
+                        'last_channel', 'lead_source', 'facebook_form_id', 'labels', 'lists',
+                        'company_name', 'job_title', 'country', 'subscriber', 'ai_agent_session', 'collaborators',
+                        'facebook_psid', 'wechat_openid', 'line_chatid',
+                        'created_at_sleekflow', 'updated_at_sleekflow', 'waktu_awal', 'updated_at',
+                        'greeting_at', 'konsul_at', 'followed_up_at', 'closing_at', 'penerimaan_at'
+                    ]);
+                    $totalSynced += count($finalUpsertData);
                 }
             }
+
+            $offset += $limit;
+            
+            // Safety break to prevent infinite loops (Sleekflow max contacts safety)
+            if ($offset > 5000) break; 
         }
 
-        return ['synced' => count($allContacts)];
+        return ['synced' => $totalSynced];
+    }
+
+    /**
+     * Get bulk daily stats for a date range (Optimized for monthly sync).
+     */
+    public function getDailyStatsInRange(string $startDate, string $endDate): array
+    {
+        return SleekflowContact::query()
+            ->whereBetween('created_at_sleekflow', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->selectRaw("
+                DATE(created_at_sleekflow) as date,
+                COUNT(*) as chat_in,
+                SUM(CASE WHEN status_chat = 'Konsultasi' THEN 1 ELSE 0 END) as chat_consul
+            ")
+            ->groupBy('date')
+            ->get()
+            ->keyBy(function($item) {
+                // Ensure key is Y-m-d string even if MySQL/Eloquent returns as object
+                return is_string($item->date) ? $item->date : Carbon::parse($item->date)->toDateString();
+            })
+            ->toArray();
     }
 
     /**
@@ -239,8 +279,7 @@ class SleekflowService
      */
     protected function upsertContact(array $data): void
     {
-        $flattened = $this->flattenObject($data);
-
+        // ... (This can be kept for single triggers, but syncContacts is optimized)
         SleekflowContact::updateOrCreate(
             ['sleekflow_id' => $data['id']],
             [
@@ -248,39 +287,7 @@ class SleekflowService
                 'last_name' => $data['LastName'] ?? null,
                 'phone_number' => $data['PhoneNumber'] ?? null,
                 'email' => $data['Email'] ?? null,
-                
-                'contact_owner_name' => $data['ContactOwnerName'] ?? null,
-                'contact_owner_email' => $data['ContactOwnerEmail'] ?? null,
-                'contact_owner_id' => $data['ContactOwner'] ?? null,
-                'assigned_team' => $data['AssignedTeam'] ?? null,
-                
                 'status_chat' => $data['status_chat'] ?? $data['custom_fields']['status_chat'] ?? null,
-                'lifecycle_stage' => $data['lifecycleStage']['name'] ?? $data['custom_fields']['lifecycle_stage'] ?? null,
-                'lead_stage' => $data['LeadStage'] ?? null,
-                'priority' => $data['Priority'] ?? null,
-                
-                'last_contact' => $this->parseToWib($data['LastContact'] ?? null),
-                'last_contact_from_customers' => $this->parseToWib($data['LastContactFromCustomers'] ?? null),
-                'last_contacted_from_company' => $this->parseToWib($data['LastContactedFromCompany'] ?? null),
-                'last_contacted_from_user' => $this->parseToWib($data['LastContactedFromUser'] ?? null),
-                'last_channel' => $data['LastChannel'] ?? null,
-                
-                'lead_source' => $data['LeadSource'] ?? null,
-                'facebook_form_id' => $data['Facebook Form ID'] ?? null,
-                'labels' => $data['Labels'] ?? null,
-                'lists' => $data['Lists'] ?? null,
-                
-                'company_name' => $data['CompanyName'] ?? null,
-                'job_title' => $data['JobTitle'] ?? null,
-                'country' => $data['Country'] ?? null,
-                'subscriber' => filter_var($data['Subscriber'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'ai_agent_session' => $data['AI Agent Session'] ?? null,
-                'collaborators' => $data['Collaborators'] ?? null,
-                
-                'facebook_psid' => $data['FacebookPSId'] ?? null,
-                'wechat_openid' => $data['WeChatOpenId'] ?? null,
-                'line_chatid' => $data['LineChatId'] ?? null,
-                
                 'created_at_sleekflow' => $this->parseToWib($data['CreatedAt'] ?? null),
                 'updated_at_sleekflow' => $this->parseToWib($data['UpdatedAt'] ?? null),
                 'waktu_awal' => $this->parseToWib($data['CreatedAt'] ?? null)?->toDateString(),

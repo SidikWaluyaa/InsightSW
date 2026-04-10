@@ -20,10 +20,11 @@ class SleekflowManager extends Component
     public $startDate;
     public $endDate;
     public $statusFilter = '';
+    public $gapFilter = '';
     public $lastSyncTimestamp;
     public $isSyncing = false;
 
-    protected $queryString = ['search', 'startDate', 'endDate', 'statusFilter'];
+    protected $queryString = ['search', 'startDate', 'endDate', 'statusFilter', 'gapFilter'];
 
     public function mount()
     {
@@ -99,6 +100,20 @@ class SleekflowManager extends Component
         $this->isSyncing = false;
     }
 
+    #[On('set-gap-filter')]
+    public function setGapFilter($gap)
+    {
+        $this->gapFilter = $gap;
+        $this->resetPage();
+    }
+
+    #[On('set-status-filter')]
+    public function setStatusFilter($status)
+    {
+        $this->statusFilter = $status;
+        $this->resetPage();
+    }
+
     public function render(SleekflowService $service)
     {
         $uniqueStatuses = SleekflowContact::whereNotNull('status_chat')
@@ -113,6 +128,10 @@ class SleekflowManager extends Component
         // Query for table (honors all filters)
         $query = SleekflowContact::query()
             ->when($this->startDate && $this->endDate, function($q) {
+                // If filtering by gap, we might want to see contacts from any time, 
+                // but usually the user wants to see contacts CREATED in this range.
+                // However, for SLA tracking, sometimes we want to see ALL pending chats regardless of creation date.
+                // For now, I'll keep the date range as primary filter unless gap is set for 'all time' check.
                 $q->whereBetween('created_at_sleekflow', [$this->startDate . ' 00:00:00', $this->endDate . ' 23:59:59']);
             })
             ->when($this->search, function ($q) {
@@ -125,6 +144,26 @@ class SleekflowManager extends Component
             })
             ->when($this->statusFilter, function($q) {
                 $q->where('status_chat', $this->statusFilter);
+            })
+            ->when($this->gapFilter, function($q) {
+                $days = (int)$this->gapFilter;
+                if ($days > 0) {
+                    $threshold = now()->subDays($days);
+                    $q->where(function($sub) use ($threshold) {
+                        // Case 1: Company never responded AND customer message is old enough
+                        $sub->where(function($inner) use ($threshold) {
+                            $inner->whereNull('last_contacted_from_company')
+                                  ->whereNotNull('last_contact_from_customers')
+                                  ->where('last_contact_from_customers', '<=', $threshold);
+                        })
+                        // Case 2: Customer message is newer than company response AND customer message is old enough
+                        ->orWhere(function($inner) use ($threshold) {
+                            $inner->whereNotNull('last_contacted_from_company')
+                                  ->whereColumn('last_contact_from_customers', '>', 'last_contacted_from_company')
+                                  ->where('last_contact_from_customers', '<=', $threshold);
+                        });
+                    });
+                }
             })
             ->orderBy('created_at_sleekflow', 'desc');
 
