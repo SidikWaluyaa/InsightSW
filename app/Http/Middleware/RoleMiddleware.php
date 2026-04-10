@@ -20,7 +20,14 @@ class RoleMiddleware
                 return response()->json(['message' => 'Unauthorized.'], 403);
             }
             
-            return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki hak akses untuk halaman tersebut.');
+            // Smart Redirect based on role to avoid access loops
+            $redirectRoute = 'dashboard'; // Default Marketing
+            
+            if ($request->user() && $request->user()->isCs()) {
+                $redirectRoute = 'cs-dashboard';
+            }
+            
+            return redirect()->route($redirectRoute)->with('error', 'Anda tidak memiliki hak akses untuk halaman tersebut.');
         }
 
         return $next($request);

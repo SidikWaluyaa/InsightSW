@@ -13,16 +13,25 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', Dashboard::class)->name('dashboard');
-    Route::get('meta-ads', MetaAdsIndex::class)->name('meta-ads');
+    // Marketing Group (Admin, Editor, Viewer)
+    Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
+        Route::get('dashboard', Dashboard::class)->name('dashboard');
+        Route::get('meta-ads', MetaAdsIndex::class)->name('meta-ads');
+    });
 
-    // Admin & Editor
+    // Admin & Editor Only (Finance, Reports)
     Route::middleware(['role:Admin,Editor'])->group(function () {
         Route::get('daily-report', DailyReportForm::class)->name('daily-report');
         Route::get('budget-transfer', BudgetTransferManager::class)->name('budget-transfer');
         Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
         Route::get('finance-sync', FinanceDashboard::class)->name('finance-sync');
         Route::get('finance-history', FinanceSyncHistory::class)->name('finance-history');
+        
+        // CX Group (Admin & Editor only for now)
+        Route::get('customer-service/cx-upsell', \App\Livewire\CxUpsellReport::class)->name('cx-upsell');
+        Route::get('customer-service/quality-control', \App\Livewire\QualityControlIndex::class)->name('quality-control');
+        Route::get('cx/konfirmasi-after', \App\Livewire\CxKonfirmasiAfter::class)->name('cx-konfirmasi-after');
+        Route::get('cx/konfirmasi-api', \App\Livewire\CxKonfirmasiApi::class)->name('cx-konfirmasi-api');
     });
 
     // Admin Only
@@ -31,15 +40,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('users', \App\Livewire\UserManager::class)->name('users');
     });
 
-    // Customer Service
-    Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
-    Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
-    Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
-    Route::get('customer-service/cx-upsell', \App\Livewire\CxUpsellReport::class)->name('cx-upsell');
-    Route::get('customer-service/quality-control', \App\Livewire\QualityControlIndex::class)->name('quality-control');
-    Route::get('cx/konfirmasi-after', \App\Livewire\CxKonfirmasiAfter::class)->name('cx-konfirmasi-after');
-    Route::get('cx/konfirmasi-api', \App\Livewire\CxKonfirmasiApi::class)->name('cx-konfirmasi-api');
-    Route::get('gudang', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
+    // Customer Service Group (Admin, Editor, CS)
+    Route::middleware(['role:Admin,Editor,CS'])->group(function () {
+        Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
+        Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
+        Route::get('customer-service/followup', \App\Livewire\CsFollowup::class)->name('cs-followup');
+        Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
+    });
+
+    // Gudang Group (Admin, Editor)
+    Route::middleware(['role:Admin,Editor'])->group(function () {
+        Route::get('gudang', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
+    });
 });
 
 Route::view('profile', 'profile')

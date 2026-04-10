@@ -28,16 +28,33 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
+        // RBAC Gates
         Gate::define('manage-users', function (\App\Models\User $user) {
             return $user->isAdmin();
         });
 
-        Gate::define('access-cs-dashboard', function (\App\Models\User $user) {
-            return $user->isAdmin() || $user->isEditor();
+        Gate::define('access-marketing', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'Viewer']);
+        });
+
+        Gate::define('access-cs', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'CS']);
+        });
+
+        Gate::define('access-cx', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor']);
+        });
+
+        Gate::define('access-finance', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor']);
+        });
+
+        Gate::define('access-gudang', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor']);
         });
 
         Gate::define('sync-sleekflow', function (\App\Models\User $user) {
-            return $user->isAdmin() || $user->isEditor();
+            return in_array($user->role, ['Admin', 'Editor']);
         });
     }
 }

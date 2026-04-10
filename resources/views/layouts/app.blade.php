@@ -94,6 +94,7 @@ new class extends Component
                     @endphp
 
                     {{-- Marketing (Collapsible Container) --}}
+                    @can('access-marketing')
                     <div x-data="{ marketingOpen: {{ $isMarketingActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="marketingOpen = !marketingOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
@@ -130,14 +131,18 @@ new class extends Component
                         </div>
                     </div>
 
+                    @endcan
+                    
                     {{-- Customer Service (Collapsible Container) --}}
+                    @can('access-cs')
                     @php
                         $csSubItems = [
                             ['route' => 'cs-dashboard', 'label' => 'Dashboard', 'icon' => '...'],
                             ['route' => 'chat-masuk', 'label' => 'Chat Masuk', 'icon' => '...'],
+                            ['route' => 'cs-followup', 'label' => 'Followup', 'icon' => '...'],
                             ['route' => 'cs-tracking', 'label' => 'Tracking', 'icon' => '...'],
                         ];
-                        $isCsActive = request()->routeIs(['cs-dashboard', 'chat-masuk', 'cs-tracking']);
+                        $isCsActive = request()->routeIs(['cs-dashboard', 'chat-masuk', 'cs-followup', 'cs-tracking']);
                     @endphp
                     <div x-data="{ csOpen: {{ $isCsActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="csOpen = !csOpen"
@@ -169,8 +174,10 @@ new class extends Component
                             @endforeach
                         </div>
                     </div>
+                    @endcan
 
                     {{-- Customer Experience (Collapsible Container) --}}
+                    @can('access-cx')
                     @php
                         $cxSubItems = [
                             ['route' => 'cx-upsell', 'label' => 'Upsell Report', 'icon' => '...'],
@@ -209,8 +216,10 @@ new class extends Component
                             @endforeach
                         </div>
                     </div>
+                    @endcan
 
                     {{-- Finance (Collapsible Container) --}}
+                    @can('access-finance')
                     @php
                         $financeSubItems = [
                             ['route' => 'finance-sync', 'label' => 'Financial Dashboard', 'icon' => '...'],
@@ -218,7 +227,6 @@ new class extends Component
                         ];
                         $isFinanceActive = request()->routeIs(['finance-sync', 'finance-history']);
                     @endphp
-                    @if (auth()->user()->isAdmin() || auth()->user()->hasRole('Editor'))
                     <div x-data="{ financeOpen: {{ $isFinanceActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="financeOpen = !financeOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
@@ -249,9 +257,10 @@ new class extends Component
                             @endforeach
                         </div>
                     </div>
-                    @endif
+                    @endcan
 
                     {{-- Gudang (Standalone) --}}
+                    @can('access-gudang')
                     <div class="space-y-1">
                         <a href="{{ route('warehouse-dashboard') }}" 
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
@@ -266,9 +275,10 @@ new class extends Component
                             </div>
                         </a>
                     </div>
+                    @endcan
 
                     {{-- Manajemen Pengguna (Standalone) --}}
-                    @if (auth()->user()->isAdmin())
+                    @can('manage-users')
                     <div class="space-y-1">
                         <a href="{{ route('users') }}" 
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
@@ -283,7 +293,7 @@ new class extends Component
                             </div>
                         </a>
                     </div>
-                    @endif
+                    @endcan
                 </nav>
 
                 {{-- Bottom Section --}}

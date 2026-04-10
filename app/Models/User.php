@@ -68,6 +68,11 @@ class User extends Authenticatable
         return $this->role === 'Viewer';
     }
 
+    public function isCs(): bool
+    {
+        return $this->role === 'CS';
+    }
+
     public function hasRole(string|array $roles): bool
     {
         if (is_array($roles)) {

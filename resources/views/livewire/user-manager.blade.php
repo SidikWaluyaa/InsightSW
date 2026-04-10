@@ -35,6 +35,7 @@
                         <option value="Admin">Admin</option>
                         <option value="Editor">Editor</option>
                         <option value="Viewer">Viewer</option>
+                        <option value="CS">CS (Customer Service)</option>
                     </select>
                 </div>
                 <div class="flex items-center gap-2">
@@ -86,7 +87,8 @@
                                         $roleStyles = [
                                             'Admin' => 'bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
                                             'Editor' => 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
-                                            'Viewer' => 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400'
+                                            'Viewer' => 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400',
+                                            'CS' => 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
                                         ];
                                     @endphp
                                     <span class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest {{ $roleStyles[$user->role] ?? $roleStyles['Viewer'] }}">
@@ -182,6 +184,7 @@
                                     <option value="Viewer">Viewer</option>
                                     <option value="Editor">Editor</option>
                                     <option value="Admin">Admin</option>
+                                    <option value="CS">CS (Customer Service)</option>
                                 </select>
                                 @error('role') <span class="text-[10px] font-bold text-rose-500 mt-2 block">{{ $message }}</span> @enderror
                             </div>
