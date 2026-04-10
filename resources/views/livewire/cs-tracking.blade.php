@@ -199,6 +199,111 @@
         </table>
     </div>
 
+    {{-- Closing Details Section with Tabs --}}
+    <div class="mt-12">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-slate-800 dark:bg-amber-500 flex items-center justify-center text-white shadow-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Analisis Detail Closing</h2>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Audit rincian performa konversi berdasarkan durasi chat</p>
+                </div>
+            </div>
+
+            {{-- Tab Navigation --}}
+            <div class="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-[24px] border border-gray-100 dark:border-gray-800">
+                <button wire:click="setDetailTab('direct')" 
+                    class="px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all {{ $activeDetailTab === 'direct' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600' }}">
+                    Closing Langsung (≤ 3H)
+                </button>
+                <button wire:click="setDetailTab('fu')" 
+                    class="px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all {{ $activeDetailTab === 'fu' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600' }}">
+                    Follow-up Closing (> 3H)
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-[40px] border border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden relative min-h-[400px]" wire:loading.class="opacity-50">
+            <div wire:loading class="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px]">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-gray-50 dark:border-gray-800">
+                        <th class="px-10 py-6">Customer</th>
+                        <th class="px-6 py-6">First Chat</th>
+                        <th class="px-6 py-6">Closing Date</th>
+                        <th class="px-6 py-6">Durasi</th>
+                        <th class="px-10 py-6 text-right">Owner CS</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50">
+                    @php 
+                        $currentData = $activeDetailTab === 'direct' ? $directClosingDetails : $fuClosingDetails;
+                        $accentColor = $activeDetailTab === 'direct' ? 'emerald' : 'amber';
+                    @endphp
+
+                    @forelse($currentData as $detail)
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                            <td class="px-10 py-6">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-{{ $accentColor }}-500 transition-colors">{{ $detail['first_name'] }} {{ $detail['last_name'] }}</span>
+                                    <span class="text-[10px] font-bold text-slate-400">{{ $detail['phone_number'] }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-6 font-medium">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                                        {{ \Carbon\Carbon::parse($detail['created_at_sleekflow'])->translatedFormat('d M Y') }}
+                                    </span>
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase">
+                                        {{ \Carbon\Carbon::parse($detail['created_at_sleekflow'])->format('H:i') }} WIB
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-6">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-widest">
+                                        {{ \Carbon\Carbon::parse($detail['closing_at'])->translatedFormat('d M Y') }}
+                                    </span>
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase text-{{ $accentColor }}-500">
+                                        {{ \Carbon\Carbon::parse($detail['closing_at'])->format('H:i') }} WIB
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-6">
+                                <span class="px-3 py-1 rounded-lg bg-{{ $accentColor }}-500/10 text-{{ $accentColor }}-600 dark:text-{{ $accentColor }}-400 text-xs font-black">
+                                    {{ $detail['chat_duration'] }} Hari
+                                </span>
+                            </td>
+                            <td class="px-10 py-6 text-right">
+                                <span class="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700">
+                                    {{ $detail['contact_owner_name'] ?: 'Tanpa Owner' }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="py-32 text-center">
+                                <div class="flex flex-col items-center gap-4">
+                                    <div class="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-200">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </div>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Data tidak ditemukan untuk kategori ini</span>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <style>
         input[type="date"]::-webkit-calendar-picker-indicator { 
             background: transparent;

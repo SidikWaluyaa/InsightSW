@@ -17,6 +17,9 @@ class CsTracking extends Component
     public $isLoading = false;
     public $lastSyncTimestamp;
     public $isSyncing = false;
+    public $directClosingDetails = [];
+    public $fuClosingDetails = [];
+    public $activeDetailTab = 'direct'; // direct, fu
 
     public function mount()
     {
@@ -50,6 +53,11 @@ class CsTracking extends Component
         $this->isSyncing = false;
     }
 
+    public function setDetailTab($tab)
+    {
+        $this->activeDetailTab = $tab;
+    }
+
     public function applyFilter()
     {
         $this->loadStats();
@@ -68,8 +76,8 @@ class CsTracking extends Component
                 COUNT(CASE WHEN greeting_at BETWEEN ? AND ? THEN 1 END) as total_greeting,
                 COUNT(CASE WHEN konsul_at BETWEEN ? AND ? THEN 1 END) as total_konsul,
                 COUNT(CASE WHEN followed_up_at BETWEEN ? AND ? THEN 1 END) as total_followed_up,
-                COUNT(CASE WHEN closing_at BETWEEN ? AND ? AND followed_up_at IS NULL THEN 1 END) as total_closing_direct,
-                COUNT(CASE WHEN closing_at BETWEEN ? AND ? AND followed_up_at IS NOT NULL THEN 1 END) as total_closing_fu,
+                COUNT(CASE WHEN closing_at BETWEEN ? AND ? AND DATEDIFF(closing_at, created_at_sleekflow) <= 3 THEN 1 END) as total_closing_direct,
+                COUNT(CASE WHEN closing_at BETWEEN ? AND ? AND DATEDIFF(closing_at, created_at_sleekflow) > 3 THEN 1 END) as total_closing_fu,
                 COUNT(CASE WHEN closing_at BETWEEN ? AND ? THEN 1 END) as total_closing_all
             ", [
                 $start, $end, // greeting
@@ -79,9 +87,26 @@ class CsTracking extends Component
                 $start, $end, // closing fu
                 $start, $end  // total closing
             ])
-            ->whereBetween('waktu_awal', [$this->startDate, $this->endDate])
             ->groupBy('contact_owner_name')
             ->orderByRaw('total_closing_all DESC')
+            ->get()
+            ->toArray();
+
+        // Load detailed Direct Closing contacts (<= 3 days)
+        $this->directClosingDetails = SleekflowContact::query()
+            ->whereBetween('closing_at', [$start, $end])
+            ->whereRaw('DATEDIFF(closing_at, created_at_sleekflow) <= 3')
+            ->selectRaw('first_name, last_name, phone_number, contact_owner_name, closing_at, created_at_sleekflow, DATEDIFF(closing_at, created_at_sleekflow) as chat_duration')
+            ->orderBy('closing_at', 'desc')
+            ->get()
+            ->toArray();
+
+        // Load detailed Follow-up Closing contacts (> 3 days)
+        $this->fuClosingDetails = SleekflowContact::query()
+            ->whereBetween('closing_at', [$start, $end])
+            ->whereRaw('DATEDIFF(closing_at, created_at_sleekflow) > 3')
+            ->selectRaw('first_name, last_name, phone_number, contact_owner_name, closing_at, created_at_sleekflow, DATEDIFF(closing_at, created_at_sleekflow) as chat_duration')
+            ->orderBy('closing_at', 'desc')
             ->get()
             ->toArray();
 
