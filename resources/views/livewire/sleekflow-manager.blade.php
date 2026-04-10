@@ -225,7 +225,7 @@
                                         <div class="flex flex-col">
                                             <div class="flex items-center gap-1.5">
                                                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 anim-pulse-slow"></div>
-                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $contact->last_contact_from_customers->format('d M Y') }}</span>
+                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $contact->last_contact_from_customers->translatedFormat('d M Y') }}</span>
                                             </div>
                                             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{{ $contact->last_contact_from_customers->format('H:i') }} WIB</span>
                                         </div>
@@ -255,7 +255,7 @@
                                         <div class="flex flex-col">
                                             <div class="flex items-center gap-1.5">
                                                 <div class="w-1.5 h-1.5 rounded-full {{ $dotClass }}"></div>
-                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $lastYou->format('d M Y') }}</span>
+                                                <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $lastYou->translatedFormat('d M Y') }}</span>
                                             </div>
                                             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{{ $lastYou->format('H:i') }} WIB</span>
                                         </div>
@@ -277,7 +277,7 @@
                                 </td>
                                 <td class="px-6 py-5">
                                     <div class="flex flex-col">
-                                        <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $contact->created_at_sleekflow->format('d M Y') }}</span>
+                                        <span class="text-[11px] font-bold text-slate-700 dark:text-gray-300">{{ $contact->created_at_sleekflow->translatedFormat('d M Y') }}</span>
                                         <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ $contact->created_at_sleekflow->format('H:i:s') }} WIB</span>
                                     </div>
                                 </td>
