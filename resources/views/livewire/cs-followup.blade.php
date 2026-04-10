@@ -6,15 +6,34 @@
             <p class="text-slate-500 dark:text-gray-400 mt-1 font-medium italic">Prioritaskan pelanggan yang membutuhkan respon segera untuk menjaga kepuasan.</p>
         </div>
         
-        <div class="relative group max-w-md w-full md:w-80">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-indigo-400 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+        <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto items-stretch">
+            {{-- Status Filter --}}
+            <div class="relative group w-full md:w-48">
+                <select wire:model.live="selectedStatus" 
+                    class="block w-full pl-4 pr-10 py-3 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none dark:text-white font-bold tracking-tight">
+                    <option value="">Semua Status</option>
+                    @foreach($statuses as $status)
+                        <option value="{{ $status }}">{{ $status }}</option>
+                    @endforeach
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-slate-400 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
             </div>
-            <input type="text" wire:model.live.debounce.300ms="search" 
-                class="block w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder-slate-400 dark:text-white" 
-                placeholder="Cari Nama, No HP, atau Email...">
+
+            {{-- Search Input --}}
+            <div class="relative group w-full md:w-80">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-indigo-400 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input type="text" wire:model.live.debounce.300ms="search" 
+                    class="block w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder-slate-400 dark:text-white" 
+                    placeholder="Cari Nama, No HP, atau Email...">
+            </div>
         </div>
     </div>
 

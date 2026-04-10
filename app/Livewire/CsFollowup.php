@@ -15,13 +15,20 @@ class CsFollowup extends Component
 
     public $search = '';
     public $activeTab = 'all'; // all, urgent (>7d), warning (>3d), info (>1d)
+    public $selectedStatus = '';
     
     protected $queryString = [
         'search' => ['except' => ''],
         'activeTab' => ['except' => 'all'],
+        'selectedStatus' => ['except' => ''],
     ];
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSelectedStatus()
     {
         $this->resetPage();
     }
@@ -84,6 +91,9 @@ class CsFollowup extends Component
                         ->orWhere('phone_number', 'like', '%' . $this->search . '%')
                         ->orWhere('email', 'like', '%' . $this->search . '%');
                 });
+            })
+            ->when($this->selectedStatus, function($q) {
+                $q->where('status_chat', $this->selectedStatus);
             });
 
         // Apply Tab filtering
@@ -99,10 +109,16 @@ class CsFollowup extends Component
         }
 
         $contacts = $query->orderBy('last_contact_from_customers', 'desc')->paginate(15);
+        
+        $statuses = SleekflowContact::whereNotNull('status_chat')
+            ->where('status_chat', '!=', '')
+            ->distinct()
+            ->pluck('status_chat');
 
         return view('livewire.cs-followup', [
             'contacts' => $contacts,
-            'kpis' => $kpis
+            'kpis' => $kpis,
+            'statuses' => $statuses
         ]);
     }
 }
