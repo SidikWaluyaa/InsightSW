@@ -133,7 +133,7 @@
                             $compDate = $contact->last_contacted_from_company ? Carbon::parse($contact->last_contacted_from_company) : null;
                             
                             $isWaiting = $custDate && (!$compDate || $custDate->gt($compDate));
-                            $gapDays = $isWaiting ? $custDate->diffInDays(now()) : 0;
+                            $gapDays = $isWaiting ? round($custDate->diffInHours(now()) / 24) : 0;
                             
                             $color = 'slate';
                             $label = 'Normal';
