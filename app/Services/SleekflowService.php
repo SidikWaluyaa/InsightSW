@@ -322,7 +322,8 @@ class SleekflowService
     {
         if (!$val) return null;
         try {
-            return Carbon::parse($val)->timezone('Asia/Jakarta');
+            // Brute force +7 as requested to ensure WIB conversion
+            return Carbon::parse($val)->addHours(7);
         } catch (\Exception $e) {
             return null;
         }
