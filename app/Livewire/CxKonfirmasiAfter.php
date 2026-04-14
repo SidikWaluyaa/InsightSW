@@ -39,6 +39,8 @@ class CxKonfirmasiAfter extends Component
 
     public function mount()
     {
+        $this->startDate = now()->startOfMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
         $this->fetch();
     }
 

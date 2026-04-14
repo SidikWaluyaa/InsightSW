@@ -125,6 +125,17 @@
                     <span>CONFIG FILTERS</span>
                 </button>
 
+                <div class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+                    <div class="flex items-center gap-2 px-3">
+                        <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <input type="date" wire:model.live="startDate" class="bg-transparent border-none text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 focus:ring-0 p-0 w-28">
+                    </div>
+                    <div class="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                    <div class="flex items-center gap-2 px-3">
+                        <input type="date" wire:model.live="endDate" class="bg-transparent border-none text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 focus:ring-0 p-0 w-28">
+                    </div>
+                </div>
+
                 <button wire:click="fetch" 
                         wire:loading.attr="disabled"
                         class="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.1em] shadow-lg shadow-teal-500/30 transition-all active:scale-95 flex items-center gap-3">
@@ -150,28 +161,12 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {{-- Search --}}
-                <div class="lg:col-span-2 space-y-2">
+                <div class="lg:col-span-4 space-y-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Keywords (Name / SPK / Catatan)</label>
                     <input type="text" 
                            wire:model.live.debounce.300ms="searchTerm"
                            class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white"
                            placeholder="Filter data by any keyword...">
-                </div>
-
-                {{-- Start Date --}}
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mulai Tanggal</label>
-                    <input type="date" 
-                           wire:model.live="startDate"
-                           class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
-                </div>
-
-                {{-- End Date --}}
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sampai Tanggal</label>
-                    <input type="date" 
-                           wire:model.live="endDate"
-                           class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-[13px] font-bold focus:ring-2 focus:ring-teal-500/20 transition-all dark:text-white">
                 </div>
             </div>
 

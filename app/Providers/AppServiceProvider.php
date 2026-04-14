@@ -38,23 +38,23 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-cs', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor', 'CS']);
+            return in_array($user->role, ['Admin', 'Editor', 'CS', 'Viewer']);
         });
 
         Gate::define('access-cx', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor']);
+            return in_array($user->role, ['Admin', 'Editor', 'CX', 'Viewer']);
         });
 
         Gate::define('access-finance', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor']);
+            return in_array($user->role, ['Admin', 'Editor', 'Finance', 'Viewer']);
         });
 
         Gate::define('access-gudang', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor']);
+            return in_array($user->role, ['Admin', 'Editor', 'Gudang', 'Viewer']);
         });
 
         Gate::define('sync-sleekflow', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor']);
+            return in_array($user->role, ['Admin', 'Editor', 'CS']);
         });
     }
 }

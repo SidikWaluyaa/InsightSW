@@ -23,8 +23,16 @@ class RoleMiddleware
             // Smart Redirect based on role to avoid access loops
             $redirectRoute = 'dashboard'; // Default Marketing
             
-            if ($request->user() && $request->user()->isCs()) {
-                $redirectRoute = 'cs-dashboard';
+            if ($request->user()) {
+                if ($request->user()->isCs()) {
+                    $redirectRoute = 'cs-dashboard';
+                } elseif ($request->user()->isCx()) {
+                    $redirectRoute = 'cx-upsell';
+                } elseif ($request->user()->isFinance()) {
+                    $redirectRoute = 'finance-sync';
+                } elseif ($request->user()->isGudang()) {
+                    $redirectRoute = 'warehouse-dashboard';
+                }
             }
             
             return redirect()->route($redirectRoute)->with('error', 'Anda tidak memiliki hak akses untuk halaman tersebut.');

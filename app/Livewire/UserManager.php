@@ -33,7 +33,7 @@ class UserManager extends Component
             'name' => 'required|min:3|max:255',
             'email' => 'required|email|unique:users,email,' . $this->user_id,
             'password' => $this->isEdit ? 'nullable|min:6|confirmed' : 'required|min:6|confirmed',
-            'role' => 'required|in:Admin,Editor,Viewer,CS',
+            'role' => 'required|in:Admin,Editor,Viewer,CS,CX,Finance,Gudang',
             'status' => 'required|integer|in:0,1',
         ];
     }
