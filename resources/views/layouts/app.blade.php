@@ -142,6 +142,15 @@ new class extends Component
                             ['route' => 'cs-followup', 'label' => 'Followup', 'icon' => '...'],
                             ['route' => 'cs-tracking', 'label' => 'Tracking', 'icon' => '...'],
                         ];
+
+                        // Filter Followup for Leader CS/Admin/Editor only
+                        $csSubItems = array_filter($csSubItems, function($item) {
+                            if ($item['route'] === 'cs-followup') {
+                                return auth()->user()->can('access-cs-followup');
+                            }
+                            return true;
+                        });
+
                         $isCsActive = request()->routeIs(['cs-dashboard', 'chat-masuk', 'cs-followup', 'cs-tracking']);
                     @endphp
                     <div x-data="{ csOpen: {{ $isCsActive ? 'true' : 'false' }} }" class="space-y-1">

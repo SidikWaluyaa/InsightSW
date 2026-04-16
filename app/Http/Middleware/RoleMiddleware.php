@@ -24,7 +24,7 @@ class RoleMiddleware
             $redirectRoute = 'dashboard'; // Default Marketing
             
             if ($request->user()) {
-                if ($request->user()->isCs()) {
+                if ($request->user()->isCs() || $request->user()->isLeaderCs()) {
                     $redirectRoute = 'cs-dashboard';
                 } elseif ($request->user()->isCx()) {
                     $redirectRoute = 'cx-upsell';

@@ -38,7 +38,11 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-cs', function (\App\Models\User $user) {
-            return in_array($user->role, ['Admin', 'Editor', 'CS', 'Viewer']);
+            return in_array($user->role, ['Admin', 'Editor', 'CS', 'Leader CS', 'Viewer']);
+        });
+
+        Gate::define('access-cs-followup', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'Leader CS']);
         });
 
         Gate::define('access-cx', function (\App\Models\User $user) {

@@ -36,6 +36,7 @@
                         <option value="Editor">Editor</option>
                         <option value="Viewer">Viewer</option>
                         <option value="CS">CS (Customer Service)</option>
+                        <option value="Leader CS">Leader CS</option>
                         <option value="CX">CX (Customer Experience)</option>
                         <option value="Finance">Finance</option>
                         <option value="Gudang">Gudang</option>
@@ -92,6 +93,7 @@
                                             'Editor' => 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
                                             'Viewer' => 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400',
                                             'CS' => 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+                                            'Leader CS' => 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
                                             'CX' => 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
                                             'Finance' => 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
                                             'Gudang' => 'bg-teal-100 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400',
@@ -191,6 +193,7 @@
                                     <option value="Editor">Editor</option>
                                     <option value="Admin">Admin</option>
                                     <option value="CS">CS (Customer Service)</option>
+                                    <option value="Leader CS">Leader CS</option>
                                     <option value="CX">CX (Customer Experience)</option>
                                     <option value="Finance">Finance</option>
                                     <option value="Gudang">Gudang</option>

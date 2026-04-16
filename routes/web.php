@@ -42,12 +42,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('users', \App\Livewire\UserManager::class)->name('users');
     });
 
-    // Customer Service Group (Admin, Editor, CS, Viewer)
-    Route::middleware(['role:Admin,Editor,CS,Viewer'])->group(function () {
+    // Customer Service Group (Admin, Editor, CS, Leader CS, Viewer)
+    Route::middleware(['role:Admin,Editor,CS,Leader CS,Viewer'])->group(function () {
         Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
         Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
-        Route::get('customer-service/followup', \App\Livewire\CsFollowup::class)->name('cs-followup');
         Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
+
+        // Followup restricted to Leader CS, Admin, Editor
+        Route::middleware(['role:Admin,Editor,Leader CS'])->group(function () {
+            Route::get('customer-service/followup', \App\Livewire\CsFollowup::class)->name('cs-followup');
+        });
     });
 
     // Gudang Group (Admin, Editor, Gudang, Viewer)

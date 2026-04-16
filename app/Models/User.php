@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->role === 'CS';
     }
 
+    public function isLeaderCs(): bool
+    {
+        return $this->role === 'Leader CS';
+    }
+
     public function isCx(): bool
     {
         return $this->role === 'CX';
