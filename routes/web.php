@@ -57,7 +57,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Gudang Group (Admin, Editor, Gudang, Viewer)
     Route::middleware(['role:Admin,Editor,Gudang,Viewer'])->group(function () {
-        Route::get('gudang', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
+        Route::get('gudang', \App\Livewire\WarehouseCommandCenter::class)->name('warehouse-command-center');
+        Route::get('gudang/inventory', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
+        Route::get('gudang/requests', \App\Livewire\WarehouseRequests::class)->name('warehouse-requests');
+        Route::get('gudang/transactions', \App\Livewire\WarehouseTransactions::class)->name('warehouse-transactions');
     });
 });
 

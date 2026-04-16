@@ -269,21 +269,46 @@ new class extends Component
                     </div>
                     @endcan
 
-                    {{-- Gudang (Standalone) --}}
+                    {{-- Gudang (Collapsible Container) --}}
                     @can('access-gudang')
-                    <div class="space-y-1">
-                        <a href="{{ route('warehouse-dashboard') }}" 
+                    @php
+                        $gudangSubItems = [
+                            ['route' => 'warehouse-command-center', 'label' => 'Pusat Komando'],
+                            ['route' => 'warehouse-dashboard', 'label' => 'Inventori & Analitik'],
+                            ['route' => 'warehouse-requests', 'label' => 'Permintaan Material'],
+                            ['route' => 'warehouse-transactions', 'label' => 'Riwayat Transaksi'],
+                        ];
+                        $isGudangActive = request()->routeIs(['warehouse-command-center', 'warehouse-dashboard', 'warehouse-requests', 'warehouse-transactions']);
+                    @endphp
+                    <div x-data="{ gudangOpen: {{ $isGudangActive ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="gudangOpen = !gudangOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
-                            {{ request()->routeIs('warehouse-dashboard') ? 'bg-gradient-to-r from-[#22AF85]/10 to-teal-500/10 text-[#22AF85] border border-[#22AF85]/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
+                            {{ $isGudangActive ? 'bg-gradient-to-r from-[#22AF85]/10 to-teal-500/10 text-[#22AF85] border border-[#22AF85]/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg {{ request()->routeIs('warehouse-dashboard') ? 'bg-[#22AF85]/20 text-[#22AF85]' : 'bg-slate-700/30 text-slate-400 group-hover:text-white transition-colors' }} flex items-center justify-center">
+                                <div class="w-8 h-8 rounded-lg bg-[#22AF85]/10 flex items-center justify-center text-[#22AF85]">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
                                 <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Gudang</span>
                             </div>
-                        </a>
+                            <svg x-show="open" class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': gudangOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div x-show="gudangOpen && open" 
+                            x-transition:enter="transition ease-out duration-300" 
+                            class="pl-4 pr-2 py-2 space-y-1">
+                            @foreach ($gudangSubItems as $item)
+                                <a href="{{ route($item['route']) }}" 
+                                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 group
+                                    {{ request()->routeIs($item['route']) ? 'text-white bg-[#22AF85]/20 shadow-lg shadow-[#22AF85]/10' : 'text-slate-500 hover:text-white hover:bg-white/5' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 {{ request()->routeIs($item['route']) ? 'bg-[#22AF85] scale-125' : 'bg-slate-700 group-hover:bg-slate-400' }}"></div>
+                                    <span class="truncate">{{ $item['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
                     @endcan
 
@@ -396,9 +421,13 @@ new class extends Component
         </div>
 
         <script>
+            // Robust SweetAlert listener for Livewire 3
             window.addEventListener('swal', event => {
-                const data = event.detail[0];
+                // Livewire 3 might send data in event.detail[0] or event.detail
+                const data = (Array.isArray(event.detail) ? event.detail[0] : event.detail) || {};
                 
+                if (Object.keys(data).length === 0) return;
+
                 if (data.showLoading) {
                     Swal.fire({
                         title: data.title || 'Mohon Tunggu...',
@@ -406,14 +435,10 @@ new class extends Component
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        },
-                        background: document.documentElement.classList.contains('dark') ? '#111827' : '#ffffff',
-                        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
-                        customClass: {
-                            popup: 'rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl',
-                        }
+                        didOpen: () => { Swal.showLoading(); },
+                        background: '#0f172a',
+                        color: '#f1f5f9',
+                        customClass: { popup: 'rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-xl' }
                     });
                     return;
                 }
@@ -427,10 +452,12 @@ new class extends Component
                     toast: data.toast || false,
                     position: data.position || 'center',
                     showConfirmButton: !data.toast,
-                    background: document.documentElement.classList.contains('dark') ? '#111827' : '#ffffff',
-                    color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827',
+                    background: '#0f172a',
+                    color: '#f1f5f9',
+                    confirmButtonColor: '#10b981',
                     customClass: {
-                        popup: 'rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl',
+                        popup: 'rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-xl',
+                        confirmButton: 'px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs'
                     }
                 });
             });

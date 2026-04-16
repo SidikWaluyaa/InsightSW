@@ -1,420 +1,247 @@
-<div class="px-6 py-8 pb-24 bg-gray-50 dark:bg-gray-950 min-h-screen transition-colors duration-300 font-sans" 
-     wire:poll.10s="loadData"
-     x-data="{ 
-        init() {
-            // Dashboard initialized
-        }
-     }">
-
+<div>
     <x-slot name="header">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#4E79A7] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Command Center</h2>
-                    <p class="text-[9px] font-black text-[#4E79A7] uppercase tracking-[0.2em] mt-1">Warehouse Division</p>
-                </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 dark:text-gray-100 tracking-tight flex items-center gap-2">
+                    <svg class="w-6 h-6 text-[#22AF85]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Warehouse Intelligence
+                </h2>
+                <p class="text-sm font-medium text-slate-500 dark:text-gray-400 mt-1">Supply Chain Analytics & Stock Health Scoring</p>
             </div>
-
+            
             <div class="flex items-center gap-3">
-                <button wire:click="refresh" 
-                        wire:loading.attr="disabled"
-                        class="px-6 py-3 bg-[#4E79A7] hover:bg-[#3b5e82] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2">
-                    <span wire:loading.remove wire:target="refresh">TARIK DATA LIVE</span>
-                    <span wire:loading wire:target="refresh">SYNCING...</span>
-                    <svg wire:loading.remove wire:target="refresh" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <svg wire:loading wire:target="refresh" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <button wire:click="syncAll" wire:loading.attr="disabled"
+                    class="group relative px-6 py-2.5 bg-gradient-to-r from-[#22AF85] to-teal-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 transition-all overflow-hidden disabled:opacity-50 flex items-center gap-2">
+                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <svg wire:loading.class="animate-spin" class="w-4 h-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    <span class="relative z-10 uppercase tracking-widest" wire:loading.remove wire:target="syncAll">Sync Realtime</span>
+                    <span class="relative z-10 uppercase tracking-widest" wire:loading wire:target="syncAll">Menarik Data...</span>
                 </button>
-                <div class="h-10 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
-                <div class="text-right">
-                    <p class="text-[8px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Last Sync</p>
-                    <p class="text-xs font-black text-slate-800 dark:text-white mt-0.5">{{ $lastUpdated }}</p>
-                </div>
             </div>
         </div>
     </x-slot>
-    
-    {{-- Main Insights Row --}}
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
-        {{-- Left: Branded Headline --}}
-        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-[40px] p-10 shadow-sm border border-gray-100 dark:border-slate-800 relative overflow-hidden group">
-            <div class="absolute -right-20 -top-20 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-            
-            <div class="relative z-10">
-                <div class="flex items-center gap-3 mb-8">
-                    <span class="px-4 py-1.5 bg-blue-500/10 text-[9px] font-black text-[#4E79A7] uppercase tracking-[0.2em] rounded-full border border-[#4E79A7]/20">Sistem Terkoneksi</span>
-                    <div class="flex h-2 w-2 relative">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-[#4E79A7]"></span>
+
+    <div class="space-y-8">
+
+        {{-- ROW 1: Primary KPI Cards --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {{-- Asset Valuation --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-[#22AF85]/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                <div class="relative z-10">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Asset Valuation</p>
+                    <h3 class="text-xl font-black text-[#22AF85]">{{ $this->formatCurrency($this->assetValuation['grand_total']) }}</h3>
+                    <div class="mt-3 text-[10px] font-bold text-slate-400">
+                        Modal terikat pada {{ $this->totalItems }} SKU gudang fisik.
                     </div>
                 </div>
+            </div>
 
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div>
-                        <h1 class="text-5xl font-black text-slate-800 dark:text-white tracking-tighter mb-4">Pusat Komando <span class="bg-gradient-to-r from-[#4E79A7] to-blue-400 bg-clip-text text-transparent italic">Operasional</span></h1>
-                        <p class="text-slate-400 dark:text-gray-500 font-bold text-lg tracking-tight">Optimalisasi stok dan efisiensi gudang secara real-time.</p>
+            {{-- Stock Health Score --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                <div class="relative z-10">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Stock Health Score</p>
+                    <div class="flex items-baseline gap-2">
+                        <h3 class="text-xl font-black {{ $this->stockHealthScore['score'] >= 75 ? 'text-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'text-amber-500' : 'text-rose-500') }}">{{ $this->stockHealthScore['score'] }}%</h3>
+                        <span class="text-xs font-black px-2 py-0.5 rounded-lg {{ $this->stockHealthScore['score'] >= 75 ? 'bg-emerald-500/10 text-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'bg-amber-500/10 text-amber-500' : 'bg-rose-500/10 text-rose-500') }}">
+                            GRADE {{ $this->stockHealthScore['grade'] }}
+                        </span>
                     </div>
-                    
-                    {{-- Search moved to top row to balance layout --}}
-                    <div class="relative group w-full md:w-80">
-                        <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                            <svg class="w-4 h-4 text-slate-400 group-focus-within:text-[#4E79A7] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </div>
-                        <input type="text" 
-                               wire:model.live.debounce.300ms="searchQuery"
-                               placeholder="CARI SPK / MEMBER..." 
-                               class="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-slate-600 dark:text-gray-300 focus:ring-4 focus:ring-[#4E79A7]/10 placeholder-slate-300 dark:placeholder-slate-700">
+                    <div class="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full transition-all duration-1000 {{ $this->stockHealthScore['score'] >= 75 ? 'bg-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'bg-amber-500' : 'bg-rose-500') }}" style="width: {{ $this->stockHealthScore['score'] }}%"></div>
+                    </div>
+                    <div class="mt-2 text-[10px] font-bold text-slate-400">
+                        {{ $this->stockHealthScore['healthy'] }} sehat • {{ $this->stockHealthScore['low'] }} peringatan • {{ $this->stockHealthScore['out'] }} habis
                     </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                    @php
-                        $metrics = [
-                            ['label' => 'SPK Pending', 'value' => $data['summary']['pending_reception'] ?? 0, 'color' => 'slate'],
-                            ['label' => 'Di Finish', 'value' => $data['summary']['finished_not_stored'] ?? 0, 'color' => 'amber'],
-                            ['label' => 'Antrean Kirim', 'value' => $data['summary']['shipping_pending'] ?? 0, 'color' => 'rose'],
-                            ['label' => 'Siap Diambil', 'value' => $data['summary']['ready_for_pickup'] ?? 0, 'color' => 'emerald'],
-                        ];
-                    @endphp
-                    @foreach($metrics as $m)
-                        <div class="group/m cursor-default">
-                            <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 group-hover/m:text-[#4E79A7] transition-colors">{{ $m['label'] }}</p>
-                            <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter group-hover/m:scale-110 transition-transform origin-left">{{ number_format($m['value']) }}</h3>
+            {{-- Total Physical Stock --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                <div class="relative z-10">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Physical Stock</p>
+                    <h3 class="text-xl font-black text-blue-600 dark:text-blue-400">{{ number_format($this->totalStock) }} <span class="text-xs text-slate-400 font-semibold">Unit</span></h3>
+                    <div class="mt-3 text-[10px] font-bold text-slate-400">
+                        Dari {{ $this->totalItems }} jenis material unik (SKU).
+                    </div>
+                </div>
+            </div>
+
+            {{-- Out of Stock --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-rose-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Dead Stock Alert</p>
+                            <h3 class="text-xl font-black {{ $this->outOfStockCount > 0 ? 'text-rose-600' : 'text-slate-800 dark:text-white' }}">{{ $this->outOfStockCount }} <span class="text-xs text-slate-400 font-semibold">Item Habis</span></h3>
                         </div>
+                        @if($this->outOfStockCount > 0)
+                        <span class="flex h-3 w-3 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                        </span>
+                        @endif
+                    </div>
+                    <div class="mt-3 text-[10px] font-bold text-slate-400">
+                        + {{ $this->lowStockCount }} item mendekati batas minimum.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ROW 2: Sub-Category Breakdown --}}
+        <div class="grid grid-cols-1 gap-6">
+            {{-- Sub-Category Breakdown --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div class="mb-6">
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Sub-Category Breakdown</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Distribusi material per jenis bahan produksi.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @foreach($this->subCategoryBreakdown as $sub)
+                    <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/30">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#22AF85]/20 to-teal-500/10 flex items-center justify-center text-[#22AF85] text-sm font-black shrink-0">
+                            {{ $sub->item_count }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-black text-slate-700 dark:text-white uppercase truncate">{{ $sub->sub_category_label }}</p>
+                            <p class="text-[10px] font-bold text-[#22AF85] mt-0.5">{{ $this->formatCurrency($sub->total_val) }}</p>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                    @php $pctVal = $this->assetValuation['grand_total'] > 0 ? ($sub->total_val / $this->assetValuation['grand_total']) * 100 : 0; @endphp
+                                    <div class="bg-[#22AF85] h-1.5 rounded-full" style="width: {{ round($pctVal) }}%"></div>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-400 shrink-0">{{ round($pctVal, 1) }}%</span>
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-1">{{ number_format($sub->total_stock) }} unit • Avg @ {{ $this->formatCurrency($sub->avg_price) }}</p>
+                        </div>
+                    </div>
                     @endforeach
                 </div>
             </div>
         </div>
 
-        {{-- Right: Dwell Time & Quick Filter --}}
-        <div class="flex flex-col gap-8">
-            <div class="bg-white dark:bg-slate-900 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col justify-between group h-1/2">
+        {{-- ROW 3: Top 10 Highest Valuation Items --}}
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div class="p-8 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-[#22AF85]/5 to-transparent">
+                <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    Top 10 — Material Tertinggi (High Asset Concentration)
+                </h3>
+                <p class="text-[10px] text-slate-400 mt-1">Material dengan modal terbesar terikat di inventaris. Klasifikasi ABC: pastikan item ini tidak pernah kehabisan stok.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            <th class="px-8 py-4 text-center">#</th>
+                            <th class="px-8 py-4">Material</th>
+                            <th class="px-8 py-4">Jenis</th>
+                            <th class="px-8 py-4 text-center">Stok</th>
+                            <th class="px-8 py-4 text-right">Harga Satuan</th>
+                            <th class="px-8 py-4 text-right">Total Valuasi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-[11px] font-bold">
+                        @foreach($this->topValueItems as $idx => $item)
+                        <tr class="hover:bg-slate-50 dark:hover:bg-gray-800/30 transition-colors">
+                            <td class="px-8 py-4 text-center">
+                                @if($idx < 3)
+                                <span class="w-6 h-6 rounded-full {{ $idx === 0 ? 'bg-amber-500' : ($idx === 1 ? 'bg-slate-400' : 'bg-amber-700') }} text-white text-[9px] font-black inline-flex items-center justify-center">{{ $idx + 1 }}</span>
+                                @else
+                                <span class="text-slate-400">{{ $idx + 1 }}</span>
+                                @endif
+                            </td>
+                            <td class="px-8 py-4 text-slate-800 dark:text-white uppercase">{{ $item->name }}</td>
+                            <td class="px-8 py-4"><span class="px-2 py-0.5 bg-slate-100 dark:bg-gray-800 text-slate-500 rounded text-[9px]">{{ $item->sub_category ?: '-' }}</span></td>
+                            <td class="px-8 py-4 text-center {{ $item->current_stock <= $item->min_stock ? 'text-rose-600' : 'text-emerald-600' }}">{{ $item->current_stock }} {{ $item->unit }}</td>
+                            <td class="px-8 py-4 text-right text-slate-500">{{ $this->formatCurrency($item->unit_price) }}</td>
+                            <td class="px-8 py-4 text-right text-[#22AF85] font-black">{{ $this->formatCurrency($item->total_valuation) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- ROW 4: Full Inventory Table --}}
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div class="p-8 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-50/30 dark:bg-indigo-900/10">
                 <div>
-                    <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">RATA-RATA WAKTU INAP</p>
-                    <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{{ $data['efficiency']['avg_dwell_hours'] ?? 0 }}<span class="text-sm font-bold text-slate-300 dark:text-slate-700 ml-1 uppercase">Jam</span></h3>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Seluruh Inventaris Gudang</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Daftar lengkap {{ $this->totalItems }} material beserta status dan valuasinya.</p>
                 </div>
-                <div class="flex items-center gap-1.5 mt-4">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#4E79A7]"></span>
-                    <p class="text-[9px] font-black text-[#4E79A7] uppercase tracking-widest leading-none">Healthy Flow Status</p>
+                <div class="flex items-center gap-3">
+                    {{-- Sub-Category Filter --}}
+                    <select wire:model.live="subCategoryFilter" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-[#22AF85] outline-none">
+                        <option value="all">Semua Jenis</option>
+                        @foreach($this->subCategories as $sc)
+                            <option value="{{ $sc }}">{{ $sc }}</option>
+                        @endforeach
+                    </select>
+                    {{-- Search --}}
+                    <div class="relative min-w-[250px]">
+                        <input wire:model.live.debounce.300ms="search" type="text" 
+                            placeholder="Cari material..."
+                            class="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#22AF85] dark:text-gray-200 transition-all outline-none">
+                        <div class="absolute left-3 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="bg-[#4E79A7] rounded-[40px] p-2 flex flex-col gap-1 shadow-xl shadow-blue-500/10 h-1/2">
-                <button class="flex-1 rounded-[32px] text-[10px] font-black uppercase tracking-widest transition-all {{ $startDate == now()->format('Y-m-d') ? 'bg-white text-[#4E79A7]' : 'text-blue-100 hover:bg-white/10' }}"
-                        wire:click="$set('startDate', '{{ now()->format('Y-m-d') }}')">Hari Ini</button>
-                <button class="flex-1 rounded-[32px] text-[10px] font-black uppercase tracking-widest transition-all {{ $startDate == now()->subDays(7)->format('Y-m-d') ? 'bg-white text-[#4E79A7]' : 'text-blue-100 hover:bg-white/10' }}"
-                        wire:click="$set('startDate', '{{ now()->subDays(7)->format('Y-m-d') }}')">7 Hari</button>
-                <div class="relative flex-1 flex items-center justify-center gap-2 cursor-pointer group">
-                    <input type="date" wire:model.live="startDate" class="absolute inset-0 opacity-0 cursor-pointer z-20">
-                    <svg class="w-4 h-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span class="text-[10px] font-black text-blue-100 uppercase tracking-widest">Kalender</span>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            <th class="px-6 py-4">Material</th>
+                            <th class="px-6 py-4">Jenis</th>
+                            <th class="px-6 py-4 text-center">Stok / Min</th>
+                            <th class="px-6 py-4 text-right">Harga Satuan</th>
+                            <th class="px-6 py-4 text-right">Valuasi</th>
+                            <th class="px-6 py-4 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-[11px] font-bold">
+                        @forelse($this->allInventory as $item)
+                        <tr class="hover:bg-slate-50 dark:hover:bg-gray-800/30 transition-colors">
+                            <td class="px-6 py-4 uppercase text-slate-800 dark:text-white max-w-[200px] truncate">{{ $item->name }}</td>
+                            <td class="px-6 py-4"><span class="px-2 py-0.5 bg-slate-100 dark:bg-gray-800 text-slate-500 rounded text-[9px]">{{ $item->sub_category ?: '-' }}</span></td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="{{ $item->current_stock <= $item->min_stock ? 'text-rose-600' : 'text-emerald-600' }}">{{ $item->current_stock }}</span>
+                                <span class="text-slate-300 mx-1">/</span>
+                                <span class="text-slate-400">{{ $item->min_stock }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-slate-500">{{ $this->formatCurrency($item->unit_price) }}</td>
+                            <td class="px-6 py-4 text-right text-[#22AF85]">{{ $this->formatCurrency($item->total_valuation) }}</td>
+                            <td class="px-6 py-4 text-center">
+                                @if($item->status === 'Out of Stock')
+                                    <span class="px-2 py-0.5 bg-rose-500/10 text-rose-500 rounded-full border border-rose-500/20 text-[9px]">HABIS</span>
+                                @elseif($item->current_stock <= $item->min_stock)
+                                    <span class="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded-full border border-amber-500/20 text-[9px]">LOW</span>
+                                @else
+                                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 text-[9px]">AMAN</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="px-8 py-16 text-center">
+                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 dark:bg-gray-800 mb-3">
+                                    <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                                </div>
+                                <p class="text-slate-500 font-bold text-xs">Belum ada data inventaris. Klik SYNC REALTIME.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-
-    {{-- Rack Occupancy Table --}}
-    <div class="bg-white dark:bg-slate-900 rounded-[40px] p-10 shadow-sm border border-gray-100 dark:border-slate-800 mb-10">
-        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-12">
-            <div>
-                <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">Peta Okupansi <span class="text-[#4E79A7]">Rak</span></h2>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="flex h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                    <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Live Tracking Matrix</p>
-                </div>
-            </div>
-
-            <div class="flex items-center bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-                @foreach(['FINISH', 'AKSESORIS', 'INBOUND'] as $tab)
-                    <button wire:click="setRackTab('{{ $tab }}')" 
-                            class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 {{ $activeRackTab == $tab ? 'bg-white dark:bg-slate-700 text-[#4E79A7] dark:text-blue-400 shadow-md border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300' }}">
-                        {{ $tab }}
-                    </button>
-                @endforeach
-            </div>
-
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full bg-[#76B7B2]"></div>
-                    <span class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Tersedia</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full bg-[#EDC948]"></div>
-                    <span class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Optimal</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 animate-pulse"></div>
-                    <span class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Penuh</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            @php
-                $categoryMap = [
-                    'FINISH' => ['shoes', 'manual', 'manual_l', 'manual_tl', 'manual_tn'],
-                    'AKSESORIS' => ['accessories'],
-                    'INBOUND' => ['before']
-                ];
-                $filteredHeatmap = collect($data['storage']['heatmap'] ?? [])
-                    ->filter(function($item) use ($categoryMap) {
-                        return in_array($item['category'], $categoryMap[$this->activeRackTab] ?? []);
-                    });
-            @endphp
-
-            @foreach($filteredHeatmap as $rack)
-                <div class="group relative p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center justify-center text-center gap-1 overflow-hidden
-                    {{ $rack['color'] == 'green' ? 'bg-blue-500/[0.03] border-blue-50 dark:border-blue-500/10 hover:border-blue-500/30' : '' }}
-                    {{ $rack['color'] == 'yellow' ? 'bg-amber-500/[0.03] border-amber-50 dark:border-amber-500/10 hover:border-amber-500/30' : '' }}
-                    {{ $rack['color'] == 'black' ? 'bg-slate-900 border-slate-800 text-white shadow-xl' : 'text-slate-800 dark:text-white' }}">
-                    
-                    <div class="absolute inset-0 bg-gradient-to-br transition-opacity duration-500 opacity-0 group-hover:opacity-100 pointer-events-none 
-                        {{ $rack['color'] == 'green' ? 'from-[#76B7B2]/10 to-transparent' : '' }}
-                        {{ $rack['color'] == 'yellow' ? 'from-[#EDC948]/10 to-transparent' : '' }}
-                        {{ $rack['color'] == 'black' ? 'from-slate-800 to-transparent' : '' }}"></div>
-
-                    <p class="relative z-10 text-[11px] font-black uppercase tracking-[0.2em] {{ $rack['color'] == 'black' ? 'text-slate-400' : 'text-slate-800 dark:text-white' }} group-hover:scale-110 transition-transform">{{ $rack['code'] }}</p>
-                    <p class="relative z-10 text-[9px] font-bold uppercase tracking-widest {{ $rack['color'] == 'black' ? 'text-blue-400' : 'text-[#4E79A7]' }}">{{ $rack['count'] }} UNIT</p>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- Analysis Row: TABLEAU STYLE CHARTS --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {{-- Tableau Trend Chart --}}
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[40px] p-10 shadow-sm border border-gray-100 dark:border-slate-800"
-             wire:ignore
-             x-data="tableauTrendChart(@js($data['qc_analytics']['trends']['labels'] ?? []), @js($data['qc_analytics']['trends']['lolos'] ?? []), @js($data['qc_analytics']['trends']['reject'] ?? []))">
-            <div class="flex items-center justify-between mb-10">
-                <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-[#4E79A7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 3v18h18M7 16l4-4 4 4 5-8" /></svg>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider leading-none">QC Performance Trends</h4>
-                        <p class="text-[9px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mt-1.5">Historical Batch Analysis</p>
-                    </div>
-                </div>
-                <div class="flex gap-6">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-sm bg-[#4E79A7]"></span>
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase">QC LOLOS</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-sm bg-[#E15759]"></span>
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase">QC REJECT</span>
-                    </div>
-                </div>
-            </div>
-            <div x-ref="chart" class="min-h-[400px]"></div>
-        </div>
-
-        {{-- Tableau Donut Chart --}}
-        <div class="bg-white dark:bg-slate-900 rounded-[40px] p-10 shadow-sm border border-gray-100 dark:border-slate-800"
-             wire:ignore
-             x-data="tableauDonutChart(@js($data['qc_analytics']['summary']['lolos'] ?? 0), @js($data['qc_analytics']['summary']['reject'] ?? 0))">
-            <div class="mb-10 text-center">
-                <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider leading-none">Composition</h4>
-                <p class="text-[9px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mt-1.5 italic">QC Success Distribution</p>
-            </div>
-            <div x-ref="chart" class="min-h-[400px] flex justify-center items-center"></div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        function tableauTrendChart(labels, lolos, reject) {
-            return {
-                chart: null,
-                init() {
-                    const options = {
-                        series: [
-                            { name: 'QC LOLOS', data: lolos || [] },
-                            { name: 'QC REJECT', data: reject || [] }
-                        ],
-                        chart: {
-                            type: 'area',
-                            height: 400,
-                            toolbar: { show: false },
-                            fontFamily: 'Inter, sans-serif',
-                            background: 'transparent',
-                            animations: { enabled: true, easing: 'easeinout', speed: 800 }
-                        },
-                        colors: ['#4E79A7', '#E15759'],
-                        dataLabels: { enabled: false },
-                        stroke: { curve: 'smooth', width: 3 },
-                        markers: { 
-                            size: 5, 
-                            strokeWidth: 2, 
-                            hover: { size: 7 },
-                            colors: ['#fff'],
-                            strokeColors: ['#4E79A7', '#E15759']
-                        },
-                        fill: {
-                            type: 'gradient',
-                            gradient: {
-                                shadeIntensity: 1,
-                                opacityFrom: 0.2,
-                                opacityTo: 0.05,
-                                stops: [0, 90, 100]
-                            }
-                        },
-                        grid: {
-                            borderColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9',
-                            strokeDashArray: 4,
-                            yaxis: { lines: { show: true } },
-                            xaxis: { lines: { show: false } }
-                        },
-                        xaxis: {
-                            categories: labels || [],
-                            labels: { 
-                                style: { 
-                                    colors: '#94a3b8', 
-                                    fontSize: '10px',
-                                    fontWeight: 600
-                                } 
-                            },
-                            axisBorder: { show: false },
-                            axisTicks: { show: false }
-                        },
-                        yaxis: {
-                            labels: { 
-                                style: { 
-                                    colors: '#94a3b8',
-                                    fontSize: '10px',
-                                    fontWeight: 600
-                                } 
-                            }
-                        },
-                        legend: { show: false },
-                        tooltip: {
-                            theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-                            shared: true,
-                            intersect: false,
-                            y: { formatter: (val) => val + ' Units' }
-                        }
-                    };
-                    this.chart = new ApexCharts(this.$refs.chart, options);
-                    this.chart.render();
-                    window.trendChart = this;
-                },
-                update(data) {
-                    if (this.chart) {
-                        this.chart.updateOptions({
-                            grid: { borderColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9' },
-                            xaxis: { categories: data.labels || [] }
-                        });
-                        this.chart.updateSeries([
-                            { name: 'QC LOLOS', data: data.lolos || [] },
-                            { name: 'QC REJECT', data: data.reject || [] }
-                        ]);
-                    }
-                }
-            }
-        }
-
-        function tableauDonutChart(lolos, reject) {
-            return {
-                chart: null,
-                init() {
-                    let lVal = parseFloat(lolos) || 0;
-                    let rVal = parseFloat(reject) || 0;
-                    
-                    const options = {
-                        series: [lVal, rVal],
-                        chart: {
-                            type: 'donut',
-                            height: 400,
-                            fontFamily: 'Inter, sans-serif',
-                            animations: { enabled: true }
-                        },
-                        colors: ['#4E79A7', '#E15759'],
-                        labels: ['QC LOLOS', 'QC REJECT'],
-                        dataLabels: { enabled: false },
-                        stroke: { width: 0 },
-                        plotOptions: {
-                            pie: {
-                                donut: {
-                                    size: '80%',
-                                    labels: {
-                                        show: true,
-                                        total: {
-                                            show: true,
-                                            label: 'TOTAL QC',
-                                            fontSize: '10px',
-                                            fontWeight: 900,
-                                            color: '#94a3b8',
-                                            formatter: function (w) {
-                                                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                            }
-                                        },
-                                        value: {
-                                            fontSize: '32px',
-                                            fontWeight: 900,
-                                            color: document.documentElement.classList.contains('dark') ? '#fff' : '#1e293b',
-                                            formatter: (val) => val
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            markers: { radius: 2 },
-                            labels: { colors: '#94a3b8' }
-                        }
-                    };
-                    this.chart = new ApexCharts(this.$refs.chart, options);
-                    this.chart.render();
-                    window.donutChart = this;
-                },
-                update(l, r) {
-                    if (this.chart) {
-                        this.chart.updateOptions({
-                            plotOptions: {
-                                pie: {
-                                    donut: {
-                                        labels: {
-                                            value: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#1e293b' }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                        this.chart.updateSeries([parseFloat(l) || 0, parseFloat(r) || 0]);
-                    }
-                }
-            }
-        }
-
-        window.addEventListener('dataUpdated', event => {
-            const data = (event.detail && event.detail.qc_analytics) ? event.detail : (event.detail[0] || {});
-            if (data.qc_analytics) {
-                // Determine summary counts (fallback to trends sum if needed)
-                let lolosCount = parseFloat(data.qc_analytics.summary?.lolos);
-                let rejectCount = parseFloat(data.qc_analytics.summary?.reject);
-                
-                if (isNaN(lolosCount) || isNaN(rejectCount) || (lolosCount === 0 && rejectCount === 0)) {
-                    lolosCount = (data.qc_analytics.trends?.lolos || []).reduce((a, b) => a + (parseFloat(b) || 0), 0);
-                    rejectCount = (data.qc_analytics.trends?.reject || []).reduce((a, b) => a + (parseFloat(b) || 0), 0);
-                }
-
-                if (window.trendChart) window.trendChart.update(data.qc_analytics.trends);
-                if (window.donutChart) window.donutChart.update(lolosCount, rejectCount);
-            }
-        });
-    </script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        .font-sans { font-family: 'Inter', sans-serif !important; }
-        input[type="date"]::-webkit-calendar-picker-indicator { 
-            background: transparent; bottom: 0; color: transparent; cursor: pointer; height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto; 
-        }
-    </style>
 </div>
