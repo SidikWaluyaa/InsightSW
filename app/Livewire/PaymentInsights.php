@@ -24,6 +24,7 @@ class PaymentInsights extends Component
 
     public $search = '';
     public $statusFilter = 'all'; // all, unpaid, paid
+    public $dateFilterType = 'paid_at'; // paid_at, source_created_at
     public $startDate;
     public $endDate;
     public $isSyncing = false;
@@ -32,11 +33,17 @@ class PaymentInsights extends Component
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
+        'dateFilterType' => ['except' => 'paid_at'],
         'startDate' => ['except' => null],
         'endDate' => ['except' => null],
     ];
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingDateFilterType()
     {
         $this->resetPage();
     }
@@ -116,7 +123,7 @@ class PaymentInsights extends Component
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }
 
-    protected function getFilteredQuery()
+    public function getFilteredQuery()
     {
         $query = PaymentSync::query();
 
@@ -142,12 +149,12 @@ class PaymentInsights extends Component
                 });
             })
             ->when($this->startDate, function($query) {
-                $query->whereDate('paid_at', '>=', $this->startDate);
+                $query->whereDate($this->dateFilterType, '>=', $this->startDate);
             })
             ->when($this->endDate, function($query) {
-                $query->whereDate('paid_at', '<=', $this->endDate);
+                $query->whereDate($this->dateFilterType, '<=', $this->endDate);
             })
-            ->orderBy('paid_at', 'desc');
+            ->orderBy($this->dateFilterType, 'desc');
     }
 
     public function exportExcel()

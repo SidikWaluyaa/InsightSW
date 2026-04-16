@@ -92,10 +92,15 @@
                             </button>
                         </div>
                         
-                        <div class="flex items-center gap-2 bg-white/50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
-                            <input type="date" wire:model.live="startDate" class="px-3 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-bold text-slate-600 dark:text-slate-300 w-[120px] cursor-pointer" title="Dari Tanggal">
+                        <div class="flex items-center gap-1 bg-white/50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
+                            <select wire:model.live="dateFilterType" class="px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer outline-none w-[110px] appearance-auto">
+                                <option value="paid_at">Tgl Bayar</option>
+                                <option value="source_created_at">Tgl Origin</option>
+                            </select>
+                            <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <input type="date" wire:model.live="startDate" class="px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-bold text-slate-600 dark:text-slate-300 w-[110px] cursor-pointer" title="Dari Tanggal">
                             <span class="text-slate-400 font-bold text-xs">-</span>
-                            <input type="date" wire:model.live="endDate" class="px-3 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-bold text-slate-600 dark:text-slate-300 w-[120px] cursor-pointer" title="Sampai Tanggal">
+                            <input type="date" wire:model.live="endDate" class="px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-bold text-slate-600 dark:text-slate-300 w-[110px] cursor-pointer" title="Sampai Tanggal">
                             @if($startDate || $endDate)
                                 <button wire:click="$set('startDate', null); $set('endDate', null)" class="px-2 text-slate-400 hover:text-rose-500 transition-colors" title="Clear Date Filter">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -132,16 +137,16 @@
                                 <td class="px-8 py-5 text-slate-500">{{ $payment->paid_at ? $payment->paid_at->format('d/m/Y H:i') : '-' }}</td>
                                 <td class="px-8 py-5">
                                     <div class="flex flex-col">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-slate-800 dark:text-white">{{ $payment->spk_number }}</span>
-                                        </div>
-                                        <span class="text-[10px] text-slate-500 font-medium">
+                                        <span class="text-slate-800 dark:text-white font-extrabold text-xs tracking-tight">{{ $payment->spk_number }}</span>
+                                        <span class="text-[10px] text-slate-500 font-semibold uppercase mt-0.5">
                                             {{ $payment->customer_name ?? '-' }} 
                                             @if($payment->customer_phone && $payment->customer_phone !== '-')
-                                                <span class="text-slate-400">• {{ $payment->customer_phone }}</span>
+                                                <span class="text-slate-400 font-medium">• {{ $payment->customer_phone }}</span>
                                             @endif
                                         </span>
-                                        <span class="text-[9px] text-slate-400 tracking-normal font-medium normal-case italic">Origin: {{ $payment->source_created_at ? $payment->source_created_at->format('M Y') : '-' }}</span>
+                                        <span class="text-[10px] text-slate-400 tracking-normal font-medium normal-case italic mt-0.5">
+                                            Origin: {{ $payment->source_created_at ? $payment->source_created_at->format('d M Y') : '-' }}
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="px-8 py-5">
