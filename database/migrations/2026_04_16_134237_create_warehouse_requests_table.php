@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('request_id')->unique();
             $table->string('spk_number')->nullable();
             $table->string('status')->nullable();
-            $table->json('material_details')->nullable();
+            $table->longText('material_details')->nullable();
             $table->timestamp('requested_at')->nullable();
             $table->timestamp('source_last_updated')->nullable();
             $table->timestamps();

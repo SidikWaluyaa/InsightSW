@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('transaction_id')->unique();
             $table->string('type')->index(); // IN, OUT, ADJUSTMENT
             $table->text('notes')->nullable();
-            $table->json('details')->nullable();
+            $table->longText('details')->nullable();
             $table->timestamp('transaction_date')->nullable();
             $table->timestamps();
         });
