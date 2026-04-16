@@ -232,9 +232,10 @@ new class extends Component
                     @php
                         $financeSubItems = [
                             ['route' => 'finance-sync', 'label' => 'Financial Dashboard', 'icon' => '...'],
+                            ['route' => 'finance-payment-insights', 'label' => 'Payment Insights', 'icon' => '...'],
                             ['route' => 'finance-history', 'label' => 'Riwayat Sync', 'icon' => '...'],
                         ];
-                        $isFinanceActive = request()->routeIs(['finance-sync', 'finance-history']);
+                        $isFinanceActive = request()->routeIs(['finance-sync', 'finance-payment-insights', 'finance-history']);
                     @endphp
                     <div x-data="{ financeOpen: {{ $isFinanceActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="financeOpen = !financeOpen"

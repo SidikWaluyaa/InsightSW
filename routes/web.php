@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
         Route::get('finance-sync', FinanceDashboard::class)->name('finance-sync');
         Route::get('finance-history', FinanceSyncHistory::class)->name('finance-history');
+        Route::get('finance/payment-insights', \App\Livewire\PaymentInsights::class)->name('finance-payment-insights');
     });
 
     // CX Group (Admin, Editor, CX, Viewer)

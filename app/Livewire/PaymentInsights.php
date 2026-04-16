@@ -1,0 +1,182 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+
+use App\Models\PaymentSync;
+use App\Services\PaymentSyncService;
+use App\Services\SyncService;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PaymentInsightExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+#[Layout('layouts.app')]
+class PaymentInsights extends Component
+{
+    use WithPagination;
+
+    public $search = '';
+    public $statusFilter = 'all'; // all, unpaid, paid
+    public $startDate;
+    public $endDate;
+    public $isSyncing = false;
+    public $lastSyncTime;
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'statusFilter' => ['except' => 'all'],
+        'startDate' => ['except' => null],
+        'endDate' => ['except' => null],
+    ];
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStartDate()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingEndDate()
+    {
+        $this->resetPage();
+    }
+
+    public function mount()
+    {
+        $this->updateSyncState();
+        $this->syncData(); // Sync on first load
+    }
+
+    public function updateSyncState()
+    {
+        $this->lastSyncTime = app(SyncService::class)->getLastSyncTime('payment_insights_sync');
+    }
+
+    public function syncData()
+    {
+        $this->isSyncing = true;
+        
+        $result = app(PaymentSyncService::class)->sync();
+        
+        if ($result['success']) {
+            \Illuminate\Support\Facades\Cache::put("sync_last_time_payment_insights_sync", time(), now()->addDay());
+            $this->updateSyncState();
+            
+            $count = $result['count'] ?? 0;
+            $this->dispatch('swal', [
+                'title' => 'Sync Selesai',
+                'text' => $count > 0 ? "Berhasil menarik $count data terbaru." : "Data sudah up-to-date. Tidak ada data baru.",
+                'icon' => 'success',
+                'timer' => 3000
+            ]);
+        } else {
+            $this->dispatch('swal', [
+                'title' => 'Sync Gagal',
+                'text' => $result['message'] ?? 'Terjadi kesalahan saat menghubungi API.',
+                'icon' => 'error',
+                'timer' => 3000
+            ]);
+        }
+        
+        $this->isSyncing = false;
+    }
+
+    #[Computed]
+    public function dailyRevenue()
+    {
+        return PaymentSync::select(
+                DB::raw('DATE(paid_at) as date'),
+                DB::raw('SUM(amount_paid) as total')
+            )
+            ->whereNotNull('paid_at')
+            ->groupBy('date')
+            ->orderBy('date', 'desc')
+            ->limit(14)
+            ->get();
+    }
+
+
+    public function formatCurrency($amount)
+    {
+        return 'Rp ' . number_format($amount, 0, ',', '.');
+    }
+
+    protected function getFilteredQuery()
+    {
+        $query = PaymentSync::query();
+
+        if ($this->statusFilter !== 'all') {
+            // Filter to show only the LATEST payment for each invoice
+            $query->whereIn('id', function($subQuery) {
+                $subQuery->select(DB::raw('MAX(id)'))
+                         ->from('payment_syncs')
+                         ->groupBy('spk_number');
+            });
+
+            if ($this->statusFilter === 'unpaid') {
+                $query->where('balance_snapshot', '>', 0);
+            } elseif ($this->statusFilter === 'paid') {
+                $query->where('balance_snapshot', '<=', 0);
+            }
+        }
+
+        return $query->when($this->search, function($query) {
+                $query->where(function($q) {
+                    $q->where('spk_number', 'like', '%' . $this->search . '%')
+                      ->orWhere('customer_name', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->when($this->startDate, function($query) {
+                $query->whereDate('paid_at', '>=', $this->startDate);
+            })
+            ->when($this->endDate, function($query) {
+                $query->whereDate('paid_at', '<=', $this->endDate);
+            })
+            ->orderBy('paid_at', 'desc');
+    }
+
+    public function exportExcel()
+    {
+        $query = $this->getFilteredQuery();
+        return Excel::download(new PaymentInsightExport($query), 'Payment_Insights_' . now()->format('YmdHis') . '.xlsx');
+    }
+
+    public function exportPdf()
+    {
+        $payments = $this->getFilteredQuery()->get();
+        
+        $pdf = Pdf::loadView('exports.payment-pdf', [
+            'payments' => $payments,
+            'statusFilter' => $this->statusFilter,
+            'search' => $this->search,
+        ]);
+        
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'Payment_Insights_' . now()->format('YmdHis') . '.pdf');
+    }
+
+    public function render()
+    {
+        $payments = $this->getFilteredQuery()->paginate(15);
+
+        return view('livewire.payment-insights', [
+            'payments' => $payments
+        ]);
+    }
+}
