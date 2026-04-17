@@ -70,6 +70,8 @@ class WarehouseCommandCenter extends Component
             $resInv = $syncService->syncInventory();
             $resReq = $syncService->syncRequests();
             $resTrx = $syncService->syncTransactions();
+            $resSortir = $syncService->syncSortir();
+            $resForecast = $syncService->syncForecast();
             
             $this->updateCounts();
             $this->loadData();

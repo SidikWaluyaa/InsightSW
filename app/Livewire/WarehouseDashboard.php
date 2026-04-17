@@ -11,12 +11,31 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\WithPagination;
 
 class WarehouseDashboard extends Component
 {
+    use WithPagination;
+
     public $isSyncing = false;
     public $search = '';
     public $subCategoryFilter = 'all';
+    public $statusFilter = 'all';
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSubCategoryFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
 
     public function mount()
     {
@@ -191,7 +210,7 @@ class WarehouseDashboard extends Component
             ->count();
     }
 
-    // ─── INVENTORY TABLE (Full) ────────────────
+    // ─── INVENTORY TABLE (Paginated) ───────────
 
     #[Computed]
     public function allInventory()
@@ -206,8 +225,11 @@ class WarehouseDashboard extends Component
             ->when($this->subCategoryFilter !== 'all', function($q) {
                 $q->where('sub_category', $this->subCategoryFilter);
             })
+            ->when($this->statusFilter !== 'all', function($q) {
+                $q->where('status', $this->statusFilter);
+            })
             ->orderBy('name', 'asc')
-            ->get();
+            ->paginate(15);
     }
 
     #[Computed]

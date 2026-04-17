@@ -27,6 +27,8 @@ class PaymentInsights extends Component
     public $dateFilterType = 'paid_at'; // paid_at, source_created_at
     public $startDate;
     public $endDate;
+    public $analyticsStartDate;
+    public $analyticsEndDate;
     public $isSyncing = false;
     public $lastSyncTime;
 
@@ -36,6 +38,8 @@ class PaymentInsights extends Component
         'dateFilterType' => ['except' => 'paid_at'],
         'startDate' => ['except' => null],
         'endDate' => ['except' => null],
+        'analyticsStartDate' => ['except' => null],
+        'analyticsEndDate' => ['except' => null],
     ];
 
     public function updatingSearch()
@@ -63,10 +67,41 @@ class PaymentInsights extends Component
         $this->resetPage();
     }
 
+    public function updatedStartDate()
+    {
+        $this->dispatchData();
+    }
+
+    public function updatedEndDate()
+    {
+        $this->dispatchData();
+    }
+
+    public function updatedAnalyticsStartDate()
+    {
+        $this->dispatchData();
+    }
+
+    public function updatedAnalyticsEndDate()
+    {
+        $this->dispatchData();
+    }
+
+    public function dispatchData()
+    {
+        $this->dispatch('revenue-data-updated', [
+            'revenueData' => $this->dailyRevenue
+        ]);
+    }
+
     public function mount()
     {
         $this->updateSyncState();
         $this->syncData(); // Sync on first load
+
+        // Default Analytics to last 14 days
+        $this->analyticsStartDate = now()->subDays(13)->format('Y-m-d');
+        $this->analyticsEndDate = now()->format('Y-m-d');
     }
 
     public function updateSyncState()
@@ -91,6 +126,7 @@ class PaymentInsights extends Component
                 'icon' => 'success',
                 'timer' => 3000
             ]);
+            $this->dispatchData(); // Update chart after sync
         } else {
             $this->dispatch('swal', [
                 'title' => 'Sync Gagal',
@@ -106,15 +142,26 @@ class PaymentInsights extends Component
     #[Computed]
     public function dailyRevenue()
     {
-        return PaymentSync::select(
+        // Use separate analytics filters
+        $start = $this->analyticsStartDate ? Carbon::parse($this->analyticsStartDate)->startOfDay() : now()->subDays(13)->startOfDay();
+        $end = $this->analyticsEndDate ? Carbon::parse($this->analyticsEndDate)->endOfDay() : now()->endOfDay();
+
+        return PaymentSync::query()
+            ->select(
                 DB::raw('DATE(paid_at) as date'),
                 DB::raw('SUM(amount_paid) as total')
             )
             ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$start, $end])
             ->groupBy('date')
-            ->orderBy('date', 'desc')
-            ->limit(14)
+            ->orderBy('date', 'asc')
             ->get();
+    }
+
+    #[Computed]
+    public function maxDailyRevenue()
+    {
+        return $this->dailyRevenue->max('total') ?: 1;
     }
 
 

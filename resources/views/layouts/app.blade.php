@@ -274,11 +274,8 @@ new class extends Component
                     @php
                         $gudangSubItems = [
                             ['route' => 'warehouse-command-center', 'label' => 'Pusat Komando'],
-                            ['route' => 'warehouse-dashboard', 'label' => 'Inventori & Analitik'],
-                            ['route' => 'warehouse-requests', 'label' => 'Permintaan Material'],
-                            ['route' => 'warehouse-transactions', 'label' => 'Riwayat Transaksi'],
                         ];
-                        $isGudangActive = request()->routeIs(['warehouse-command-center', 'warehouse-dashboard', 'warehouse-requests', 'warehouse-transactions']);
+                        $isGudangActive = request()->routeIs(['warehouse-command-center']);
                     @endphp
                     <div x-data="{ gudangOpen: {{ $isGudangActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="gudangOpen = !gudangOpen"
@@ -305,6 +302,50 @@ new class extends Component
                                     class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 group
                                     {{ request()->routeIs($item['route']) ? 'text-white bg-[#22AF85]/20 shadow-lg shadow-[#22AF85]/10' : 'text-slate-500 hover:text-white hover:bg-white/5' }}">
                                     <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 {{ request()->routeIs($item['route']) ? 'bg-[#22AF85] scale-125' : 'bg-slate-700 group-hover:bg-slate-400' }}"></div>
+                                    <span class="truncate">{{ $item['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endcan
+
+                    {{-- Supply Chain (Collapsible Container) --}}
+                    @can('access-supply-chain')
+                    @php
+                        $supplyChainItems = [
+                            ['route' => 'warehouse-dashboard', 'label' => 'Inventori & Analitik'],
+                            ['route' => 'warehouse-requests', 'label' => 'Permintaan Material'],
+                            ['route' => 'warehouse-transactions', 'label' => 'Riwayat Transaksi'],
+                            ['route' => 'warehouse-intelligence', 'label' => 'Audit & Prediksi'],
+                        ];
+                        $isSupplyChainActive = request()->routeIs(['warehouse-dashboard', 'warehouse-requests', 'warehouse-transactions', 'warehouse-intelligence']);
+                    @endphp
+                    <div x-data="{ scOpen: {{ $isSupplyChainActive ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="scOpen = !scOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200
+                            {{ $isSupplyChainActive ? 'bg-gradient-to-r from-indigo-500/10 to-blue-500/10 text-indigo-400 border border-indigo-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Supply Chain</span>
+                            </div>
+                            <svg x-show="open" class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': scOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div x-show="scOpen && open" 
+                            x-transition:enter="transition ease-out duration-300" 
+                            class="pl-4 pr-2 py-2 space-y-1">
+                            @foreach ($supplyChainItems as $item)
+                                <a href="{{ route($item['route']) }}" 
+                                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 group
+                                    {{ request()->routeIs($item['route']) ? 'text-white bg-indigo-500/20 shadow-lg shadow-indigo-500/10' : 'text-slate-500 hover:text-white hover:bg-white/5' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 {{ request()->routeIs($item['route']) ? 'bg-indigo-400 scale-125' : 'bg-slate-700 group-hover:bg-slate-400' }}"></div>
                                     <span class="truncate">{{ $item['label'] }}</span>
                                 </a>
                             @endforeach

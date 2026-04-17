@@ -61,6 +61,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('gudang/inventory', \App\Livewire\WarehouseDashboard::class)->name('warehouse-dashboard');
         Route::get('gudang/requests', \App\Livewire\WarehouseRequests::class)->name('warehouse-requests');
         Route::get('gudang/transactions', \App\Livewire\WarehouseTransactions::class)->name('warehouse-transactions');
+        Route::get('gudang/intelligence', \App\Livewire\WarehouseIntelligence::class)->name('warehouse-intelligence');
     });
 });
 

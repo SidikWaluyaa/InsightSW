@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\WarehouseInventory;
 use App\Models\WarehouseRequest;
 use App\Models\WarehouseTransaction;
+use App\Models\WarehouseSortir;
+use App\Models\WarehouseForecast;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -174,6 +176,101 @@ class WarehouseSyncService
             return ['success' => false, 'message' => 'API Error: ' . $response->status()];
         } catch (\Exception $e) {
             Log::error("Transaction Sync Error: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function syncSortir()
+    {
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                            ->timeout(60)
+                            ->get("{$this->baseUrl}/warehouse-sortir-sync");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $items = isset($data['data']) ? $data['data'] : $data;
+
+                if (!is_array($items) || empty($items)) {
+                    return ['success' => true, 'message' => 'No sortir data to sync.'];
+                }
+
+                $upsertData = [];
+                foreach ($items as $item) {
+                    $upsertData[] = [
+                        'spk_number' => $item['spk_number'],
+                        'days_in_sortir' => $item['days_in_sortir'] ?? 0,
+                        'is_sla_violated' => $item['is_sla_violated'] ?? false,
+                        'entry_date' => !empty($item['entry_date']) ? date('Y-m-d H:i:s', strtotime($item['entry_date'])) : null,
+                        'sortir_category' => $item['sortir_category'] ?? null,
+                        'technician_name' => $item['technician_name'] ?? null,
+                        'source_last_updated' => !empty($item['updated_at']) ? date('Y-m-d H:i:s', strtotime($item['updated_at'])) : null,
+                    ];
+                }
+
+                foreach (array_chunk($upsertData, 500) as $chunk) {
+                    WarehouseSortir::upsert($chunk, ['spk_number'], [
+                        'days_in_sortir', 'is_sla_violated', 'entry_date', 'sortir_category', 'technician_name', 'source_last_updated'
+                    ]);
+                }
+
+                return [
+                    'success' => true, 
+                    'message' => 'Sortir data synced (' . count($upsertData) . ' items)',
+                    'count' => count($upsertData)
+                ];
+            }
+
+            return ['success' => false, 'message' => 'API Error: ' . $response->status()];
+        } catch (\Exception $e) {
+            Log::error("Sortir Sync Error: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function syncForecast()
+    {
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                            ->timeout(60)
+                            ->get("{$this->baseUrl}/warehouse-forecast-sync");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $items = isset($data['data']) ? $data['data'] : $data;
+
+                if (!is_array($items) || empty($items)) {
+                    return ['success' => true, 'message' => 'No forecast data to sync.'];
+                }
+
+                $upsertData = [];
+                foreach ($items as $item) {
+                    $upsertData[] = [
+                        'item_id' => $item['item_id'],
+                        'item_name' => $item['item_name'] ?? 'Unknown Item',
+                        'total_needed' => $item['total_needed'] ?? 0,
+                        'current_stock' => $item['current_stock'] ?? 0,
+                        'forecast_remaining' => $item['forecast_remaining'] ?? 0,
+                        'source_last_updated' => !empty($item['updated_at']) ? date('Y-m-d H:i:s', strtotime($item['updated_at'])) : null,
+                    ];
+                }
+
+                foreach (array_chunk($upsertData, 500) as $chunk) {
+                    WarehouseForecast::upsert($chunk, ['item_id'], [
+                        'item_name', 'total_needed', 'current_stock', 'forecast_remaining', 'source_last_updated'
+                    ]);
+                }
+
+                return [
+                    'success' => true, 
+                    'message' => 'Forecast data synced (' . count($upsertData) . ' items)',
+                    'count' => count($upsertData)
+                ];
+            }
+
+            return ['success' => false, 'message' => 'API Error: ' . $response->status()];
+        } catch (\Exception $e) {
+            Log::error("Forecast Sync Error: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }

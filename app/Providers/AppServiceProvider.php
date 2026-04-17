@@ -57,6 +57,10 @@ class AppServiceProvider extends ServiceProvider
             return in_array($user->role, ['Admin', 'Editor', 'Gudang', 'Viewer']);
         });
 
+        Gate::define('access-supply-chain', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'Gudang', 'Viewer']);
+        });
+
         Gate::define('sync-sleekflow', function (\App\Models\User $user) {
             return in_array($user->role, ['Admin', 'Editor', 'CS']);
         });

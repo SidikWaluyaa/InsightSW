@@ -177,6 +177,14 @@
                     <p class="text-[10px] text-slate-400 mt-1">Daftar lengkap {{ $this->totalItems }} material beserta status dan valuasinya.</p>
                 </div>
                 <div class="flex items-center gap-3">
+                    {{-- Status Filter --}}
+                    <select wire:model.live="statusFilter" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-[#22AF85] outline-none">
+                        <option value="all">Semua Status</option>
+                        <option value="In Stock">Aman</option>
+                        <option value="Low Stock">Mendekati Habis</option>
+                        <option value="Out of Stock">Habis</option>
+                    </select>
+
                     {{-- Sub-Category Filter --}}
                     <select wire:model.live="subCategoryFilter" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-[#22AF85] outline-none">
                         <option value="all">Semua Jenis</option>
@@ -184,6 +192,7 @@
                             <option value="{{ $sc }}">{{ $sc }}</option>
                         @endforeach
                     </select>
+
                     {{-- Search --}}
                     <div class="relative min-w-[250px]">
                         <input wire:model.live.debounce.300ms="search" type="text" 
@@ -241,6 +250,10 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="px-8 py-6 border-t border-gray-100 dark:border-gray-800">
+                {{ $this->allInventory->links() }}
             </div>
         </div>
     </div>

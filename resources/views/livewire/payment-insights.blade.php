@@ -38,18 +38,69 @@
     </x-slot>
 
     <div class="space-y-8" wire:poll.30s>
-        {{-- Charts Row --}}
-        <div class="grid grid-cols-1 gap-8">
+        {{-- Analytics Row --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {{-- Daily Revenue Chart --}}
-            <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
-                <div class="flex items-center justify-between mb-8">
-                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">Daily Cash Revenue (Last 14 Days)</h3>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 bg-indigo-500 rounded-full"></span>
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Amount Paid</span>
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Daily Cash Revenue</h3>
+                        <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">
+                            Periode: {{ \Carbon\Carbon::parse($this->analyticsStartDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($this->analyticsEndDate)->format('d/m/Y') }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 bg-slate-50 dark:bg-gray-800/50 p-2 rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <input type="date" wire:model.live="analyticsStartDate" class="bg-transparent border-none focus:ring-0 text-[11px] font-black text-indigo-600 dark:text-indigo-400 w-[120px] cursor-pointer">
+                            <span class="text-slate-400 text-xs">—</span>
+                            <input type="date" wire:model.live="analyticsEndDate" class="bg-transparent border-none focus:ring-0 text-[11px] font-black text-indigo-600 dark:text-indigo-400 w-[120px] cursor-pointer">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 hidden xl:flex">
+                            <span class="w-3 h-3 bg-indigo-500 rounded-full"></span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Paid</span>
+                        </div>
                     </div>
                 </div>
-                <div id="revenueChart" style="min-height: 350px;"></div>
+                <div id="revenueChart" wire:ignore style="min-height: 350px;" class="flex items-center justify-center">
+                    <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+
+            {{-- Tableau-style Widget --}}
+            <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
+                <div class="mb-6">
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Performa Harian</h3>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Analisis Valuasi Transaksi harian — Tableau Style</p>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar" style="max-height: 350px;">
+                    @foreach($this->dailyRevenue->reverse() as $day)
+                        @php 
+                            $percentage = ($day->total / $this->maxDailyRevenue) * 100;
+                            $isHighest = $day->total == $this->maxDailyRevenue;
+                        @endphp
+                        <div class="group cursor-default">
+                            <div class="flex justify-between items-end mb-1.5">
+                                <span class="text-[11px] font-black text-slate-500 dark:text-gray-400 uppercase">{{ \Carbon\Carbon::parse($day->date)->translatedFormat('d M Y') }}</span>
+                                <span class="text-xs font-bold {{ $isHighest ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-white' }}">
+                                    {{ $this->formatCurrency($day->total) }}
+                                </span>
+                            </div>
+                            <div class="h-2 w-full bg-slate-100 dark:bg-gray-800 rounded-full overflow-hidden relative">
+                                <div class="absolute inset-y-0 left-0 bg-gradient-to-r {{ $isHighest ? 'from-indigo-600 to-blue-500' : 'from-slate-400 to-slate-500 dark:from-gray-600 dark:to-gray-500' }} rounded-full transition-all duration-1000 group-hover:opacity-80" 
+                                     style="width: {{ $percentage }}%">
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <span>Max Daily</span>
+                        <span class="text-indigo-600 dark:text-indigo-400">{{ $this->formatCurrency($this->maxDailyRevenue) }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -192,14 +243,11 @@
         document.addEventListener('livewire:initialized', () => {
             let revenueChart;
 
-            const updateCharts = () => {
-                const revenueData = @json($this->dailyRevenue);
-
-                // Revenue Chart
-                const revenueOptions = {
+            const initChart = (initialData) => {
+                const options = {
                     series: [{
                         name: 'Amount Paid',
-                        data: revenueData.map(d => d.total).reverse()
+                        data: initialData.map(d => d.total)
                     }],
                     chart: {
                         type: 'area',
@@ -207,7 +255,8 @@
                         toolbar: { show: false },
                         zoom: { enabled: false },
                         background: 'transparent',
-                        foreColor: '#94a3b8'
+                        foreColor: '#94a3b8',
+                        animations: { enabled: true, easing: 'easeinout', speed: 800 }
                     },
                     colors: ['#6366f1'],
                     fill: {
@@ -217,10 +266,7 @@
                     dataLabels: { enabled: false },
                     stroke: { curve: 'smooth', width: 3 },
                     xaxis: {
-                        categories: revenueData.map(d => {
-                            const date = new Date(d.date);
-                            return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-                        }).reverse(),
+                        labels: { show: false },
                         axisBorder: { show: false },
                         axisTicks: { show: false }
                     },
@@ -228,29 +274,56 @@
                         labels: {
                             formatter: function (val) {
                                 if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1) + 'jt';
-                                return 'Rp ' + (val / 1000).toFixed(0) + 'k';
+                                if (val >= 1000) return 'Rp ' + (val / 1000).toFixed(0) + 'k';
+                                return 'Rp ' + val;
                             }
                         }
                     },
                     grid: { borderColor: 'rgba(148, 163, 184, 0.1)', strokeDashArray: 4 },
-                    theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' }
+                    tooltip: { theme: 'dark' }
                 };
 
-                if (revenueChart) revenueChart.destroy();
-
-                const revenueEl = document.querySelector("#revenueChart");
-                
-                if (revenueEl) {
-                    revenueChart = new ApexCharts(revenueEl, revenueOptions);
-                    revenueChart.render();
-                }
+                revenueChart = new ApexCharts(document.querySelector("#revenueChart"), options);
+                revenueChart.render();
             };
 
-            updateCharts();
+            const updateChartData = (newData) => {
+                if (!revenueChart) {
+                    initChart(newData);
+                    return;
+                }
+
+                if (!newData || newData.length === 0) {
+                    revenueChart.updateSeries([{ name: 'Amount Paid', data: [] }]);
+                    return;
+                }
+
+                revenueChart.updateOptions({
+                    xaxis: {
+                        labels: { show: false }
+                    }
+                });
+
+                revenueChart.updateSeries([{
+                    name: 'Amount Paid',
+                    data: newData.map(d => d.total)
+                }]);
+            };
+
+            // Initial load
+            initChart(@json($this->dailyRevenue));
             
-            // Re-render on livewire updates
-            Livewire.on('post-sync', () => {
-                setTimeout(updateCharts, 50);
+            // Listen for custom event from Livewire
+            Livewire.on('revenue-data-updated', (event) => {
+                const data = Array.isArray(event) ? (event[0].revenueData || []) : (event.revenueData || []);
+                updateChartData(data);
+            });
+
+            // Extra protection: re-init if element is somehow lost (rare with wire:ignore)
+            Livewire.hook('morph.updated', ({ component }) => {
+                if (component.name === 'payment-insights' && !document.querySelector("#revenueChart svg")) {
+                    updateChartData(@json($this->dailyRevenue));
+                }
             });
         });
     </script>
