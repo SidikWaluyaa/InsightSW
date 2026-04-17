@@ -63,6 +63,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('gudang/transactions', \App\Livewire\WarehouseTransactions::class)->name('warehouse-transactions');
         Route::get('gudang/intelligence', \App\Livewire\WarehouseIntelligence::class)->name('warehouse-intelligence');
     });
+
+    // Workshop Group (Admin, Editor, Viewer)
+    Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
+        Route::get('workshop/intelligence-v2', \App\Livewire\WorkshopDashboard::class)->name('workshop-intelligence-v2');
+    });
 });
 
 Route::view('profile', 'profile')

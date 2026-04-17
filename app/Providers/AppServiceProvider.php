@@ -64,5 +64,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('sync-sleekflow', function (\App\Models\User $user) {
             return in_array($user->role, ['Admin', 'Editor', 'CS']);
         });
+
+        Gate::define('access-workshop', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'Viewer']);
+        });
     }
 }
