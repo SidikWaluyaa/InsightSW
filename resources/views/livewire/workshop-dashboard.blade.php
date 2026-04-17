@@ -492,6 +492,7 @@
                                 axisTicks: { show: false }
                             },
                             xaxis: { 
+                                categories: metrics.service_mix?.map(m => m.name) || [],
                                 labels: { style: { colors: '#94a3b8', fontSize: '10px', fontWeight: 700 } } 
                             },
                             yaxis: { 
