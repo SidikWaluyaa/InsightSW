@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('workshop_metrics', function (Blueprint $table) {
-            $table->json('pipeline')->nullable();
-            $table->json('trends')->nullable();
-            $table->json('workload')->nullable();
-            $table->json('service_mix')->nullable();
-            $table->json('leaderboard')->nullable();
-            $table->json('urgent_orders')->nullable();
-            $table->json('stock_alerts')->nullable();
-            $table->json('recent_activity')->nullable();
+            $table->longText('pipeline')->nullable();
+            $table->longText('trends')->nullable();
+            $table->longText('workload')->nullable();
+            $table->longText('service_mix')->nullable();
+            $table->longText('leaderboard')->nullable();
+            $table->longText('urgent_orders')->nullable();
+            $table->longText('stock_alerts')->nullable();
+            $table->longText('recent_activity')->nullable();
         });
     }
 
