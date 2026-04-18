@@ -17,6 +17,7 @@ class Dashboard extends Component
     public string $selectedMonth = '';
     public bool $isSyncing = false;
     public ?string $lastSyncTime = null;
+    public int $lastGlobalSyncTrigger = 0;
 
     public function mount(): void
     {
@@ -63,6 +64,9 @@ class Dashboard extends Component
         }, 60);
 
         if ($synced) {
+            // Trigger cross-tab reload for other dashboards
+            \Illuminate\Support\Facades\Cache::put('global_sync_trigger', now()->timestamp, now()->addMinutes(10));
+
             $this->dispatch('swal', [
                 'title' => 'Sinkronisasi Berhasil',
                 'text' => 'Seluruh performa iklan, omset, dan chat telah diperbarui.',
@@ -75,6 +79,17 @@ class Dashboard extends Component
 
         $this->updateSyncTime();
         $this->isSyncing = false;
+    }
+
+    public function checkSync()
+    {
+        // Detect if a global sync happened in another tab
+        $globalSyncTrigger = (int) \Illuminate\Support\Facades\Cache::get('global_sync_trigger', 0);
+        if ($globalSyncTrigger > $this->lastGlobalSyncTrigger) {
+            $this->lastGlobalSyncTrigger = $globalSyncTrigger;
+            $this->updateSyncTime();
+            // Native re-render will pick up new computed properties
+        }
     }
 
     /**

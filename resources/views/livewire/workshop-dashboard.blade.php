@@ -1,4 +1,4 @@
-<div class="max-w-[1600px] mx-auto space-y-10 pb-20 bg-[#F8FAFC] dark:bg-[#0B0E14] min-h-screen" wire:poll.30s>
+<div class="max-w-[1600px] mx-auto space-y-10 pb-20 bg-[#F8FAFC] dark:bg-[#0B0E14] min-h-screen" wire:poll.30s="checkSync">
     
     {{-- 1. HERO HEADER (Premium Banner) --}}
     <div class="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-[#10B981] via-[#059669] to-[#F59E0B] p-10 lg:p-16 shadow-2xl shadow-emerald-500/20 mt-4">

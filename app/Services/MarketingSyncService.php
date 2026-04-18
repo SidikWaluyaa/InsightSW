@@ -24,36 +24,55 @@ class MarketingSyncService
         $monthDate = Carbon::parse($monthYear . '-01');
         $start = $monthDate->copy()->startOfMonth();
         $endObj = $monthDate->copy()->isCurrentMonth() ? Carbon::now() : $monthDate->copy()->endOfMonth();
-        $endDateStr = $endObj->toDateString();
-        $startDateStr = $start->toDateString();
+        
+        return $this->syncRange($start->toDateString(), $endObj->toDateString());
+    }
 
+    /**
+     * Sync marketing data for a custom date range.
+     */
+    public function syncRange(string $startDateStr, string $endDateStr): array
+    {
         $results = ['days_processed' => 0, 'errors' => []];
+        $start = Carbon::parse($startDateStr);
+        $endObj = Carbon::parse($endDateStr);
 
         // 1. BULK FETCH: Meta Ads
         $metaDailyTotals = [];
         try {
             $adAccountId = env('META_AD_ACCOUNT_ID', 'act_1922369221497688');
             $metaDailyTotals = $this->metaService->fetchDailyAccountInsights($adAccountId, ['since' => $startDateStr, 'until' => $endDateStr]);
-            Log::info("Meta Bulk Sync Complete for {$monthYear}");
+            Log::info("Meta Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
         } catch (\Exception $e) {
             Log::error("Meta Bulk Sync Error: " . $e->getMessage());
+            $results['errors'][] = "Meta API: " . $e->getMessage();
         }
 
         // 2. BULK SYNC & FETCH: Sleekflow
-        $this->sleekflowService->syncContacts($startDateStr, $endDateStr);
-        $sleekflowDailyStats = $this->sleekflowService->getDailyStatsInRange($startDateStr, $endDateStr);
-        Log::info("Sleekflow Bulk Sync Complete for {$monthYear}");
+        try {
+            $this->sleekflowService->syncContacts($startDateStr, $endDateStr);
+            $sleekflowDailyStats = $this->sleekflowService->getDailyStatsInRange($startDateStr, $endDateStr);
+            Log::info("Sleekflow Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
+        } catch (\Exception $e) {
+            Log::error("Sleekflow Bulk Sync Error: " . $e->getMessage());
+            $results['errors'][] = "Sleekflow: " . $e->getMessage();
+        }
 
         // 3. BULK FETCH: Finance/Revenue
-        app(FinanceSyncService::class)->sync($startDateStr, $endDateStr);
-        $financeDailyTotals = FinanceSync::query()
-            ->whereBetween('source_created_at', [$startDateStr . ' 00:00:00', $endDateStr . ' 23:59:59'])
-            ->selectRaw("DATE(source_created_at) as date, SUM(amount_paid) as revenue")
-            ->groupBy('date')
-            ->get()
-            ->keyBy(fn($item) => is_string($item->date) ? $item->date : Carbon::parse($item->date)->toDateString())
-            ->toArray();
-        Log::info("Finance Bulk Sync Complete for {$monthYear}");
+        try {
+            app(FinanceSyncService::class)->sync($startDateStr, $endDateStr);
+            $financeDailyTotals = FinanceSync::query()
+                ->whereBetween('source_created_at', [$startDateStr . ' 00:00:00', $endDateStr . ' 23:59:59'])
+                ->selectRaw("DATE(source_created_at) as date, SUM(amount_paid) as revenue")
+                ->groupBy('date')
+                ->get()
+                ->keyBy(fn($item) => is_string($item->date) ? $item->date : Carbon::parse($item->date)->toDateString())
+                ->toArray();
+            Log::info("Finance Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
+        } catch (\Exception $e) {
+            Log::error("Finance Bulk Sync Error: " . $e->getMessage());
+            $results['errors'][] = "Finance: " . $e->getMessage();
+        }
 
         // 4. PRE-FETCH Existing Reports (to preserve budgeting)
         $existingReports = DailyReport::whereBetween('date', [$startDateStr, $endDateStr])

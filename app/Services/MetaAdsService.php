@@ -37,6 +37,7 @@ class MetaAdsService
 
         $fields = [
             'campaign_name', 'campaign_id', 'adset_name', 'adset_id', 'ad_name', 'ad_id',
+            'objective', 'optimization_goal',
             'date_start', 'impressions', 'reach', 'clicks', 'inline_link_clicks', 'spend', 'ctr', 'cpc', 'cpm', 'frequency',
             'actions', 'unique_actions'
         ];
@@ -85,6 +86,12 @@ class MetaAdsService
             }
 
             $url = $result['paging']['next'] ?? null;
+            if ($url) {
+                // Ensure headers are included in subsequent pages if not part of the URL
+                $response = Http::withHeaders([
+                    'Authorization' => "Bearer {$this->accessToken}",
+                ])->timeout(120)->get($url);
+            }
             $params = []; // Params are included in the 'next' URL
             $pageCount++;
             if ($pageCount >= 1000) break;
@@ -101,32 +108,59 @@ class MetaAdsService
     }
 
     /**
-     * Aggregates Messaging Started results (Corresponds to the 197 value in Ads Manager)
+     * Aggregates Results based on common action types.
+     * Maps to the "Results" column in Ads Manager as closely as possible.
      */
-    protected function findResultsValue(array $actions): int
+    protected function findResultsValue(array $actions, array $uniqueActions = []): int
     {
-        // 1. PRECISION STRIKE: The exact '197' key found in deep-inspection
-        foreach ($actions as $action) {
-            $type = $action['action_type'];
-            if ($type === 'onsite_conversion.messaging_conversation_started_7d') {
-                return (int) $action['value'];
+        if (empty($actions) && empty($uniqueActions)) return 0;
+
+        // 1. MESSAGING RESULTS (Highest Priority)
+        // We look for specific messaging event names.
+        $messagingValues = [];
+
+        // Check unique_actions first as Ads Manager "Messaging Conversations Started" is a unique metric
+        foreach ($uniqueActions as $action) {
+            $type = strtolower($action['action_type'] ?? '');
+            if ($type === 'onsite_conversion.messaging_conversation_started' || 
+                $type === 'messaging_conversation_started') {
+                $messagingValues[] = (int) ($action['value'] ?? 0);
             }
         }
 
-        // 2. PRIMARY FALLBACK: onsite_conversion.messaging_conversation_started
-        foreach ($actions as $action) {
-            if ($action['action_type'] === 'onsite_conversion.messaging_conversation_started') {
-                return (int) $action['value'];
+        // If not found in unique, check standard actions
+        if (empty($messagingValues)) {
+            foreach ($actions as $action) {
+                $type = strtolower($action['action_type'] ?? '');
+                if (str_contains($type, 'messaging_conversation_started') || 
+                    str_contains($type, 'messenger_conversation_started')) {
+                    $messagingValues[] = (int) ($action['value'] ?? 0);
+                }
             }
         }
 
-        // 2. FALLBACK: Other messaging/conversation variants
+        // We take the MAX value from messaging variants to avoid double-counting 
+        // the same conversion reported under different labels (standard vs onsite_conversion).
+        $messagingResults = !empty($messagingValues) ? max($messagingValues) : 0;
+
+        if ($messagingResults > 0) return $messagingResults;
+
+        // 2. LEAD RESULTS (Secondary Priority)
+        $leadValues = [];
+        foreach (array_merge($actions, $uniqueActions) as $action) {
+            $type = strtolower($action['action_type'] ?? '');
+            if ($type === 'lead' || $type === 'onsite_conversion.lead_grouped' || str_contains($type, 'submit_application')) {
+                $leadValues[] = (int) ($action['value'] ?? 0);
+            }
+        }
+
+        if (!empty($leadValues)) return max($leadValues);
+
+        // 3. CONTACT/CONVERSION FALLBACK
         foreach ($actions as $action) {
-            $type = strtolower($action['action_type']);
-            if (str_contains($type, 'messaging_conversation_started') || 
-                str_contains($type, 'messenger_conversation_started') ||
-                str_contains($type, 'total_messaging_connection')) {
-                return (int) $action['value'];
+            $type = strtolower($action['action_type'] ?? '');
+            if ($type === 'contact' || $type === 'purchase' || $type === 'onsite_conversion.contact') {
+                return (int) ($action['value'] ?? 0);
             }
         }
 
@@ -162,7 +196,7 @@ class MetaAdsService
         $reach = (int) ($item['reach'] ?? 0);
         $clicks = (int) ($item['clicks'] ?? 0);
         $linkClick = (int) ($item['inline_link_clicks'] ?? 0);
-        $results = $this->findResultsValue($actions);
+        $results = $this->findResultsValue($actions, $uniqueActions);
 
         // Budget Mapping
         $adsetId = $item['adset_id'] ?? null;

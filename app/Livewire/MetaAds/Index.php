@@ -60,6 +60,7 @@ class Index extends Component
 
     public $lastSyncTimestamp;
     public $isSyncing = false;
+    public $lastGlobalSyncTrigger = 0;
 
     public function mount()
     {
@@ -76,7 +77,15 @@ class Index extends Component
 
     public function checkSync()
     {
-        // Auto sync only for today
+        // 1. Detect if a global sync happened in another tab (Workshop Dashboard, etc.)
+        $globalSyncTrigger = (int) \Illuminate\Support\Facades\Cache::get('global_sync_trigger', 0);
+        if ($globalSyncTrigger > $this->lastGlobalSyncTrigger) {
+            $this->loadSummary();
+            $this->lastGlobalSyncTrigger = $globalSyncTrigger;
+            $this->updateSyncState();
+        }
+
+        // 2. Auto sync only for today in the background
         if ($this->startDate !== now()->format('Y-m-d')) {
             return;
         }
@@ -147,9 +156,16 @@ class Index extends Component
         $this->isSyncing = true;
         
         try {
-            // Sync for the selected start date or default to today
-            $syncDate = $this->startDate ?: 'today';
-            $result = $service->fetchAndSync($adAccountId, $syncDate);
+            // Determine sync parameter context
+            if ($this->startDate && $this->endDate && $this->startDate !== $this->endDate) {
+                $syncParam = ['since' => $this->startDate, 'until' => $this->endDate];
+                $syncLabel = $this->startDate . ' s/d ' . $this->endDate;
+            } else {
+                $syncParam = $this->startDate ?: 'today';
+                $syncLabel = $this->startDate ?: 'hari ini';
+            }
+
+            $result = $service->fetchAndSync($adAccountId, $syncParam);
 
             if ($result) {
                 // Update timestamp manually since we forced it
@@ -160,7 +176,7 @@ class Index extends Component
                 $this->dispatch('swal', [
                     'icon' => 'success',
                     'title' => 'Sync Success',
-                    'text' => 'Data Meta Ads untuk tanggal ' . $syncDate . ' telah diperbarui.',
+                    'text' => 'Data Meta Ads untuk periode ' . $syncLabel . ' telah diperbarui.',
                 ]);
             } else {
                 throw new \Exception("Sync process failed at service level.");

@@ -18,6 +18,7 @@ class WorkshopDashboard extends Component
     public $endDate;
     public $activeFilter = 'bulan_ini';
     public $isSyncing = false;
+    public $lastGlobalSyncTrigger = 0;
 
     public function mount()
     {
@@ -89,6 +90,16 @@ class WorkshopDashboard extends Component
         $this->sync();
     }
 
+    public function checkSync()
+    {
+        // Detect if a global sync happened in another tab (Meta Ads, etc.)
+        $globalSyncTrigger = (int) \Illuminate\Support\Facades\Cache::get('global_sync_trigger', 0);
+        if ($globalSyncTrigger > $this->lastGlobalSyncTrigger) {
+            $this->lastGlobalSyncTrigger = $globalSyncTrigger;
+            // Native re-render will pick up new computed properties
+        }
+    }
+
     public function sync($silent = false)
     {
         $this->isSyncing = true;
@@ -97,9 +108,22 @@ class WorkshopDashboard extends Component
             $service = app(WorkshopSyncService::class);
             $result = $service->sync($this->startDate, $this->endDate);
 
+            // Also sync Marketing data (Meta Ads, etc.) for the same period
+            try {
+                app(\App\Services\MarketingSyncService::class)->syncRange($this->startDate, $this->endDate);
+            } catch (\Exception $e) {
+                Log::warning("Marketing sync failed during Workshop Dashboard sync: " . $e->getMessage());
+                // Don't fail the whole process if marketing sync fails
+            }
+
             if ($result['success']) {
                 $freshMetrics = WorkshopMetric::latest('last_sync_at')->first();
+                
+                // Trigger immediate reload for this component
                 $this->dispatch('revenue-data-updated', metrics: $freshMetrics);
+                
+                // Trigger cross-tab reload for other dashboards (Meta Ads, etc.)
+                \Illuminate\Support\Facades\Cache::put('global_sync_trigger', now()->timestamp, now()->addMinutes(10));
                 
                 if (!$silent) {
                     $this->dispatch('swal', [
