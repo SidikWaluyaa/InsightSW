@@ -34,6 +34,44 @@
                 </button>
             </div>
         </div>
+        {{-- Sequential Sync Overlay --}}
+        <div x-data="{ 
+                show: @entangle('isSyncing'),
+                progress: 0,
+                message: @entangle('syncMessage')
+             }"
+             x-show="show"
+             x-on:sync-started.window="progress = 0"
+             x-on:chunk-completed.window="progress = $event.detail.progress; $wire.syncNextChunk()"
+             x-on:sync-finished.window="show = false"
+             class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+             x-cloak>
+            <div class="bg-white dark:bg-gray-900 w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 relative overflow-hidden">
+                <div class="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-500" :style="{ width: progress + '%' }"></div>
+                
+                <div class="flex flex-col items-center gap-6 text-center">
+                    <div class="relative">
+                        <div class="w-20 h-20 border-4 border-emerald-100 dark:border-emerald-500/10 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-sm font-black text-emerald-600 dark:text-emerald-400" x-text="progress + '%'"></span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h4 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Menyinkronkan Data</h4>
+                        <p class="text-sm text-slate-500 dark:text-gray-400 font-medium leading-relaxed" x-text="message"></p>
+                    </div>
+
+                    <div class="w-full bg-gray-100 dark:bg-gray-800 h-3 rounded-full overflow-hidden p-0.5">
+                        <div class="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" :style="{ width: progress + '%' }"></div>
+                    </div>
+
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Mohon jangan tutup halaman ini</p>
+                </div>
+            </div>
+        </div>
+
         {{-- Loading Overlay --}}
         <div wire:loading wire:target="selectedMonth" class="absolute inset-0 z-[60] bg-gray-50/50 dark:bg-gray-950/50 backdrop-blur-[2px] rounded-3xl flex items-center justify-center transition-all">
             <div class="flex flex-col items-center gap-3 p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">

@@ -19,6 +19,11 @@ class Dashboard extends Component
     public ?string $lastSyncTime = null;
     public int $lastGlobalSyncTrigger = 0;
 
+    // Sequential Sync State
+    public array $syncSteps = [];
+    public int $currentStepIndex = 0;
+    public string $syncMessage = '';
+
     public function mount(): void
     {
         if (empty($this->selectedMonth)) {
@@ -30,11 +35,9 @@ class Dashboard extends Component
     public function syncAll(): void
     {
         $syncService = app(\App\Services\SyncService::class);
-        $marketingSyncService = app(\App\Services\MarketingSyncService::class);
-        
-        $secondsLeft = $syncService->getSecondsToNextSync('marketing_sync', 60);
+        $secondsLeft = $syncService->getSecondsToNextSync('marketing_sync', 30); // Reduced throttle for chunks
 
-        if ($secondsLeft > 0) {
+        if ($secondsLeft > 0 && !$this->isSyncing) {
             $this->dispatch('swal', [
                 'title' => 'Tunggu Sebentar',
                 'text' => "Data baru saja disinkronkan. Mohon tunggu {$secondsLeft} detik lagi.",
@@ -46,39 +49,83 @@ class Dashboard extends Component
             return;
         }
 
-        // 1. Notify Start with a persistent modal
-        $this->dispatch('swal', [
-            'title' => 'Menyinkronkan Data',
-            'text' => 'Sedang menarik data terupdate dari Meta, Shoeworkshop, dan Sleekflow. Mohon tunggu...',
-            'icon' => 'info',
-            'allowOutsideClick' => false,
-            'showConfirmButton' => false,
-            'willOpen' => true, // Flag for frontend to handle showLoading()
-        ]);
-
         $this->isSyncing = true;
+        $this->currentStepIndex = 0;
+        $this->syncSteps = [];
 
-        // 2. Perform Sync
-        $synced = $syncService->syncIfAllowed('marketing_sync', function() use ($marketingSyncService) {
-            $marketingSyncService->syncMonth($this->selectedMonth);
-        }, 60);
-
-        if ($synced) {
-            // Trigger cross-tab reload for other dashboards
-            \Illuminate\Support\Facades\Cache::put('global_sync_trigger', now()->timestamp, now()->addMinutes(10));
-
-            $this->dispatch('swal', [
-                'title' => 'Sinkronisasi Berhasil',
-                'text' => 'Seluruh performa iklan, omset, dan chat telah diperbarui.',
-                'icon' => 'success',
-                'timer' => 3000,
-                'showConfirmButton' => true,
-                'confirmButtonColor' => '#10b981',
-            ]);
+        // 1. Calculate Chunks (3-day blocks)
+        $monthDate = Carbon::parse($this->selectedMonth . '-01');
+        $start = $monthDate->copy()->startOfMonth();
+        $endOfMonth = $monthDate->copy()->isCurrentMonth() ? Carbon::now() : $monthDate->copy()->endOfMonth();
+        
+        $current = $start->copy();
+        while ($current->lte($endOfMonth)) {
+            $chunkEnd = $current->copy()->addDays(2);
+            if ($chunkEnd->gt($endOfMonth)) $chunkEnd = $endOfMonth->copy();
+            
+            $this->syncSteps[] = [
+                'start' => $current->toDateString(),
+                'end' => $chunkEnd->toDateString(),
+                'label' => $current->format('d M') . ' - ' . $chunkEnd->format('d M')
+            ];
+            
+            $current = $chunkEnd->copy()->addDay();
         }
 
-        $this->updateSyncTime();
+        $this->syncMessage = "Menyiapkan sinkronisasi " . count($this->syncSteps) . " blok data...";
+        
+        // 2. Start the chain
+        $this->dispatch('sync-started', total: count($this->syncSteps));
+        $this->syncNextChunk();
+    }
+
+    public function syncNextChunk(): void
+    {
+        if ($this->currentStepIndex >= count($this->syncSteps)) {
+            $this->finishSync();
+            return;
+        }
+
+        $chunk = $this->syncSteps[$this->currentStepIndex];
+        $this->syncMessage = "Memproses " . ($this->currentStepIndex + 1) . "/" . count($this->syncSteps) . ": " . $chunk['label'];
+
+        $marketingSyncService = app(\App\Services\MarketingSyncService::class);
+        $syncService = app(\App\Services\SyncService::class);
+
+        // We use a shorter lock for chunks
+        $synced = $syncService->syncIfAllowed('marketing_sync', function() use ($marketingSyncService, $chunk) {
+            $marketingSyncService->syncRange($chunk['start'], $chunk['end']);
+        }, 0); // Disable throttle for sequential chunks
+
+        $this->currentStepIndex++;
+        
+        if ($this->currentStepIndex >= count($this->syncSteps)) {
+            $this->finishSync();
+        } else {
+            // Signal browser to trigger next chunk to avoid PHP timeout
+            $this->dispatch('chunk-completed', 
+                nextIndex: $this->currentStepIndex, 
+                progress: round(($this->currentStepIndex / count($this->syncSteps)) * 100)
+            );
+        }
+    }
+
+    protected function finishSync(): void
+    {
         $this->isSyncing = false;
+        $this->syncMessage = "Sinkronisasi Selesai!";
+        $this->updateSyncTime();
+        
+        // Trigger cross-tab reload for other dashboards
+        \Illuminate\Support\Facades\Cache::put('global_sync_trigger', now()->timestamp, now()->addMinutes(10));
+
+        $this->dispatch('sync-finished');
+        $this->dispatch('swal', [
+            'title' => 'Sinkronisasi Berhasil',
+            'text' => 'Seluruh performa iklan, omset, dan chat untuk bulan ini telah diperbarui.',
+            'icon' => 'success',
+            'timer' => 3000,
+        ]);
     }
 
     public function checkSync()
