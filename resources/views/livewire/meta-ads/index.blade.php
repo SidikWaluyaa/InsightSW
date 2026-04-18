@@ -3,6 +3,8 @@
         seconds: 0,
         lastSync: @entangle('lastSyncTimestamp'),
         isSyncing: @entangle('isSyncing'),
+        startDate: @entangle('startDate'),
+        endDate: @entangle('endDate'),
         serverTime: {{ time() }},
         browserTime: Math.floor(Date.now() / 1000),
         get drift() { return this.serverTime - this.browserTime; },
