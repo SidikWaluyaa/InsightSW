@@ -1,4 +1,4 @@
-<div wire:poll.10s="checkSync"
+<div wire:poll.30s="checkSync"
      x-data="{ 
         seconds: 0,
         lastSync: @entangle('lastSyncTimestamp'),
@@ -12,7 +12,7 @@
             setInterval(() => {
                 if (this.lastSync) {
                     let now = Math.floor(Date.now() / 1000) + this.drift;
-                    this.seconds = Math.max(0, 60 - (now - this.lastSync));
+                    this.seconds = Math.max(0, 120 - (now - this.lastSync));
                 }
             }, 1000);
         }

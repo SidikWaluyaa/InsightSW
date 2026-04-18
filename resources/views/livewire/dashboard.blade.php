@@ -7,7 +7,7 @@
         </div>
     </x-slot>
 
-    <div class="space-y-6 relative" wire:poll.30s="checkSync" x-cloak>
+    <div class="space-y-6 relative" wire:poll.60s="checkSync" x-cloak>
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-3 md:p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
             <div class="flex items-center gap-3">
                 <h3 class="font-bold text-[15px] md:text-lg text-slate-800 dark:text-gray-200 tracking-tight">Pilih Periode:</h3>

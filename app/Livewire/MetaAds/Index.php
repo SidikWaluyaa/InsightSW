@@ -94,7 +94,7 @@ class Index extends Component
         app(SyncService::class)->syncIfAllowed('meta_ads_sync', function() {
             $adAccountId = 'act_1922369221497688';
             app(MetaAdsService::class)->fetchAndSync($adAccountId, 'today');
-        }, 60);
+        }, 120);
 
         $this->updateSyncState();
         $this->loadSummary();
