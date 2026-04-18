@@ -40,10 +40,10 @@
                                 <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
                             </div>
                         </template>
-                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                        <template x-if="!isSyncing && seconds > 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
                             <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Auto-update: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
                         </template>
-                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
+                        <template x-if="!isSyncing && seconds <= 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
                             <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
                         </template>
                     </div>
