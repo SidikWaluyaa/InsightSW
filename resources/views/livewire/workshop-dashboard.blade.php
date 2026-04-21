@@ -13,7 +13,7 @@
                     <span class="text-[10px] font-black text-white uppercase tracking-[0.2em]">Live Monitoring • UNIVERSE V2</span>
                 </div>
                 <h1 class="text-5xl lg:text-7xl font-black text-white tracking-tighter leading-none">Workshop<br>Dashboard</h1>
-                <p class="text-lg text-emerald-50/70 font-medium max-w-md leading-relaxed">Matrik Performansi & Analitik Operasional (Real-time)</p>
+                <p class="text-lg text-emerald-50/70 font-medium max-w-md leading-relaxed">Laporan Hasil Kerja & Pantauan Bengkel (Waktu Nyata)</p>
             </div>
 
             <div class="space-y-5">
@@ -84,9 +84,9 @@
                     <span class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                     </span>
-                    SPK Matrix Intelligence
+                    Status Tahapan Kerja
                 </h2>
-                <p class="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest ml-13">Alur Kerja Harian & Deteksi Hambatan</p>
+                <p class="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest ml-13">Progres Pekerjaan & Pantauan Masalah</p>
             </div>
             <div class="px-5 py-2 rounded-full bg-slate-100 dark:bg-gray-800 text-[10px] font-black text-slate-600 dark:text-gray-400 uppercase tracking-widest border border-gray-200 dark:border-gray-700">
                 Total: {{ $this->metrics->in_progress ?? 0 }} SPK
@@ -104,10 +104,10 @@
 
             @php
                 $phases = [
-                    'Persiapan' => ['color' => 'indigo', 'title' => 'PERSIAPAN'],
-                    'Sortir' => ['color' => 'rose', 'title' => 'SORTIR'],
-                    'Produksi' => ['color' => 'emerald', 'title' => 'PRODUKSI'],
-                    'Post' => ['color' => 'amber', 'title' => 'POST'],
+                    'Persiapan' => ['color' => 'indigo', 'title' => 'PENYIAPAN'],
+                    'Sortir' => ['color' => 'rose', 'title' => 'PEMILIHAN'],
+                    'Produksi' => ['color' => 'emerald', 'title' => 'PENGERJAAN'],
+                    'Post' => ['color' => 'amber', 'title' => 'SELESAI'],
                 ];
             @endphp
 
@@ -152,39 +152,179 @@
             </div>
         </div>
 
-        {{-- 3. Area Chart: Arus Masuk vs Selesai --}}
-        <div class="bg-white dark:bg-gray-900 rounded-[3rem] p-10 border border-gray-100 dark:border-gray-800 shadow-sm mb-10">
-            <div class="flex items-center justify-between mb-8">
-                <div>
-                    <h3 class="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wide flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                        </span>
-                        Arus Masuk vs Selesai
-                    </h3>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 ml-11">Tren Arus Masuk vs Penyelesaian</p>
-                </div>
-                <div class="flex items-center gap-6">
+        {{-- 3. Flow Intelligence Hub (Replacing Area Chart) --}}
+        <div class="bg-white dark:bg-gray-900 rounded-[3rem] p-10 lg:p-14 border border-gray-100 dark:border-gray-800 shadow-sm mb-10 overflow-hidden relative group">
+            {{-- Decorative Background Glow --}}
+            <div class="absolute -right-20 -top-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-1000"></div>
+            
+            <div class="relative z-10">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-14">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-500/30">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                            </span>
+                            Kelancaran Arus Kerja
+                        </h3>
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 ml-16">Perbandingan Pekerjaan Masuk vs Hasil Jadi</p>
+                    </div>
+
                     @php
-                        $perfIndex = $this->metrics->trends['summary']['performance_index'] ?? '0%';
+                        $analytics = $this->trendAnalytics;
+                        $perfVal = intval($analytics->performance_index ?? 0);
+                        $statusText = $perfVal >= 80 ? 'LANCAR' : ($perfVal >= 50 ? 'NORMAL' : 'PADAT');
+                        $statusColor = $perfVal >= 80 ? 'emerald' : ($perfVal >= 50 ? 'amber' : 'rose');
                     @endphp
-                    <div class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
-                        <span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Indeks Kinerja</span>
-                        <span class="text-sm font-black text-emerald-600">{{ $perfIndex }}</span>
+
+                    @if($analytics)
+                    <div class="flex items-center gap-4 px-6 py-3 bg-{{ $statusColor }}-500/5 border border-{{ $statusColor }}-500/10 rounded-[2rem]">
+                        <div class="relative w-14 h-14 shrink-0">
+                            <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-slate-100 dark:stroke-gray-800" stroke-width="3"></circle>
+                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-{{ $statusColor }}-500" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="{{ 100 - $perfVal }}" stroke-linecap="round"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-[10px] font-black text-{{ $statusColor }}-600">{{ $perfVal }}%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Skor Kecepatan</p>
+                            <h4 class="text-sm font-black text-{{ $statusColor }}-600 uppercase">{{ $statusText }}</h4>
+                        </div>
                     </div>
-                    <div class="flex gap-4">
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-indigo-500"></div><span class="text-[9px] font-black text-slate-500 uppercase">Masuk</span></div>
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-[9px] font-black text-slate-500 uppercase">Selesai</span></div>
+                    @endif
+                </div>
+
+                @if($analytics)
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
+                    {{-- Total Inbound --}}
+                    <div class="relative p-8 rounded-[2.5rem] bg-slate-50/50 dark:bg-gray-800/20 border border-slate-100 dark:border-gray-800 group/card hover:border-indigo-500/30 transition-all">
+                        <div class="absolute top-6 right-8 w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover/card:scale-110 transition-transform">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                        </div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Masuk</p>
+                        <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{{ $analytics->total_in }} <span class="text-xs text-slate-400 tracking-normal ml-1">SPK</span></h3>
+                        <p class="text-[9px] font-bold text-slate-400 mt-4 uppercase">Periode: {{ $this->filterLabel }}</p>
+                    </div>
+
+                    {{-- Completion --}}
+                    <div class="relative p-8 rounded-[2.5rem] bg-slate-50/50 dark:bg-gray-800/20 border border-slate-100 dark:border-gray-800 group/card hover:border-emerald-500/30 transition-all">
+                        <div class="absolute top-6 right-8 w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover/card:scale-110 transition-transform">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                        </div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Selesai</p>
+                        <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{{ $analytics->total_out }} <span class="text-xs text-slate-400 tracking-normal ml-1">SPK</span></h3>
+                        <p class="text-[9px] font-bold text-emerald-500 mt-4 uppercase">Success Rate: {{ $perfVal }}%</p>
+                    </div>
+
+                    {{-- Net Flow (Backlog Indicator) --}}
+                    <div class="relative p-8 rounded-[2.5rem] bg-slate-50/50 dark:bg-gray-800/20 border border-slate-100 dark:border-gray-800 group/card hover:border-{{ $analytics->gap > 0 ? 'amber' : 'indigo' }}-500/30 transition-all">
+                        <div class="absolute top-6 right-8 w-12 h-12 rounded-2xl bg-{{ $analytics->gap > 0 ? 'amber' : 'indigo' }}-500/10 flex items-center justify-center text-{{ $analytics->gap > 0 ? 'amber' : 'indigo' }}-500">
+                            @if($analytics->gap > 0)
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+                            @else
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            @endif
+                        </div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Sisa Antrian</p>
+                        <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{{ $analytics->gap > 0 ? '+' . $analytics->gap : $analytics->gap }} <span class="text-xs text-slate-400 tracking-normal ml-1">SPK</span></h3>
+                        <p class="text-[9px] font-bold text-{{ $analytics->gap > 0 ? 'amber-500' : 'indigo-500' }} mt-4 uppercase">
+                            {{ $analytics->gap > 0 ? 'Terdapat beban antrian baru' : 'Semua arus kerja terproses' }}
+                        </p>
                     </div>
                 </div>
+
+                {{-- Daily/Weekly Pulse: Adaptive Matrix View --}}
+                <div class="space-y-8">
+                    <div class="flex items-center justify-between px-2">
+                        <div>
+                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">
+                                {{ $analytics->is_weekly ? 'Catatan Kecepatan Mingguan' : 'Catatan Kecepatan Harian' }}
+                            </h4>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">
+                                {{ $analytics->is_weekly ? 'Ringkasan kelancaran kerja per minggu' : 'Status pengerjaan tim setiap hari' }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-6 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                            <span class="flex items-center gap-2">🚀 Catch Up</span>
+                            <span class="flex items-center gap-2">⚖️ Stable</span>
+                            <span class="flex items-center gap-2">📥 Build Up</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                        @foreach(collect($analytics->pulse)->take(7) as $day)
+                            <div class="relative p-6 rounded-[2.5rem] bg-white dark:bg-gray-800 border {{ $day['status'] === 'CATCH UP' ? 'border-emerald-500/20 bg-emerald-500/[0.02]' : ($day['status'] === 'BUILD UP' ? 'border-amber-500/20 bg-amber-500/[0.02]' : 'border-slate-100 dark:border-gray-700') }} transition-all hover:-translate-y-1 hover:shadow-xl group">
+                                {{-- Status Badge --}}
+                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-{{ $day['status_color'] }}-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-{{ $day['status_color'] }}-500/30 flex items-center gap-2">
+                                    <span>{{ $day['status_icon'] }}</span>
+                                    <span>{{ $day['status'] }}</span>
+                                </div>
+
+                                <div class="mt-4 text-center space-y-4">
+                                    <div class="space-y-1">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ $day['label'] }}</p>
+                                        <p class="text-[8px] font-bold text-slate-300 dark:text-gray-600 uppercase tracking-tighter">{{ $day['sub_label'] }}</p>
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-center gap-1">
+                                        <div class="flex items-center gap-3 text-2xl font-black text-slate-800 dark:text-white tracking-tighter">
+                                            <span>{{ $day['in'] }}</span>
+                                            <span class="text-slate-300 dark:text-gray-700 text-lg">➔</span>
+                                            <span>{{ $day['out'] }}</span>
+                                        </div>
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Input ➔ Hasil</p>
+                                    </div>
+
+                                    <div class="pt-4 border-t border-dashed border-slate-100 dark:border-gray-700">
+                                        @if($day['delta'] > 0)
+                                            <p class="text-[10px] font-black text-amber-500 uppercase">
+                                                +{{ $day['delta'] }} Beban Baru
+                                            </p>
+                                        @elseif($day['delta'] < 0)
+                                            <p class="text-[10px] font-black text-emerald-500 uppercase">
+                                                -{{ abs($day['delta']) }} Antrian Berkurang
+                                            </p>
+                                        @else
+                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                Arus Seimbang
+                                            </p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Intelligence Insight Bar --}}
+                <div class="mt-10 py-4 px-8 bg-slate-900 dark:bg-black rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <p class="text-[10px] font-black text-white uppercase tracking-widest leading-relaxed">
+                            Info: Puncak kesibukan ada di tanggal <span class="text-emerald-400">{{ \Carbon\Carbon::parse($analytics->peak_day)->format('d M') }}</span> dengan <span class="text-emerald-400">{{ $analytics->peak_value }} pesanan baru</span>.
+                        </p>
+                    </div>
+                    <div class="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] shrink-0">
+                        Velocity Check • Real-time Data
+                    </div>
+                </div>
+                @else
+                <div class="py-20 flex flex-col items-center justify-center text-slate-400 uppercase tracking-widest text-xs font-black gap-4 border-2 border-dashed border-slate-100 dark:border-gray-800 rounded-[2rem]">
+                    <svg class="w-10 h-10 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Belum Ada Data Tren Periode Ini
+                </div>
+                @endif
             </div>
-            <div id="workshopTrendsChart" class="w-full" style="height: 350px;" wire:ignore></div>
+        </div>
         {{-- 4. MID ROW: Pipeline Doughnut (Wide) & Info --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-10">
             {{-- Status Pipeline --}}
             <div class="lg:col-span-4 bg-white dark:bg-gray-900 rounded-[3rem] p-10 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col items-center justify-center relative overflow-hidden group">
                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                <h4 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-10 w-full text-center relative z-10">Status Pipeline</h4>
+                <h4 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-10 w-full text-center relative z-10">Penyebaran Tugas</h4>
                 <div id="workshopPipelineChart" class="w-full relative z-10" wire:ignore></div>
             </div>
 
@@ -198,8 +338,8 @@
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </div>
                         <div>
-                            <h4 class="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Kategori Terlaris</h4>
-                            <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Revenue by Service Category</p>
+                            <h4 class="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Layanan Paling Laris</h4>
+                            <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Pendapatan Berdasarkan Jenis Layanan</p>
                         </div>
                     </div>
                     <div id="serviceMixChart" class="w-full flex-1 min-h-[500px] relative z-10" wire:ignore></div>
@@ -215,9 +355,9 @@
                     <span class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                     </span>
-                    Beban Kerja
+                    Beban Kerja Tim
                 </h3>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 ml-16">Efisiensi & Distribusi Beban Kerja</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 ml-16">Keseimbangan Pembagian Tugas & Stasiun</p>
             </div>
             @if(isset($this->metrics->workload['bottleneck']) && $this->metrics->workload['bottleneck']['count'] > 0)
                 <div class="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20 text-[10px] font-black uppercase tracking-widest shrink-0">
@@ -233,9 +373,9 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {{-- Antrian Stasiun --}}
+            {{-- Antrian Per Ruangan --}}
             <div class="space-y-8">
-                <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 dark:border-gray-800 pb-4">Antrian Stasiun</h4>
+                <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 dark:border-gray-800 pb-4">Antrian Per Ruangan</h4>
                 <div class="space-y-6">
                     @php
                         $workload = $this->metrics->workload ?? [];
@@ -255,9 +395,9 @@
                 </div>
             </div>
 
-            {{-- Beban Kerja Teknisi --}}
+            {{-- Beban Kerja Tiap Orang --}}
             <div class="space-y-8">
-                <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 dark:border-gray-800 pb-4">Beban Kerja Teknisi</h4>
+                <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 dark:border-gray-800 pb-4">Beban Kerja Tiap Orang</h4>
                 <div class="space-y-6">
                     @php
                         $technicians = $workload['technicians'] ?? [];
@@ -285,9 +425,9 @@
             <div class="p-8 pb-4 flex items-center justify-between">
                 <h3 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-3">
                     <span class="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></span>
-                    SPK Mendekati Deadline
+                    Pesanan Hampir Jatuh Tempo
                 </h3>
-                <span class="text-[10px] font-black text-rose-500 uppercase px-3 py-1 bg-rose-50 rounded-lg">Perlu Tindakan</span>
+                <span class="text-[10px] font-black text-rose-500 uppercase px-3 py-1 bg-rose-50 rounded-lg">Butuh Perhatian</span>
             </div>
             <div class="flex-1 overflow-y-auto px-8 pb-8 space-y-4 max-h-[500px]">
                 @forelse($this->metrics->urgent_orders ?? [] as $ord)
@@ -320,7 +460,7 @@
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-[2s]"></div>
                 <h3 class="text-sm font-black text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    Stok Menipis
+                    Bahan Mau Habis
                 </h3>
                 <div class="space-y-3">
                     @forelse($this->metrics->stock_alerts ?? [] as $stock)
@@ -386,32 +526,7 @@
                 const metrics = data || @json($this->metrics);
                 if (!metrics) return;
 
-                // 1. Trends Chart (Area)
-                const trendsEl = document.querySelector("#workshopTrendsChart");
-                if (trendsEl && metrics.trends?.labels?.length > 0) {
-                    const trendsOptions = {
-                        chart: { type: 'area', height: 350, toolbar: { show: false }, zoom: { enabled: false }, sparkline: { enabled: false } },
-                        colors: ['#6366f1', '#10b981'],
-                        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100, 100, 100] } },
-                        dataLabels: { enabled: false },
-                        stroke: { curve: 'smooth', width: 3 },
-                        series: [
-                            { name: 'SPK Masuk', data: metrics.trends.inflow || [] },
-                            { name: 'Selesai', data: metrics.trends.completion || [] }
-                        ],
-                        xaxis: {
-                            categories: metrics.trends.labels || [],
-                            axisBorder: { show: false },
-                            axisTicks: { show: false },
-                            labels: { style: { colors: '#94a3b8', fontWeight: 700, fontSize: '10px' } }
-                        },
-                        yaxis: { labels: { style: { colors: '#94a3b8', fontWeight: 700, fontSize: '10px' } } },
-                        grid: { borderColor: 'rgba(255,255,255,0.05)', strokeDashArray: 4 }
-                    };
-                    if (trendsChart) trendsChart.destroy();
-                    trendsChart = new ApexCharts(trendsEl, trendsOptions);
-                    trendsChart.render();
-                }
+                // 1. Trends Chart removed and replaced with Blade Native UI Components
 
                 // 2. Pipeline Chart (Donut)
                 const pipelineEl = document.querySelector("#workshopPipelineChart");
@@ -428,7 +543,7 @@
                             p.selesai || 0
                         ],
                         chart: { type: 'donut', height: 320 },
-                        labels: ['Penilaian', 'Persiapan', 'Sortir', 'Produksi', 'QC', 'Tindak Lanjut', 'Selesai'],
+                        labels: ['Penilaian', 'Penyiapan', 'Pemilihan (Sortir)', 'Pengerjaan (Produksi)', 'Cek Kualitas (QC)', 'Tindak Lanjut', 'Selesai'],
                         colors: ['#6366f1', '#8b5cf6', '#f43f5e', '#10b981', '#0ea5e9', '#f59e0b', '#64748b'],
                         plotOptions: {
                             pie: {
@@ -525,6 +640,8 @@
             
             Livewire.on('revenue-data-updated', (event) => {
                 const metricsData = event.metrics || event[0]?.metrics || event;
+                // Native Blade UI re-renders automatically with Livewire update
+                // Re-rendering other JS charts:
                 setTimeout(() => renderCharts(metricsData), 100);
             });
 

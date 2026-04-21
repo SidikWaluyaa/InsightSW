@@ -117,7 +117,7 @@ class CsDashboard extends Component
                         : 0;
                     
                     if (!isset($this->apiSummary['kalkulasi_closing']) || $this->apiSummary['kalkulasi_closing'] == '0%') {
-                        $this->apiSummary['kalkulasi_closing'] = 'Calculated from Agent Data';
+                        $this->apiSummary['kalkulasi_closing'] = 'Dihitung dari Data Agen';
                     }
                 }
             } else {

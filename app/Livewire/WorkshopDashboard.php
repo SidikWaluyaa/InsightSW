@@ -161,6 +161,125 @@ class WorkshopDashboard extends Component
     }
 
     /**
+     * Get trend data in a structured format for the new UI.
+     */
+    #[Computed]
+    public function trendAnalytics()
+    {
+        $trends = $this->metrics->trends ?? [];
+        if (empty($trends) || !isset($trends['labels'])) {
+            return null;
+        }
+
+        $inflow = collect($trends['inflow'] ?? []);
+        $completion = collect($trends['completion'] ?? []);
+        $labels = $trends['labels'] ?? [];
+
+        $totalDays = count($labels);
+        $isWeekly = $totalDays > 7;
+
+        $totalIn = $inflow->sum();
+        $totalOut = $completion->sum();
+        $gap = $totalIn - $totalOut;
+        
+        // Find peak day
+        $maxInValue = $inflow->max();
+        $maxInIndex = $inflow->search($maxInValue);
+        $peakDay = $labels[$maxInIndex] ?? null;
+
+        // Adaptive Data Preparation
+        $items = [];
+        foreach ($labels as $idx => $label) {
+            $items[] = [
+                'date' => $label,
+                'in' => intval($inflow[$idx] ?? 0),
+                'out' => intval($completion[$idx] ?? 0)
+            ];
+        }
+
+        $displayItems = [];
+        if ($isWeekly) {
+            // Group by 7-day chunks (Weeks)
+            $chunks = collect($items)->chunk(7);
+            foreach ($chunks as $index => $chunk) {
+                $weekIn = $chunk->sum('in');
+                $weekOut = $chunk->sum('out');
+                $firstDay = $chunk->first()['date'];
+                $lastDay = $chunk->last()['date'];
+                
+                $displayItems[] = $this->calculateStatusMetadata([
+                    'label' => "Minggu " . ($index + 1),
+                    'sub_label' => \Carbon\Carbon::parse($firstDay)->format('d M') . ' - ' . \Carbon\Carbon::parse($lastDay)->format('d M'),
+                    'in' => $weekIn,
+                    'out' => $weekOut
+                ]);
+            }
+        } else {
+            // Daily items
+            foreach ($items as $item) {
+                $displayItems[] = $this->calculateStatusMetadata([
+                    'label' => \Carbon\Carbon::parse($item['date'])->format('D, d M'),
+                    'sub_label' => 'Daily Status',
+                    'in' => $item['in'],
+                    'out' => $item['out']
+                ]);
+            }
+        }
+
+        return (object) [
+            'total_in' => $totalIn,
+            'total_out' => $totalOut,
+            'gap' => $gap,
+            'peak_day' => $peakDay,
+            'peak_value' => $maxInValue,
+            'is_weekly' => $isWeekly,
+            'pulse' => array_reverse($displayItems), // Show latest first
+            'performance_index' => $trends['summary']['performance_index'] ?? '0%',
+        ];
+    }
+
+    /**
+     * Helper to calculate human status and metadata for a data point.
+     */
+    private function calculateStatusMetadata($data)
+    {
+        $in = $data['in'];
+        $out = $data['out'];
+        $ratio = $in > 0 ? ($out / $in) * 100 : ($out > 0 ? 100 : 0);
+
+        // Flow Balance Logic (Indonesian)
+        if ($out > $in) {
+            $status = __('PENGEJARAN');
+            $statusIcon = '🚀';
+            $statusColor = 'emerald';
+        } elseif ($out === $in && $in > 0) {
+            $status = __('STABIL');
+            $statusIcon = '⚖️';
+            $statusColor = 'indigo';
+        } elseif ($in > $out) {
+            $status = __('PENUMPUKAN');
+            $statusIcon = '📥';
+            $statusColor = 'amber';
+        } else {
+            $status = __('IDLE');
+            $statusIcon = '💤';
+            $statusColor = 'slate';
+        }
+
+        return [
+            'label' => $data['label'],
+            'sub_label' => $data['sub_label'],
+            'in' => $in,
+            'out' => $out,
+            'delta' => $in - $out,
+            'status' => $status,
+            'status_icon' => $statusIcon,
+            'status_color' => $statusColor,
+            'ratio' => min(100, $ratio)
+        ];
+    }
+
+    /**
      * Get a human-readable label for the active filter period.
      */
     #[Computed]

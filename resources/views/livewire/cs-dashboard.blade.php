@@ -25,7 +25,7 @@
             </div>
             <div>
                 <div class="flex items-center gap-3">
-                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Unified Analytics</h1>
+                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Pantauan Chat & Operasional</h1>
                     <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
                     
                     <div class="flex items-center gap-4 border-l border-slate-100 dark:border-slate-800 ml-4 pl-4">
@@ -106,40 +106,73 @@
     <div class="mb-20">
         <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-4">
             <span class="h-1 w-12 bg-indigo-500 rounded-full"></span>
-            Chat Metrics (Sleekflow)
+            Metrik Chat (Sleekflow)
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-10">
-            {{-- Total Contacts --}}
-            <div class="bg-indigo-600 rounded-[40px] p-8 shadow-2xl shadow-indigo-500/30 text-white relative overflow-hidden group">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-16">
+            {{-- 1. Semua Kontak --}}
+            <div class="group bg-indigo-600 rounded-[40px] p-7 shadow-2xl shadow-indigo-500/30 text-white relative overflow-hidden transition-all duration-300 hover:-translate-y-2">
                 <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                <p class="text-[11px] font-black uppercase tracking-widest text-indigo-100/60 mb-3 leading-none">Total Contacts</p>
-                <h3 class="text-4xl font-black tracking-tighter leading-none">{{ number_format($sleekflowMetrics['totalContacts'] ?? 0) }}</h3>
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div class="flex items-start justify-between">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-indigo-100/60 leading-none">Semua Kontak</p>
+                        <div class="bg-white/20 p-2 rounded-xl"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                    </div>
+                    <h3 class="text-3xl font-black tracking-tighter mt-6 leading-none">{{ number_format($sleekflowMetrics['totalContacts'] ?? 0) }}</h3>
+                    <p class="text-[9px] font-black text-indigo-100/40 uppercase tracking-widest mt-2">Database Utama</p>
+                </div>
             </div>
 
             @php
                 $chatItems = [
-                    ['label' => 'Greeting', 'val' => $sleekflowMetrics['totalGreeting'] ?? 0, 'col' => 'indigo'],
-                    ['label' => 'Konsultasi', 'val' => $sleekflowMetrics['totalKonsul'] ?? 0, 'col' => 'blue'],
-                    ['label' => 'Closing', 'val' => $sleekflowMetrics['totalClosing'] ?? 0, 'col' => 'emerald'],
+                    ['label' => 'Baru Sapa', 'val' => $sleekflowMetrics['totalGreeting'] ?? 0, 'icon' => 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z', 'sub' => 'Masih di Awal'],
+                    ['label' => 'Sedang Konsul', 'val' => $sleekflowMetrics['totalKonsul'] ?? 0, 'icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'sub' => 'Proses Chat'],
+                    ['label' => 'Deal (Closing)', 'val' => $sleekflowMetrics['totalClosing'] ?? 0, 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'sub' => 'Gol / Selesai'],
                 ];
+                $chatClosingRate = (($sleekflowMetrics['totalKonsul'] ?? 0) + ($sleekflowMetrics['totalClosing'] ?? 0)) > 0 
+                    ? (($sleekflowMetrics['totalClosing'] ?? 0) / (($sleekflowMetrics['totalKonsul'] ?? 0) + ($sleekflowMetrics['totalClosing'] ?? 0))) * 100 
+                    : 0;
             @endphp
+
             @foreach($chatItems as $item)
-                <div class="bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 leading-none">{{ $item['label'] }}</p>
-                    <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tighter leading-none">{{ number_format($item['val']) }}</h3>
+                <div class="group bg-white dark:bg-slate-900 rounded-[40px] p-7 border border-gray-100 dark:border-gray-800 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900/50">
+                    <div class="flex items-start justify-between">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{{ $item['label'] }}</p>
+                        <div class="text-slate-300 dark:text-slate-700 transition-colors group-hover:text-indigo-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"></path></svg>
+                        </div>
+                    </div>
+                    <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tighter mt-6 leading-none">{{ number_format($item['val']) }}</h3>
+                    <p class="text-[9px] font-black text-slate-400/50 uppercase tracking-widest mt-2">{{ $item['sub'] }}</p>
                 </div>
             @endforeach
 
-            {{-- Unhandled --}}
-            <div class="md:col-span-2 bg-rose-600 rounded-[40px] p-8 shadow-2xl shadow-rose-500/30 text-white flex items-center justify-between group overflow-hidden">
-                <div>
-                    <p class="text-[11px] font-black uppercase tracking-widest text-rose-100/60 mb-3 leading-none uppercase">Unhandled Chat</p>
-                    <h3 class="text-4xl font-black tracking-tighter leading-none">{{ number_format($sleekflowMetrics['unhandledCount'] ?? 0) }}</h3>
-                    <p class="text-[10px] font-black text-rose-100/40 uppercase tracking-widest mt-4">Rate: {{ $sleekflowMetrics['unhandledRate'] ?? 0 }}% Response Lag</p>
+            {{-- 5. Closing Rate (Success Glow) --}}
+            <div class="group bg-emerald-500 rounded-[40px] p-7 shadow-2xl shadow-emerald-500/20 text-white relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-emerald-500/40">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div class="flex items-start justify-between">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-emerald-100/60 leading-none">Closing Rate</p>
+                        <div class="bg-white/20 p-2 rounded-xl"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                    </div>
+                    <div class="flex items-baseline gap-1 mt-6">
+                        <h3 class="text-4xl font-black tracking-tighter leading-none">{{ number_format($chatClosingRate, 1) }}</h3>
+                        <span class="text-xl font-bold uppercase">%</span>
+                    </div>
+                    <p class="text-[9px] font-black text-emerald-100/40 uppercase tracking-widest mt-2">Closing vs Konsul</p>
                 </div>
-                <div class="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+
+            {{-- 6. Belum Terbalas (Danger Glow) --}}
+            <div class="group bg-rose-600 rounded-[40px] p-7 shadow-2xl shadow-rose-500/30 text-white relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-rose-500/40">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div class="flex items-start justify-between">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-rose-100/60 leading-none">Belum Terbalas</p>
+                        <div class="bg-white/20 p-2 rounded-xl"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                    </div>
+                    <h3 class="text-3xl font-black tracking-tighter mt-6 leading-none">{{ number_format($sleekflowMetrics['unhandledCount'] ?? 0) }}</h3>
+                    <p class="text-[9px] font-black text-rose-100/40 uppercase tracking-widest mt-2">Belum Diapa-apain</p>
                 </div>
             </div>
         </div>
@@ -149,11 +182,11 @@
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                        <th class="px-10 py-6">Customer Service Agent</th>
+                        <th class="px-10 py-6">Petugas CS (Ejen)</th>
                         <th class="px-6 py-6">Greeting</th>
                         <th class="px-6 py-6">Konsultasi</th>
-                        <th class="px-6 py-6 text-rose-500">Unhandle</th>
-                        <th class="px-6 py-6 text-center">Persentase</th>
+                        <th class="px-6 py-6 text-rose-500">Tertunda</th>
+                        <th class="px-6 py-6 text-center">Efisiensi</th>
                         <th class="px-10 py-6 text-center">Closing</th>
                     </tr>
                 </thead>
@@ -175,7 +208,7 @@
                                 <td class="px-6 py-6 text-center">
                                     <div class="flex flex-col items-center">
                                         <span class="text-sm font-black text-emerald-500 tracking-tighter">{{ $stat['consultation_rate'] ?? 0 }}%</span>
-                                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">Rate Efficiency</span>
+                                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">Tingkat Balas</span>
                                     </div>
                                 </td>
                                 <td class="px-10 py-6 text-center">
@@ -194,7 +227,7 @@
     <div>
         <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-4">
             <span class="h-1 w-12 bg-emerald-500 rounded-full"></span>
-            Operational Performance (API)
+            Performa Operasional (API)
         </h2>
 
         <div class="grid grid-cols-1 gap-8 items-start mb-20">
@@ -206,7 +239,7 @@
                         <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[11px] font-black uppercase tracking-widest text-emerald-100/60 mb-4 leading-none font-bold">Consolidated Revenue</p>
+                                <p class="text-[11px] font-black uppercase tracking-widest text-emerald-100/60 mb-4 leading-none font-bold">Total Omzet Penjualan</p>
                                 <h3 class="text-5xl font-black tracking-tighter leading-none">Rp {{ number_format($apiSummary['revenue'] ?? 0, 0, ',', '.') }}</h3>
                             </div>
                             <div class="bg-white/20 p-4 rounded-3xl">
@@ -246,7 +279,7 @@
                                 <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter leading-none">{{ number_format($apiSummary['total_closing'] ?? 0) }}</h3>
                             </div>
                             <div class="text-right">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 leading-none">Closing Rate</p>
+                                <p class="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 leading-none">Tingkat Closing</p>
                                 <span class="text-lg font-black text-emerald-500">{{ $apiSummary['kalkulasi_closing'] ?? '0%' }}</span>
                             </div>
                         </div>
@@ -258,7 +291,7 @@
                     wire:key="chart-{{ $startDate }}-{{ $endDate }}"
                     x-data="chartComponent(@js(collect($perCs)->pluck('cs_name')->toArray()), @js(collect($perCs)->pluck('revenue')->toArray()))"
                     wire:ignore>
-                    <h4 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest mb-10 leading-none">Revenue Breakdown per Agent</h4>
+                    <h4 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest mb-10 leading-none">Rincian Omzet per Petugas (Agen)</h4>
                     <div x-ref="salesChart" class="min-h-[400px]"></div>
                 </div>
             </div>
@@ -275,13 +308,13 @@
                 <table class="w-full text-left border-collapse min-w-[1200px]">
                     <thead>
                         <tr class="bg-[#242731] text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-gray-800">
-                            <th class="px-8 py-6">CS Name</th>
+                            <th class="px-8 py-6">Nama CS</th>
                             <th class="px-4 py-6 text-center">Closing</th>
-                            <th class="px-4 py-6 text-center">In Gudang</th>
-                            <th class="px-4 py-6 text-center">Items In</th>
+                            <th class="px-4 py-6 text-center">Diterima Gudang</th>
+                            <th class="px-4 py-6 text-center">Unit Masuk</th>
                             <th class="px-4 py-6 text-center">Langsung</th>
-                            <th class="px-6 py-6 text-right">Revenue</th>
-                            <th class="px-8 py-6 text-right">Avg Deal</th>
+                            <th class="px-6 py-6 text-right">Omzet</th>
+                            <th class="px-8 py-6 text-right">Rerata Deal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-800">
@@ -320,7 +353,7 @@
                 init() {
                     if (this.chart) this.chart.destroy();
                     const options = {
-                        series: [{ name: "Revenue", data: data }],
+                        series: [{ name: "Total Omzet", data: data }],
                         chart: { 
                             type: "bar", 
                             height: 400, 

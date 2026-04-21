@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Payment Insights
+                Pantauan Arus Kas & Omzet
             </h2>
             <div class="flex items-center gap-3">
                 @if($lastSyncTime)
@@ -30,7 +30,7 @@
                     <div class="relative z-10 flex items-center gap-2">
                         <div wire:loading wire:target="syncData" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <svg wire:loading.remove wire:target="syncData" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                        <span class="text-sm font-bold tracking-tight">SYNC REALTIME</span>
+                        <span class="text-sm font-bold tracking-tight uppercase">Perbarui Data Keuangan</span>
                     </div>
                 </button>
             </div>
@@ -44,9 +44,9 @@
             <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Daily Cash Revenue</h3>
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Omzet Tunai Harian</h3>
                         <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">
-                            Periode: {{ \Carbon\Carbon::parse($this->analyticsStartDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($this->analyticsEndDate)->format('d/m/Y') }}
+                            Rentang Waktu: {{ \Carbon\Carbon::parse($this->analyticsStartDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($this->analyticsEndDate)->format('d/m/Y') }}
                         </p>
                     </div>
                     <div class="flex items-center gap-3">
@@ -57,7 +57,7 @@
                         </div>
                         <div class="flex items-center gap-2 px-3 hidden xl:flex">
                             <span class="w-3 h-3 bg-indigo-500 rounded-full"></span>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Paid</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jumlah Terbayar</span>
                         </div>
                     </div>
                 </div>
@@ -69,8 +69,8 @@
             {{-- Tableau-style Widget --}}
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
                 <div class="mb-6">
-                    <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Performa Harian</h3>
-                    <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Analisis Valuasi Transaksi harian — Tableau Style</p>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Performa Omzet</h3>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Ringkasan harian uang masuk — Gaya Tableau</p>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar" style="max-height: 350px;">
@@ -97,7 +97,7 @@
 
                 <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <span>Max Daily</span>
+                        <span>Rekor Tertinggi</span>
                         <span class="text-indigo-600 dark:text-indigo-400">{{ $this->formatCurrency($this->maxDailyRevenue) }}</span>
                     </div>
                 </div>
@@ -110,8 +110,8 @@
             <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 <div class="p-8 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-50/30 dark:bg-indigo-900/10">
                     <div>
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white">Semua Riwayat Pembayaran</h3>
-                        <p class="text-sm text-slate-400">Daftar lengkap seluruh transaksi yang berhasil ditarik</p>
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white uppercase tracking-tight">Riwayat Pembayaran Lengkap</h3>
+                        <p class="text-sm text-slate-400">Daftar seluruh catatan pembayaran yang berhasil ditarik.</p>
                     </div>
                     <div class="flex flex-col xl:flex-row items-start xl:items-center gap-4">
                         <div class="flex items-center gap-2">
@@ -173,13 +173,13 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-gray-500">
-                                <th class="px-8 py-4">Tanggal Bayar</th>
-                                <th class="px-8 py-4">SPK/Invoice</th>
-                                <th class="px-8 py-4">Tipe</th>
+                                <th class="px-8 py-4">Waktu Bayar</th>
+                                <th class="px-8 py-4">Pesanan / SPK</th>
+                                <th class="px-8 py-4">Tipe Bayar</th>
                                 <th class="px-8 py-4 text-right">Total Tagihan</th>
-                                <th class="px-8 py-4 text-right">Tunai Masuk</th>
-                                <th class="px-8 py-4 text-right">Sisa Balance</th>
-                                <th class="px-8 py-4 text-center">Aksi</th>
+                                <th class="px-8 py-4 text-right">Uang Masuk</th>
+                                <th class="px-8 py-4 text-right">Sisa Piutang</th>
+                                <th class="px-8 py-4 text-center">Detail</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800 uppercase text-[11px] font-bold">
@@ -246,7 +246,7 @@
             const initChart = (initialData) => {
                 const options = {
                     series: [{
-                        name: 'Amount Paid',
+                        name: 'Uang Masuk',
                         data: initialData.map(d => d.total)
                     }],
                     chart: {
@@ -305,7 +305,7 @@
                 });
 
                 revenueChart.updateSeries([{
-                    name: 'Amount Paid',
+                    name: 'Uang Masuk',
                     data: newData.map(d => d.total)
                 }]);
             };

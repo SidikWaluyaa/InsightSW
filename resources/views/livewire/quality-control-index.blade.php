@@ -1,7 +1,7 @@
 <div class="px-6 py-6 pb-20" x-data="{ showFilters: false }">
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Quality Control</h2>
+            <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Pengecekan Akhir (QC)</h2>
             <span class="px-2 py-1 rounded-lg bg-indigo-500 text-white text-[10px] font-black tracking-[0.2em]">AFTER</span>
         </div>
     </x-slot>
@@ -23,9 +23,9 @@
                 </div>
                 <div class="flex items-baseline gap-2">
                     <span class="text-4xl font-black text-white tracking-tighter">{{ number_format($w1_baseline) }}</span>
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Order</span>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Pesanan</span>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">DIPOTRET: {{ $w1_time }}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">DIPOTRET JAM: {{ $w1_time }}</p>
             </div>
         </div>
 
@@ -42,7 +42,7 @@
                     </div>
                     <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-black text-slate-800 dark:text-white tracking-tighter">{{ number_format($w2_realtime_verified) }}</span>
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Order</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Lolos QC</span>
                     </div>
                 </div>
                 <div class="mt-4 flex items-center gap-2">
@@ -70,7 +70,7 @@
                 </div>
                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 flex items-center gap-1">
                     <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    Sisa Hutang Verifikasi
+                    Belum Melalui Pengecekan
                 </p>
             </div>
         </div>
@@ -80,15 +80,15 @@
             <div class="absolute -right-4 -bottom-4 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
             <div class="relative z-10 flex flex-col h-full justify-between">
                 <div>
-                    <span class="text-[10px] font-black text-indigo-100 uppercase tracking-[0.2em] mb-4 block">Shift Achievement</span>
+                    <span class="text-[10px] font-black text-indigo-100 uppercase tracking-[0.2em] mb-4 block">Pencapaian Hari Ini</span>
                     <div class="flex items-baseline gap-2">
                         <span class="text-5xl font-black text-white tracking-tighter">{{ ($w4_shift_achievement >= 0 ? '+' : '') . number_format($w4_shift_achievement) }}</span>
-                        <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest">Order</span>
+                        <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest">Selesai QC</span>
                     </div>
                 </div>
                 <div class="mt-4 p-2 bg-white/10 rounded-xl backdrop-blur-sm self-start">
                     <p class="text-[9px] font-black text-indigo-50 uppercase tracking-widest">
-                        TOTAL TEAM PROGRESS
+                        TOTAL PROGRES TIM
                     </p>
                 </div>
             </div>
@@ -101,7 +101,7 @@
             <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                 {{-- Spreadsheet URL --}}
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spreadsheet URL</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Link Data (Google Sheets)</label>
                     <div class="relative group">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <svg class="w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
@@ -140,7 +140,7 @@
                 <button wire:click="fetch(true)" 
                         wire:loading.attr="disabled"
                         class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-500/30 transition-all active:scale-95 flex items-center gap-3">
-                    <span wire:loading.remove wire:target="fetch">TARIK DATA</span>
+                    <span wire:loading.remove wire:target="fetch">AMBIL DATA TERBARU</span>
                     <span wire:loading wire:target="fetch">MEMUAT...</span>
                     <svg wire:loading.remove wire:target="fetch" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <svg wire:loading wire:target="fetch" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -181,7 +181,7 @@
 
             {{-- Filter: Step --}}
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Step Progress</label>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tahapan Kerja</label>
                 <select wire:model.live="filters.step" 
                         class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 transition-all dark:text-white">
                     <option value="">SEMUA STEP</option>
@@ -255,8 +255,8 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
                 <div>
-                    <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Daftar QC</h3>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: {{ number_format($totalResults) }} Data</p>
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Daftar Hasil QC</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: {{ number_format($totalResults) }} Pesanan</p>
                 </div>
             </div>
 
@@ -276,12 +276,12 @@
                 <thead>
                     <tr class="bg-slate-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-gray-800">
                         <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">SPK Number</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Barang</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status / Step</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Kirim</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Checklist</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nomor Pesanan</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Baru/Kategori</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pelanggan</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kondisi / Tahap</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Kirim (Target)</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hasil QC</th>
                         <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
                     </tr>
                 </thead>
@@ -341,7 +341,7 @@
                                     <a href="{{ $item['link_pdf'] }}" target="_blank" 
                                        class="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all inline-flex items-center gap-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                        <span class="text-[10px] font-black uppercase">Report</span>
+                                        <span class="text-[10px] font-black uppercase tracking-widest">Lihat Laporan</span>
                                     </a>
                                 @else
                                     <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">No PDF</span>

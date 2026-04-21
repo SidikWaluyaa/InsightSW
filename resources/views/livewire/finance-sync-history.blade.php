@@ -5,8 +5,8 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         </div>
         <div>
-            <h1 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Riwayat Sinkronisasi Data</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium italic">Log audit aktivitas penarikan data dari server pusat</p>
+            <h1 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Catatan Pembaruan Keuangan</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium italic">Riwayat kapan terakhir kali data diambil dari server pusat</p>
         </div>
     </div>
 
@@ -16,12 +16,12 @@
             <table class="w-full text-left border-separate border-spacing-0">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50">
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Waktu Eksekusi</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Oleh User</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Tarik</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Data Terpindah</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Waktu Update</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Oleh Siapa</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rentang Tanggal</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Data Masuk</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kondisi</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -46,11 +46,11 @@
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <span class="text-sm font-black text-indigo-600 dark:text-indigo-400">{{ number_format($log->records_count) }}</span>
-                                <span class="text-[10px] text-slate-400 font-bold ml-1 uppercase">Rows</span>
+                                <span class="text-[10px] text-slate-400 font-bold ml-1 uppercase">Transaksi</span>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ $log->status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' }}">
-                                    {{ $log->status }}
+                                    {{ $log->status === 'SUCCESS' ? 'BERHASIL' : 'GAGAL' }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">

@@ -137,8 +137,8 @@ class QualityControlIndex extends Component
             if ($force) {
                 $this->dispatch('swal', [
                     'icon'    => 'success',
-                    'title'   => 'Data Berhasil Disinkronkan',
-                    'text'    => "Berhasil memuat " . count($this->items) . " baris data terbaru.",
+                    'title'   => 'Update Data Berhasil',
+                    'text'    => "Berhasil memuat " . count($this->items) . " catatan pesanan terbaru.",
                     'timer'   => 3000
                 ]);
             }
@@ -199,8 +199,8 @@ class QualityControlIndex extends Component
 
         $this->dispatch('swal', [
             'icon'    => 'success',
-            'title'   => 'Snapshot Berhasil Dicatat',
-            'text'    => "Baseline Total (Seluruh Waktu) disetel ke: $allTimeVerified Order.",
+            'title'   => 'Patokan Harian Dicatat',
+            'text'    => "Target harian (baseline) disetel ke: $allTimeVerified Pesanan.",
             'timer'   => 3000
         ]);
     }
@@ -243,7 +243,7 @@ class QualityControlIndex extends Component
         $this->availableOptions['jenis_barang'] = $data->pluck('jenis_barang')->unique()->sort()->filter()->values()->toArray();
         $this->availableOptions['status']       = $data->pluck('status')->unique()->sort()->filter()->values()->toArray();
         $this->availableOptions['step']         = $data->pluck('step')->unique()->sort()->filter()->values()->toArray();
-        $this->availableOptions['checklist']    = ['Sudah Tidak Ada Revisi', 'Belum Ada Verifikasi'];
+        $this->availableOptions['checklist']    = ['Selesai QC (Lancar)', 'Belum Dicek / Tertunda'];
     }
 
     /**
@@ -277,8 +277,8 @@ class QualityControlIndex extends Component
     private function mapChecklist(string $value): string
     {
         $value = strtoupper(trim($value));
-        if ($value === 'TRUE') return 'Sudah Tidak Ada Revisi';
-        return 'Belum Ada Verifikasi';
+        if ($value === 'TRUE') return 'Selesai QC (Lancar)';
+        return 'Belum Dicek / Tertunda';
     }
 
     public function render()

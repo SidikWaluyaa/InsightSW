@@ -28,21 +28,17 @@ class SleekflowService
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
 
-        // Calculate all totals in one optimized query
+        // Calculate totals using Mutually Exclusive Bucket logic (Current Status)
+        // This ensures: Total = Greeting + Konsul + Closing + Unhandled
         $totals = SleekflowContact::query()
+            ->whereBetween('created_at_sleekflow', [$start, $end])
             ->selectRaw("
-                COUNT(CASE WHEN created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_contacts,
-                COUNT(CASE WHEN greeting_at BETWEEN ? AND ? THEN 1 END) as total_greeting,
-                COUNT(CASE WHEN konsul_at BETWEEN ? AND ? THEN 1 END) as total_konsul,
-                COUNT(CASE WHEN closing_at BETWEEN ? AND ? THEN 1 END) as total_closing,
-                COUNT(CASE WHEN (status_chat IS NULL OR status_chat = '') AND created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_unhandled
-            ", [
-                $start, $end, // total contacts
-                $start, $end, // greeting
-                $start, $end, // konsul
-                $start, $end, // closing
-                $start, $end  // unhandled (based on chat entry)
-            ])
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
+                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul,
+                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing,
+                COUNT(CASE WHEN status_chat IS NULL OR status_chat = '' OR status_chat = 'Contact Filtered' THEN 1 END) as total_unhandled
+            ")
             ->first();
 
         $totalContacts = (int)$totals->total_contacts;
@@ -54,23 +50,17 @@ class SleekflowService
         $greetingToKonsulRate = $totalGreeting > 0 ? round(($totalKonsul / $totalGreeting) * 100, 1) : 0;
         $unhandledRate = $totalContacts > 0 ? round(($unhandledCount / $totalContacts) * 100, 1) : 0;
 
-        // Leaderboard stats (per owner) 
-        // We filter the base query to owners who had ANY activity in the range to keep it efficient
+        // Leaderboard stats (per owner) using Mutually Exclusive logic
         $ownerStats = SleekflowContact::query()
+            ->whereBetween('created_at_sleekflow', [$start, $end])
             ->selectRaw("
                 contact_owner_name,
-                COUNT(CASE WHEN created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_contacts,
-                COUNT(CASE WHEN greeting_at BETWEEN ? AND ? THEN 1 END) as total_greeting,
-                COUNT(CASE WHEN closing_at BETWEEN ? AND ? THEN 1 END) as total_closing,
-                COUNT(CASE WHEN konsul_at BETWEEN ? AND ? THEN 1 END) as total_konsul,
-                COUNT(CASE WHEN (status_chat IS NULL OR status_chat = '') AND created_at_sleekflow BETWEEN ? AND ? THEN 1 END) as total_unhandled
-            ", [
-                $start, $end, // total contacts
-                $start, $end, // greeting
-                $start, $end, // closing
-                $start, $end, // konsul
-                $start, $end  // unhandled
-            ])
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
+                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing,
+                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul,
+                COUNT(CASE WHEN status_chat IS NULL OR status_chat = '' OR status_chat = 'Contact Filtered' THEN 1 END) as total_unhandled
+            ")
             ->groupBy('contact_owner_name')
             ->get()
             ->map(function($stat) {

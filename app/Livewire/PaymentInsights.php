@@ -121,8 +121,8 @@ class PaymentInsights extends Component
             
             $count = $result['count'] ?? 0;
             $this->dispatch('swal', [
-                'title' => 'Sync Selesai',
-                'text' => $count > 0 ? "Berhasil menarik $count data terbaru." : "Data sudah up-to-date. Tidak ada data baru.",
+                'title' => 'Sinkron Selesai',
+                'text' => $count > 0 ? "Berhasil mendapatkan $count catatan pembayaran baru." : "Data pembayaran sudah yang terbaru. Tidak ada data baru.",
                 'icon' => 'success',
                 'timer' => 3000
             ]);

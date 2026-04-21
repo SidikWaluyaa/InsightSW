@@ -6,9 +6,9 @@
                     <svg class="w-6 h-6 text-[#22AF85]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
-                    Warehouse Intelligence
+                    Pantauan Stok & Inventaris
                 </h2>
-                <p class="text-sm font-medium text-slate-500 dark:text-gray-400 mt-1">Supply Chain Analytics & Stock Health Scoring</p>
+                <p class="text-sm font-medium text-slate-500 dark:text-gray-400 mt-1">Analisis Ketersediaan Barang & Skor Kesehatan Stok</p>
             </div>
             
             <div class="flex items-center gap-3">
@@ -31,10 +31,10 @@
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-[#22AF85]/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                 <div class="relative z-10">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Asset Valuation</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Nilai Barang (Modal)</p>
                     <h3 class="text-xl font-black text-[#22AF85]">{{ $this->formatCurrency($this->assetValuation['grand_total']) }}</h3>
                     <div class="mt-3 text-[10px] font-bold text-slate-400">
-                        Modal terikat pada {{ $this->totalItems }} SKU gudang fisik.
+                        Total modal yang terikat pada {{ $this->totalItems }} jenis barang di gudang.
                     </div>
                 </div>
             </div>
@@ -43,7 +43,7 @@
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                 <div class="relative z-10">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Stock Health Score</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Skor Kesehatan Stok</p>
                     <div class="flex items-baseline gap-2">
                         <h3 class="text-xl font-black {{ $this->stockHealthScore['score'] >= 75 ? 'text-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'text-amber-500' : 'text-rose-500') }}">{{ $this->stockHealthScore['score'] }}%</h3>
                         <span class="text-xs font-black px-2 py-0.5 rounded-lg {{ $this->stockHealthScore['score'] >= 75 ? 'bg-emerald-500/10 text-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'bg-amber-500/10 text-amber-500' : 'bg-rose-500/10 text-rose-500') }}">
@@ -54,7 +54,7 @@
                         <div class="h-1.5 rounded-full transition-all duration-1000 {{ $this->stockHealthScore['score'] >= 75 ? 'bg-emerald-500' : ($this->stockHealthScore['score'] >= 50 ? 'bg-amber-500' : 'bg-rose-500') }}" style="width: {{ $this->stockHealthScore['score'] }}%"></div>
                     </div>
                     <div class="mt-2 text-[10px] font-bold text-slate-400">
-                        {{ $this->stockHealthScore['healthy'] }} sehat • {{ $this->stockHealthScore['low'] }} peringatan • {{ $this->stockHealthScore['out'] }} habis
+                        {{ $this->stockHealthScore['healthy'] }} aman • {{ $this->stockHealthScore['low'] }} menipis • {{ $this->stockHealthScore['out'] }} habis
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 relative group overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                 <div class="relative z-10">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Physical Stock</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Stok Fisik</p>
                     <h3 class="text-xl font-black text-blue-600 dark:text-blue-400">{{ number_format($this->totalStock) }} <span class="text-xs text-slate-400 font-semibold">Unit</span></h3>
                     <div class="mt-3 text-[10px] font-bold text-slate-400">
                         Dari {{ $this->totalItems }} jenis material unik (SKU).
@@ -77,8 +77,8 @@
                 <div class="relative z-10">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Dead Stock Alert</p>
-                            <h3 class="text-xl font-black {{ $this->outOfStockCount > 0 ? 'text-rose-600' : 'text-slate-800 dark:text-white' }}">{{ $this->outOfStockCount }} <span class="text-xs text-slate-400 font-semibold">Item Habis</span></h3>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Peringatan Stok Habis</p>
+                            <h3 class="text-xl font-black {{ $this->outOfStockCount > 0 ? 'text-rose-600' : 'text-slate-800 dark:text-white' }}">{{ $this->outOfStockCount }} <span class="text-xs text-slate-400 font-semibold">Jenis Barang</span></h3>
                         </div>
                         @if($this->outOfStockCount > 0)
                         <span class="flex h-3 w-3 relative">
@@ -99,8 +99,8 @@
             {{-- Sub-Category Breakdown --}}
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div class="mb-6">
-                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Sub-Category Breakdown</h3>
-                    <p class="text-[10px] text-slate-400 mt-1">Distribusi material per jenis bahan produksi.</p>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Pembagian Per Jenis Barang</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Distribusi nilai barang berdasarkan kategori bahan produksi.</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @foreach($this->subCategoryBreakdown as $sub)
@@ -131,20 +131,20 @@
             <div class="p-8 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-[#22AF85]/5 to-transparent">
                 <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
                     <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    Top 10 — Material Tertinggi (High Asset Concentration)
+                    Top 10 — Nilai Modal Terbesar (Aset Kritis)
                 </h3>
-                <p class="text-[10px] text-slate-400 mt-1">Material dengan modal terbesar terikat di inventaris. Klasifikasi ABC: pastikan item ini tidak pernah kehabisan stok.</p>
+                <p class="text-[10px] text-slate-400 mt-1">Barang-barang dengan modal terbesar yang tersimpan. Pastikan stok ini selalu terjaga.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400">
                             <th class="px-8 py-4 text-center">#</th>
-                            <th class="px-8 py-4">Material</th>
-                            <th class="px-8 py-4">Jenis</th>
+                            <th class="px-8 py-4">Nama Barang</th>
+                            <th class="px-8 py-4">Kategori</th>
                             <th class="px-8 py-4 text-center">Stok</th>
                             <th class="px-8 py-4 text-right">Harga Satuan</th>
-                            <th class="px-8 py-4 text-right">Total Valuasi</th>
+                            <th class="px-8 py-4 text-right">Total Nilai (Modal)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-[11px] font-bold">
@@ -173,8 +173,8 @@
         <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div class="p-8 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-50/30 dark:bg-indigo-900/10">
                 <div>
-                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Seluruh Inventaris Gudang</h3>
-                    <p class="text-[10px] text-slate-400 mt-1">Daftar lengkap {{ $this->totalItems }} material beserta status dan valuasinya.</p>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-widest">Daftar Inventaris Lengkap</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Daftar seluruh barang gudang beserta status dan nilai modalnya.</p>
                 </div>
                 <div class="flex items-center gap-3">
                     {{-- Status Filter --}}
@@ -208,11 +208,11 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400">
-                            <th class="px-6 py-4">Material</th>
-                            <th class="px-6 py-4">Jenis</th>
-                            <th class="px-6 py-4 text-center">Stok / Min</th>
+                            <th class="px-6 py-4">Nama Barang</th>
+                            <th class="px-6 py-4">Kategori</th>
+                            <th class="px-6 py-4 text-center">Stok / Minimal</th>
                             <th class="px-6 py-4 text-right">Harga Satuan</th>
-                            <th class="px-6 py-4 text-right">Valuasi</th>
+                            <th class="px-6 py-4 text-right">Nilai Modal</th>
                             <th class="px-6 py-4 text-center">Status</th>
                         </tr>
                     </thead>
