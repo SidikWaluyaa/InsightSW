@@ -316,6 +316,21 @@
             font-size: 1.1rem !important;
             font-weight: 800 !important;
             padding-top: 10px !important;
+            color: #fff !important;
+        }
+
+        .flatpickr-monthDropdown-months {
+            background: #1e293b !important;
+            color: #fff !important;
+            padding: 2px 8px !important;
+            border-radius: 4px !important;
+            border: 1px solid #334155 !important;
+            outline: none !important;
+        }
+
+        .flatpickr-monthDropdown-month {
+            background: #1e293b !important;
+            color: #fff !important;
         }
 
         .flatpickr-weekday {
