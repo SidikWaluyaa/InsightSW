@@ -1,299 +1,305 @@
-<div class="p-6 space-y-8 bg-slate-950 min-h-screen text-slate-200" x-data="{ 
+<div class="p-6 space-y-8 bg-slate-950 min-h-screen text-slate-200 font-sans selection:bg-emerald-500/30" x-data="{ 
     syncing: @entangle('isLoading')
 }">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    {{-- Decorative Background Elements --}}
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[120px]"></div>
+        <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]"></div>
+    </div>
+
+    {{-- Header Section --}}
+    <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
         <div>
-            <div class="flex items-center gap-3 mb-1">
-                <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-900/20 text-white transform hover:rotate-6 transition-transform duration-300">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                 </div>
-                <h2 class="text-2xl font-black tracking-tight uppercase text-white">Pusat Komando Operasional</h2>
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight text-white uppercase leading-none">Pusat Komando</h2>
+                    <p class="text-slate-500 text-xs font-bold tracking-[0.3em] uppercase mt-1">Divisi Gudang • Intelijen Operasional</p>
+                </div>
             </div>
-            <p class="text-slate-400 text-sm font-medium tracking-wide uppercase">Warehouse Division • Real-time Monitoring</p>
         </div>
 
-        <div class="flex items-center gap-4">
-            <div class="text-right hidden sm:block">
-                <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest">Last Sync</p>
-                <p class="text-emerald-400 font-mono font-bold">{{ $lastSync ?? '--:--:--' }}</p>
+        <div class="flex flex-wrap items-center gap-4">
+            {{-- Quick Filter Buttons --}}
+            <div class="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-2xl shadow-2xl">
+                <button wire:click="setRange('today')" 
+                    class="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 {{ $startDate == now()->toDateString() && $endDate == now()->toDateString() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' }}">
+                    Hari Ini
+                </button>
+                <button wire:click="setRange('7days')" 
+                    class="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 {{ $startDate == now()->subDays(7)->toDateString() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' }}">
+                    7 Hari
+                </button>
+                <button wire:click="setRange('30days')" 
+                    class="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 {{ $startDate == now()->subDays(30)->toDateString() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' }}">
+                    30 Hari
+                </button>
             </div>
-            <button wire:click="syncNow" wire:loading.attr="disabled"
-                class="relative group px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all duration-300 shadow-lg shadow-emerald-900/20 overflow-hidden">
-                <div class="flex items-center gap-2">
-                    <svg wire:loading.remove wire:target="syncNow" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+
+            {{-- Unified Date Picker --}}
+            <div class="relative group"
+                x-data="{
+                    picker: null,
+                    init() {
+                        this.picker = flatpickr($refs.picker, {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            defaultDate: ['{{ $startDate }}', '{{ $endDate }}'],
+                            onChange: (selectedDates) => {
+                                if (selectedDates.length === 2) {
+                                    const start = this.picker.formatDate(selectedDates[0], 'Y-m-d');
+                                    const end = this.picker.formatDate(selectedDates[1], 'Y-m-d');
+                                    @this.set('startDate', start);
+                                    @this.set('endDate', end);
+                                }
+                            }
+                        });
+                    }
+                }">
+                <div class="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-500 z-10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 00-2 2z" />
                     </svg>
-                    <svg wire:loading wire:target="syncNow" class="w-5 h-5 animate-spin pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span wire:loading.remove wire:target="syncNow">TARIK DATA LIVE</span>
-                    <span wire:loading wire:target="syncNow">MENARIK DATA...</span>
                 </div>
-            </button>
+                <input x-ref="picker" readonly
+                    class="bg-slate-900 border border-slate-800 rounded-2xl text-xs font-black text-white focus:ring-2 focus:ring-emerald-500/40 pl-14 pr-8 py-4 uppercase tracking-[0.2em] cursor-pointer shadow-2xl transition-all min-w-[320px] text-center"
+                    placeholder="PILIH RENTANG TANGGAL">
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest leading-none mb-1">Update Terakhir</p>
+                    <div class="flex items-center gap-2 justify-end">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="text-xs font-mono font-bold text-emerald-400">{{ $lastSync ?? '--:--:--' }}</span>
+                    </div>
+                </div>
+                
+                <button wire:click="syncNow" wire:loading.attr="disabled"
+                    class="relative group px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 shadow-2xl shadow-emerald-900/40 active:scale-95 overflow-hidden">
+                    <div class="relative z-10 flex items-center gap-3">
+                        <svg wire:loading.remove wire:target="syncNow" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <svg wire:loading wire:target="syncNow" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="uppercase tracking-[0.2em] text-[10px]">Tarik Data</span>
+                    </div>
+                </button>
+            </div>
         </div>
     </div>
 
-    {{-- Stats Grid --}}
+    {{-- PRIMARY METRICS --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        @php
+            $primaryStats = [
+                [
+                    'label' => 'Sepatu di Rak',
+                    'value' => $this->warehouseStats['total_sepatu_dirak'],
+                    'unit' => 'Unit',
+                    'sub' => 'Inventori Aktif',
+                    'color' => 'indigo',
+                    'icon' => '<path d="M21 16.5c0 .38-.21.71-.53.88l-7.97 4.44c-.31.17-.69.17-1 0l-7.97-4.44c-.32-.17-.53-.5-.53-.88v-9c0-.38.21-.71.53-.88l7.97-4.44c.31-.17.69-.17 1 0l7.97 4.44c.32.17.53.5.53.88v9z"/>'
+                ],
+                [
+                    'label' => 'Selesai Periode',
+                    'value' => $this->warehouseStats['total_sepatu_finish_periode'],
+                    'unit' => 'Unit',
+                    'sub' => 'Aliran Keluar',
+                    'color' => 'emerald',
+                    'icon' => '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>'
+                ],
+                [
+                    'label' => 'Masuk Periode',
+                    'value' => $this->warehouseStats['total_sepatu_diterima_periode'],
+                    'unit' => 'Unit',
+                    'sub' => 'Aliran Masuk',
+                    'color' => 'amber',
+                    'icon' => '<path d="M11 9h2V7h-2v2zm0 4h2v-2h-2v2zm0 4h2v-2h-2v2zm-6 4h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2zM5 5h14v14H5V5z"/>'
+                ],
+                [
+                    'label' => 'Total QC Lolos',
+                    'value' => $this->warehouseStats['total_spk_print'],
+                    'unit' => 'SPK',
+                    'sub' => 'Total QC Lolos',
+                    'color' => 'slate',
+                    'icon' => '<path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>'
+                ]
+            ];
+        @endphp
+
+        @foreach($primaryStats as $stat)
+        <div class="group relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:bg-slate-900/60 transition-all duration-500 overflow-hidden shadow-xl shadow-black/20">
+            <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 group-hover:scale-125 transition-all duration-700 text-{{ $stat['color'] }}-400">
+                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">{!! $stat['icon'] !!}</svg>
+            </div>
+            
+            <div class="relative z-10">
+                <p class="text-[10px] font-black text-{{ $stat['color'] }}-400/80 uppercase tracking-[0.3em] mb-4">{{ $stat['label'] }}</p>
+                <div class="flex items-baseline gap-3">
+                    <h3 class="text-5xl font-black text-white leading-none tracking-tighter">{{ number_format($stat['value']) }}</h3>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase">{{ $stat['unit'] }}</span>
+                </div>
+                <div class="mt-6 flex items-center gap-2">
+                    <div class="w-1 h-4 rounded-full bg-{{ $stat['color'] }}-500"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $stat['sub'] }}</span>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+
+    {{-- SECONDARY STATS (Snapshots) --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {{-- SPK Pending --}}
-        <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg class="w-16 h-16 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                </svg>
-            </div>
-            <p class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">SPK Pending</p>
-            <div class="flex items-baseline gap-2">
-                <h3 class="text-4xl font-black text-white">{{ number_format($summary['pending_reception'] ?? 0) }}</h3>
-                <span class="text-amber-400 text-xs font-bold uppercase">Antrean</span>
-            </div>
-            <div class="mt-4 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-amber-500 rounded-full" style="width: 45%"></div>
-            </div>
-        </div>
+        @php
+            $snapshotStats = [
+                ['label' => 'SPK Pending', 'value' => $summary['pending_reception'] ?? 0, 'unit' => 'Antrean', 'color' => 'amber'],
+                ['label' => 'Di Finish', 'value' => $summary['finished_not_stored'] ?? 0, 'unit' => 'Selesai', 'color' => 'blue'],
+                ['label' => 'Antrean Kirim', 'value' => $summary['shipping_pending'] ?? 0, 'unit' => 'Paket', 'color' => 'indigo'],
+                ['label' => 'Siap Diambil', 'value' => $summary['ready_for_pickup'] ?? 0, 'unit' => 'Offline', 'color' => 'emerald'],
+            ];
+        @endphp
 
-        {{-- Di Finish --}}
-        <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg class="w-16 h-16 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        @foreach($snapshotStats as $stat)
+        <div class="bg-slate-900/20 border border-slate-800/60 p-5 rounded-2xl flex items-center justify-between group hover:border-slate-700 transition-colors">
+            <div>
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{{ $stat['label'] }}</p>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-white">{{ number_format($stat['value']) }}</span>
+                    <span class="text-[9px] font-bold text-{{ $stat['color'] }}-500/70 uppercase">{{ $stat['unit'] }}</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-{{ $stat['color'] }}-500/10 flex items-center justify-center text-{{ $stat['color'] }}-500 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
             </div>
-            <p class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">Di Finish</p>
-            <div class="flex items-baseline gap-2">
-                <h3 class="text-4xl font-black text-white">{{ number_format($summary['finished_not_stored'] ?? 0) }}</h3>
-                <span class="text-blue-400 text-xs font-bold uppercase">Selesai</span>
-            </div>
-            <div class="mt-4 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-blue-500 rounded-full" style="width: 65%"></div>
-            </div>
         </div>
-
-        {{-- Antrean Kirim --}}
-        <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg class="w-16 h-16 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                </svg>
-            </div>
-            <p class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">Antrean Kirim</p>
-            <div class="flex items-baseline gap-2">
-                <h3 class="text-4xl font-black text-white">{{ number_format($summary['shipping_pending'] ?? 0) }}</h3>
-                <span class="text-indigo-400 text-xs font-bold uppercase">Paket</span>
-            </div>
-            <div class="mt-4 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-indigo-500 rounded-full" style="width: 25%"></div>
-            </div>
-        </div>
-
-        {{-- Siap Diambil --}}
-        <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg class="w-16 h-16 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-            </div>
-            <p class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">Siap Diambil</p>
-            <div class="flex items-baseline gap-2">
-                <h3 class="text-4xl font-black text-white">{{ number_format($summary['ready_for_pickup'] ?? 0) }}</h3>
-                <span class="text-emerald-400 text-xs font-bold uppercase">Offline</span>
-            </div>
-            <div class="mt-4 w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-emerald-500 rounded-full" style="width: 80%"></div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    {{-- Module Status Section --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                </div>
-                <div>
-                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Inventori</h4>
-                    <p class="text-sm font-bold text-white">{{ number_format($inventoryCount) }} <span class="text-[10px] text-slate-500 font-medium">Items</span></p>
-                </div>
-            </div>
-            <div class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Live Sync</span>
-            </div>
-        </div>
-
-        <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                </div>
-                <div>
-                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Permintaan Material</h4>
-                    <p class="text-sm font-bold text-white">{{ number_format($requestCount) }} <span class="text-[10px] text-slate-500 font-medium">Items</span></p>
-                </div>
-            </div>
-            <div class="px-2.5 py-1 rounded-lg {{ $requestCount > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-slate-800 border border-slate-700' }}">
-                <span class="text-[9px] font-black {{ $requestCount > 0 ? 'text-emerald-400' : 'text-slate-500' }} uppercase tracking-widest">{{ $requestCount > 0 ? 'Live Sync' : 'Waiting Data' }}</span>
-            </div>
-        </div>
-
-        <div class="bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>
-                </div>
-                <div>
-                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Riwayat Transaksi</h4>
-                    <p class="text-sm font-bold text-white">{{ number_format($transactionCount) }} <span class="text-[10px] text-slate-500 font-medium">Items</span></p>
-                </div>
-            </div>
-            <div class="px-2.5 py-1 rounded-lg {{ $transactionCount > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-slate-800 border border-slate-700' }}">
-                <span class="text-[9px] font-black {{ $transactionCount > 0 ? 'text-emerald-400' : 'text-slate-500' }} uppercase tracking-widest">{{ $transactionCount > 0 ? 'Live Sync' : 'Waiting Data' }}</span>
-            </div>
-        </div>
-    </div>
-
-    {{-- QC Performance Section --}}
+    {{-- QC VISUALIZATION --}}
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div class="xl:col-span-3 bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="xl:col-span-3 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h3 class="text-lg font-bold text-white uppercase tracking-tight">QC Performance Trends</h3>
-                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Historical Batch Analysis</p>
+                    <h3 class="text-xl font-black text-white uppercase tracking-tight">Tren Performa QC</h3>
+                    <p class="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em] mt-1">Analisis Batch & Aliran Keluar</p>
                 </div>
-                <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest">
-                    <div class="flex items-center gap-1.5 text-indigo-400">
-                        <div class="w-2 h-2 rounded-full bg-indigo-500"></div> QC Lolos
+                <div class="flex items-center gap-6 p-2 bg-slate-950/50 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(129,140,248,0.4)]"></div>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">QC Lolos</span>
                     </div>
-                    <div class="flex items-center gap-1.5 text-rose-400">
-                        <div class="w-2 h-2 rounded-full bg-rose-500"></div> QC Reject
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(251,113,133,0.4)]"></div>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">QC Reject</span>
                     </div>
                 </div>
             </div>
-            <div class="h-[300px] relative">
+            <div class="h-[350px] relative">
                 <canvas id="qcTrendsChart"></canvas>
             </div>
         </div>
 
-        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-            <h3 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 w-full text-left">Composition</h3>
-            <div class="relative w-full aspect-square max-w-[200px]">
+        <div class="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
+            <h3 class="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-8 w-full text-center">Komposisi QC</h3>
+            
+            <div class="relative w-full aspect-square max-w-[220px]">
                 <canvas id="qcCompositionChart"></canvas>
                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p class="text-[10px] text-slate-500 uppercase font-black">Total QC</p>
-                    <p class="text-3xl font-black text-white">{{ number_format(($qcAnalytics['stats']['data'][0] ?? 0) + ($qcAnalytics['stats']['data'][1] ?? 0)) }}</p>
+                    <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Total</p>
+                    <p class="text-4xl font-black text-white tracking-tighter">{{ number_format(($qcAnalytics['stats']['data'][0] ?? 0) + ($qcAnalytics['stats']['data'][1] ?? 0)) }}</p>
                 </div>
             </div>
-            <div class="mt-8 grid grid-cols-2 gap-4 w-full">
-                <div class="text-left">
-                    <div class="flex items-center gap-1.5 mb-1">
-                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">QC Lolos</span>
-                    </div>
-                    <p class="text-lg font-black text-white">{{ number_format($qcAnalytics['stats']['data'][0] ?? 0) }}</p>
+
+            <div class="mt-10 grid grid-cols-2 gap-8 w-full">
+                <div class="text-center group">
+                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Lolos</p>
+                    <p class="text-2xl font-black text-white group-hover:scale-110 transition-transform">{{ number_format($qcAnalytics['stats']['data'][0] ?? 0) }}</p>
                 </div>
-                <div class="text-right">
-                    <div class="flex items-center gap-1.5 mb-1 justify-end">
-                        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">QC Reject</span>
-                        <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                    </div>
-                    <p class="text-lg font-black text-white">{{ number_format($qcAnalytics['stats']['data'][1] ?? 0) }}</p>
+                <div class="text-center group">
+                    <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">Reject</p>
+                    <p class="text-2xl font-black text-white group-hover:scale-110 transition-transform">{{ number_format($qcAnalytics['stats']['data'][1] ?? 0) }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Main Content: Rack Map --}}
-    <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-800/50">
-            <div>
-                <h3 class="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                    </svg>
-                    Peta Okupansi Rak
-                </h3>
-            </div>
-            <div class="flex gap-6 text-[10px] font-bold uppercase tracking-[0.2em]">
-                <div class="flex items-center gap-2 text-emerald-400">
-                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div> Low
-                </div>
-                <div class="flex items-center gap-2 text-amber-400">
-                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]"></div> High
-                </div>
-                <div class="flex items-center gap-2 text-rose-400">
-                    <div class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]"></div> Full
-                </div>
-            </div>
-        </div>
-
-        {{-- Grouped Racks (3 Categories) --}}
-        @php
-            $racks = collect($rackMap);
-            $categories = [
-                'Inbound' => $racks->filter(fn($r) => in_array($r['category'] ?? '', ['manual', 'before', 'manual_l', 'manual_tl', 'manual_tn'])),
-                'Aksesoris' => $racks->filter(fn($r) => ($r['category'] ?? '') === 'accessories'),
-                'Rak Finish' => $racks->filter(fn($r) => ($r['category'] ?? '') === 'shoes'),
-            ];
-        @endphp
-
-        <div class="grid grid-cols-1 gap-8">
-            @foreach ($categories as $title => $items)
-                @if($items->isNotEmpty())
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <h4 class="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">{{ $title }}</h4>
-                            <div class="h-[1px] flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
-                            <span class="text-[10px] font-black text-slate-500 uppercase">{{ $items->count() }} Rak</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-                            @foreach ($items as $rack)
-                                @php
-                                    $colorClass = match($rack['color']) {
-                                        'yellow' => 'from-amber-500/10 to-transparent border-amber-500/30 text-amber-200',
-                                        'black', 'rose' => 'from-rose-500/20 to-transparent border-rose-500/40 text-rose-100',
-                                        default => 'from-emerald-500/10 to-transparent border-emerald-500/20 text-emerald-200'
-                                    };
-                                    $bulletColor = match($rack['color']) {
-                                        'yellow' => 'bg-amber-500',
-                                        'black', 'rose' => 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]',
-                                        default => 'bg-emerald-500'
-                                    };
-                                @endphp
-                                <div class="bg-gradient-to-br {{ $colorClass }} border p-3 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-white/20 group relative overflow-hidden">
-                                    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    <span class="text-[10px] font-black tracking-widest uppercase mb-1 relative z-10">{{ $rack['code'] }}</span>
-                                    <div class="flex items-center gap-1.5 relative z-10">
-                                        <div class="w-1.5 h-1.5 rounded-full {{ $bulletColor }}"></div>
-                                        <span class="text-xs font-mono font-bold">{{ $rack['usage'] }}%</span>
-                                    </div>
-                                    <span class="text-[9px] text-slate-500 mt-1 relative z-10">{{ $rack['count'] }}/{{ $rack['capacity'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            @endforeach
-        </div>
-    </div>
-
+    {{-- External Resources --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Flatpickr Custom Solid Dark Theme */
+        .flatpickr-calendar {
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
+            border-radius: 1rem !important;
+            color: #f8fafc !important;
+            width: 320px !important;
+        }
+        
+        .flatpickr-months .flatpickr-month {
+            background: #1e293b !important;
+            color: #f8fafc !important;
+            fill: #f8fafc !important;
+            height: 50px !important;
+        }
+
+        .flatpickr-current-month {
+            font-size: 1.1rem !important;
+            font-weight: 800 !important;
+            padding-top: 10px !important;
+        }
+
+        .flatpickr-weekday {
+            color: #94a3b8 !important;
+            font-weight: 700 !important;
+        }
+
+        .flatpickr-day {
+            color: #cbd5e1 !important;
+            font-weight: 600 !important;
+            border-radius: 8px !important;
+        }
+
+        .flatpickr-day:hover {
+            background: #334155 !important;
+            color: #fff !important;
+        }
+
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+            background: #10b981 !important;
+            border-color: #10b981 !important;
+            color: #fff !important;
+        }
+
+        .flatpickr-day.inRange {
+            background: rgba(16, 185, 129, 0.2) !important;
+            box-shadow: none !important;
+            color: #10b981 !important;
+        }
+
+        .flatpickr-calendar.arrowTop:after, .flatpickr-calendar.arrowTop:before {
+            border-bottom-color: #1e293b !important;
+        }
+    </style>
+
     <script>
-        document.addEventListener('livewire:navigated', () => {
-            initCharts();
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initCharts();
-        });
-
-        // Handle Chart Re-init after Sync
-        window.addEventListener('swal', () => {
-            setTimeout(initCharts, 500);
-        });
+        document.addEventListener('livewire:navigated', () => initCharts());
+        document.addEventListener('DOMContentLoaded', () => initCharts());
+        window.addEventListener('swal', () => setTimeout(initCharts, 500));
 
         let trendsChart = null;
         let compositionChart = null;
@@ -305,7 +311,6 @@
             const ctxTrends = document.getElementById('qcTrendsChart');
             if (ctxTrends) {
                 if (trendsChart) trendsChart.destroy();
-                
                 trendsChart = new Chart(ctxTrends, {
                     type: 'line',
                     data: {
@@ -314,42 +319,47 @@
                             {
                                 label: 'QC Lolos',
                                 data: qcData.trends.lolos,
-                                borderColor: '#818cf8', // indigo-400
-                                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                                borderColor: '#818cf8',
+                                backgroundColor: 'rgba(129, 140, 248, 0.05)',
                                 fill: true,
                                 tension: 0.4,
-                                borderWidth: 3,
-                                pointRadius: 4,
-                                pointBackgroundColor: '#818cf8'
+                                borderWidth: 4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#818cf8',
+                                pointHoverBorderColor: '#fff',
+                                pointHoverBorderWidth: 2
                             },
                             {
                                 label: 'QC Reject',
                                 data: qcData.trends.reject,
-                                borderColor: '#fb7185', // rose-400
-                                backgroundColor: 'rgba(251, 113, 133, 0.1)',
+                                borderColor: '#fb7185',
+                                backgroundColor: 'rgba(251, 113, 133, 0.05)',
                                 fill: true,
                                 tension: 0.4,
-                                borderWidth: 3,
-                                pointRadius: 4,
-                                pointBackgroundColor: '#fb7185'
+                                borderWidth: 4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#fb7185',
+                                pointHoverBorderColor: '#fff',
+                                pointHoverBorderWidth: 2
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: { legend: { display: false } },
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: { color: 'rgba(51, 65, 85, 0.5)', drawBorder: false },
-                                ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } }
+                                grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
+                                ticks: { color: '#475569', font: { size: 10, weight: '900' }, padding: 10 }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } }
+                                ticks: { color: '#475569', font: { size: 10, weight: '900' }, padding: 10 }
                             }
                         }
                     }
@@ -359,7 +369,6 @@
             const ctxComposition = document.getElementById('qcCompositionChart');
             if (ctxComposition) {
                 if (compositionChart) compositionChart.destroy();
-
                 compositionChart = new Chart(ctxComposition, {
                     type: 'doughnut',
                     data: {
@@ -368,16 +377,16 @@
                             data: qcData.stats.data,
                             backgroundColor: ['#818cf8', '#fb7185'],
                             borderWidth: 0,
-                            hoverOffset: 4
+                            hoverOffset: 15,
+                            borderRadius: 10
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '80%',
-                        plugins: {
-                            legend: { display: false }
-                        }
+                        cutout: '85%',
+                        plugins: { legend: { display: false } },
+                        animation: { animateScale: true, animateRotate: true }
                     }
                 });
             }

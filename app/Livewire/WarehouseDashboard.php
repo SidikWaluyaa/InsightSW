@@ -6,9 +6,11 @@ use Livewire\Component;
 use App\Models\WarehouseInventory;
 use App\Models\WarehouseRequest;
 use App\Models\WarehouseTransaction;
+use App\Services\WarehouseApiService;
 use App\Services\WarehouseSyncService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
@@ -22,55 +24,67 @@ class WarehouseDashboard extends Component
     public $subCategoryFilter = 'all';
     public $statusFilter = 'all';
 
-    public function updatingSearch()
-    {
-        $this->resetPage();
-    }
+    // Date Filters
+    public $startDate = '';
+    public $endDate = '';
+    public $lastSync = null;
 
-    public function updatingSubCategoryFilter()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingStatusFilter()
-    {
-        $this->resetPage();
-    }
+    public function updatingSearch() { $this->resetPage(); }
+    public function updatingSubCategoryFilter() { $this->resetPage(); }
+    public function updatingStatusFilter() { $this->resetPage(); }
 
     public function mount()
     {
-        //
+        $this->startDate = date('Y-m-01');
+        $this->endDate = date('Y-m-d');
+        $this->lastSync = now()->format('H:i:s');
+    }
+
+    public function setRange($range)
+    {
+        switch ($range) {
+            case 'today':
+                $this->startDate = now()->toDateString();
+                $this->endDate = now()->toDateString();
+                break;
+            case '7days':
+                $this->startDate = now()->subDays(7)->toDateString();
+                $this->endDate = now()->toDateString();
+                break;
+            case '30days':
+                $this->startDate = now()->subDays(30)->toDateString();
+                $this->endDate = now()->toDateString();
+                break;
+        }
+        $this->syncAll();
     }
 
     public function syncAll()
     {
         $this->isSyncing = true;
         
-        $service = new WarehouseSyncService();
-        $invResult = $service->syncInventory();
-        $reqResult = $service->syncRequests();
-        $trxResult = $service->syncTransactions();
+        try {
+            $service = new WarehouseSyncService();
+            $service->syncInventory();
+            $service->syncRequests();
+            $service->syncTransactions();
 
-        if ($invResult['success'] && $reqResult['success'] && $trxResult['success']) {
+            $this->lastSync = now()->format('H:i:s');
+            
             $this->dispatch('swal', [
                 'title' => 'Sync Berhasil',
-                'text' => 'Seluruh data operasional Gudang telah terbarui.',
+                'text' => 'Data operasional Gudang telah terbarui.',
                 'icon' => 'success',
-                'timer' => 3000
+                'timer' => 2000
             ]);
-        } else {
-            $this->dispatch('swal', [
-                'title' => 'Sync Error',
-                'text' => 'Beberapa data gagal ditarik. Cek log untuk detail.',
-                'icon' => 'error',
-                'timer' => 3000
-            ]);
+        } catch (\Exception $e) {
+            Log::error("Dashboard Sync Error: " . $e->getMessage());
         }
 
         $this->isSyncing = false;
     }
 
-    // ─── KPI METRICS ───────────────────────────
+    // ─── KPI METRICS (INVENTORY) ────────────────
 
     #[Computed]
     public function assetValuation()
@@ -79,70 +93,23 @@ class WarehouseDashboard extends Component
             ->groupBy('category')
             ->get();
 
-        $grandTotal = $valuation->sum('total');
-
         return [
-            'grand_total' => $grandTotal,
+            'grand_total' => $valuation->sum('total'),
             'categories' => $valuation
         ];
     }
 
     #[Computed]
-    public function totalItems()
-    {
-        return WarehouseInventory::count();
-    }
-
-    #[Computed]
-    public function totalStock()
-    {
-        return WarehouseInventory::sum('current_stock');
-    }
-
-    #[Computed]
-    public function outOfStockCount()
-    {
-        return WarehouseInventory::where('status', 'Out of Stock')->count();
-    }
-
-    #[Computed]
-    public function lowStockCount()
-    {
-        return WarehouseInventory::whereColumn('current_stock', '<=', 'min_stock')
-            ->where('current_stock', '>', 0)
-            ->count();
-    }
-
-    // ─── ALGORITHMIC INSIGHTS ──────────────────
-
-    #[Computed]
-    public function subCategoryBreakdown()
-    {
-        return WarehouseInventory::select(
-                DB::raw("CASE WHEN sub_category IS NULL OR sub_category = '' THEN 'Material & Upper' ELSE sub_category END as sub_category_label"),
-                DB::raw('COUNT(*) as item_count'),
-                DB::raw('SUM(current_stock) as total_stock'),
-                DB::raw('SUM(total_valuation) as total_val'),
-                DB::raw('AVG(unit_price) as avg_price')
-            )
-            ->groupBy('sub_category_label')
-            ->orderBy('total_val', 'desc')
-            ->get();
-    }
-
-    #[Computed]
     public function stockHealthScore()
     {
-        // Score 0-100 based on stock health metrics
         $total = WarehouseInventory::count();
-        if ($total === 0) return 100;
+        if ($total === 0) return ['score' => 100, 'grade' => 'A'];
 
         $outOfStock = WarehouseInventory::where('status', 'Out of Stock')->count();
         $lowStock = WarehouseInventory::whereColumn('current_stock', '<=', 'min_stock')
             ->where('current_stock', '>', 0)->count();
         $healthy = $total - $outOfStock - $lowStock;
 
-        // Weighted: out of stock = -3 pts, low stock = -1 pt per item
         $score = max(0, min(100, round(($healthy / $total) * 100)));
         
         return [
@@ -156,61 +123,38 @@ class WarehouseDashboard extends Component
     }
 
     #[Computed]
-    public function topValueItems()
+    public function totalStock()
     {
-        return WarehouseInventory::orderBy('total_valuation', 'desc')
-            ->limit(10)
-            ->get();
+        return WarehouseInventory::sum('current_stock');
     }
 
-    // ─── CRISIS ALERTS ─────────────────────────
+    // ─── OPERATIONAL METRICS (API BASED) ────────
 
     #[Computed]
-    public function lowStockAlerts()
+    public function warehouseStats()
     {
-        return WarehouseInventory::where(function($q) {
-                $q->whereColumn('current_stock', '<=', 'min_stock')
-                  ->orWhere('status', 'Out of Stock');
-            })
-            ->when($this->search, function($q) {
-                $q->where(function($sub) {
-                    $sub->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('sub_category', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->orderBy('current_stock', 'asc')
-            ->limit(30)
-            ->get();
+        try {
+            $apiService = new WarehouseApiService();
+            $data = $apiService->fetchSummary($this->startDate, $this->endDate);
+            $metrics = $data['summary'] ?? [];
+
+            return [
+                'total_sepatu_dirak' => $metrics['stored_items'] ?? 0,
+                'total_sepatu_finish_periode' => $metrics['finished_day'] ?? 0,
+                'total_sepatu_diterima_periode' => $metrics['incoming_day'] ?? 0,
+                'total_spk_print' => $metrics['spk_print'] ?? 0,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total_sepatu_dirak' => 0,
+                'total_sepatu_finish_periode' => 0,
+                'total_sepatu_diterima_periode' => 0,
+                'total_spk_print' => 0,
+            ];
+        }
     }
 
-    #[Computed]
-    public function fulfillmentHealth()
-    {
-        $threeDaysAgo = Carbon::now()->subDays(3);
-        
-        $bottlenecks = WarehouseRequest::where('status', 'PENDING')
-            ->where('requested_at', '<', $threeDaysAgo)
-            ->count();
-
-        $allPending = WarehouseRequest::where('status', 'PENDING')->count();
-
-        return [
-            'bottleneck_count' => $bottlenecks,
-            'total_pending' => $allPending
-        ];
-    }
-
-    #[Computed]
-    public function auditIntegrity()
-    {
-        $thirtyDaysAgo = Carbon::now()->subDays(30);
-
-        return WarehouseTransaction::where('type', 'ADJUSTMENT')
-            ->where('transaction_date', '>=', $thirtyDaysAgo)
-            ->count();
-    }
-
-    // ─── INVENTORY TABLE (Paginated) ───────────
+    // ─── TABLE DATA ────────────────────────────
 
     #[Computed]
     public function allInventory()
@@ -233,6 +177,21 @@ class WarehouseDashboard extends Component
     }
 
     #[Computed]
+    public function subCategoryBreakdown()
+    {
+        return WarehouseInventory::select(
+                DB::raw("CASE WHEN sub_category IS NULL OR sub_category = '' THEN 'Material & Upper' ELSE sub_category END as sub_category_label"),
+                DB::raw('COUNT(*) as item_count'),
+                DB::raw('SUM(current_stock) as total_stock'),
+                DB::raw('SUM(total_valuation) as total_val'),
+                DB::raw('AVG(unit_price) as avg_price')
+            )
+            ->groupBy('sub_category_label')
+            ->orderBy('total_val', 'desc')
+            ->get();
+    }
+
+    #[Computed]
     public function subCategories()
     {
         return WarehouseInventory::select('sub_category')
@@ -243,9 +202,17 @@ class WarehouseDashboard extends Component
             ->pluck('sub_category');
     }
 
-    public function formatCurrency($amount)
+    #[Computed]
+    public function topValueItems()
     {
-        return 'Rp ' . number_format($amount, 0, ',', '.');
+        return WarehouseInventory::orderBy('total_valuation', 'desc')
+            ->limit(10)
+            ->get();
+    }
+
+    public function formatCurrency($value)
+    {
+        return 'Rp ' . number_format($value, 0, ',', '.');
     }
 
     #[Layout('layouts.app')]

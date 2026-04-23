@@ -25,7 +25,7 @@ class WarehouseApiService
      * @return array
      * @throws Exception
      */
-    public function fetchSummary(string $startDate, string $endDate): array
+    public function fetchSummary(string $startDate, string $endDate, bool $forceRefresh = false): array
     {
         $endpoint = rtrim($this->baseUrl, '/') . '/warehouse-summary';
 
@@ -38,6 +38,7 @@ class WarehouseApiService
                 ->get($endpoint, [
                     'start_date' => $startDate,
                     'end_date'   => $endDate,
+                    'force_refresh' => $forceRefresh ? 1 : 0,
                 ]);
 
             if ($response->status() === 401) {
