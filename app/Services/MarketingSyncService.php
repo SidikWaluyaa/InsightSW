@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DailyReport;
 use App\Models\FinanceSync;
 use App\Models\MetaAdsReport;
+use App\Models\PaymentSync;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -31,7 +32,7 @@ class MarketingSyncService
     /**
      * Sync marketing data for a custom date range.
      */
-    public function syncRange(string $startDateStr, string $endDateStr): array
+    public function syncRange(string $startDateStr, string $endDateStr, bool $skipPaymentSync = false): array
     {
         $results = ['days_processed' => 0, 'errors' => []];
         $start = Carbon::parse($startDateStr);
@@ -58,20 +59,25 @@ class MarketingSyncService
             $results['errors'][] = "Sleekflow: " . $e->getMessage();
         }
 
-        // 3. BULK FETCH: Finance/Revenue
+        // 3. BULK FETCH: Payment/Revenue (Real Omset)
         try {
-            app(FinanceSyncService::class)->sync($startDateStr, $endDateStr);
-            $financeDailyTotals = FinanceSync::query()
-                ->whereBetween('source_created_at', [$startDateStr . ' 00:00:00', $endDateStr . ' 23:59:59'])
-                ->selectRaw("DATE(source_created_at) as date, SUM(amount_paid) as revenue")
+            // Also sync payments (latest transactional data) - Optimized to run only when needed
+            if (!$skipPaymentSync) {
+                app(PaymentSyncService::class)->sync();
+            }
+            
+            // Query from PaymentSync based on paid_at (Real money received)
+            $financeDailyTotals = PaymentSync::query()
+                ->whereBetween('paid_at', [$startDateStr . ' 00:00:00', $endDateStr . ' 23:59:59'])
+                ->selectRaw("DATE(paid_at) as date, SUM(amount_paid) as revenue")
                 ->groupBy('date')
                 ->get()
                 ->keyBy(fn($item) => is_string($item->date) ? $item->date : Carbon::parse($item->date)->toDateString())
                 ->toArray();
-            Log::info("Finance Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
+            Log::info("Payment Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
         } catch (\Exception $e) {
-            Log::error("Finance Bulk Sync Error: " . $e->getMessage());
-            $results['errors'][] = "Finance: " . $e->getMessage();
+            Log::error("Payment Bulk Sync Error: " . $e->getMessage());
+            $results['errors'][] = "Payment: " . $e->getMessage();
         }
 
         // 4. PRE-FETCH Existing Reports (to preserve budgeting)
@@ -132,7 +138,7 @@ class MarketingSyncService
             $taxRate = (float) env('META_TAX_RATE', 1.11);
 
             $revenue = $useLocalOnly 
-                ? FinanceSync::whereBetween('source_created_at', [$date.' 00:00:00', $date.' 23:59:59'])->sum('amount_paid')
+                ? PaymentSync::whereBetween('paid_at', [$date.' 00:00:00', $date.' 23:59:59'])->sum('amount_paid')
                 : 0;
 
             $sleekflowData = $this->sleekflowService->getAnalyticsData($date, $date);

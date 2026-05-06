@@ -19,15 +19,15 @@ class WarehouseDashboard extends Component
 {
     use WithPagination;
 
-    public $isSyncing = false;
-    public $search = '';
-    public $subCategoryFilter = 'all';
-    public $statusFilter = 'all';
+    public bool $isSyncing = false;
+    public string $search = '';
+    public string $subCategoryFilter = 'all';
+    public string $statusFilter = 'all';
 
     // Date Filters
-    public $startDate = '';
-    public $endDate = '';
-    public $lastSync = null;
+    public string $startDate = '';
+    public string $endDate = '';
+    public ?string $lastSync = null;
 
     public function updatingSearch() { $this->resetPage(); }
     public function updatingSubCategoryFilter() { $this->resetPage(); }
@@ -40,7 +40,7 @@ class WarehouseDashboard extends Component
         $this->lastSync = now()->format('H:i:s');
     }
 
-    public function setRange($range)
+    public function setRange(string $range)
     {
         switch ($range) {
             case 'today':
@@ -210,7 +210,7 @@ class WarehouseDashboard extends Component
             ->get();
     }
 
-    public function formatCurrency($value)
+    public function formatCurrency(int|float $value)
     {
         return 'Rp ' . number_format($value, 0, ',', '.');
     }

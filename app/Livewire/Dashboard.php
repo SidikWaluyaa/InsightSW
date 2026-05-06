@@ -94,7 +94,8 @@ class Dashboard extends Component
 
         // We use a shorter lock for chunks
         $synced = $syncService->syncIfAllowed('marketing_sync', function() use ($marketingSyncService, $chunk) {
-            $marketingSyncService->syncRange($chunk['start'], $chunk['end']);
+            // Only sync payments on the first chunk to save API resources
+            $marketingSyncService->syncRange($chunk['start'], $chunk['end'], skipPaymentSync: $this->currentStepIndex > 0);
         }, 0); // Disable throttle for sequential chunks
 
         $this->currentStepIndex++;
@@ -142,7 +143,7 @@ class Dashboard extends Component
     /**
      * Update daily budget directly from the table
      */
-    public function updateBudget($id, $value): void
+    public function updateBudget(int|string $id, mixed $value): void
     {
         // Cleanup value (remove non-numeric)
         $cleanValue = preg_replace('/[^0-9]/', '', $value);
@@ -185,17 +186,17 @@ class Dashboard extends Component
         return $dashboardService->getDailyReports($this->selectedMonth . '-01');
     }
 
-    public function formatCurrency($amount): string
+    public function formatCurrency(int|float $amount): string
     {
         return app(CalculationService::class)->formatCurrency((float) $amount);
     }
 
-    public function formatPercentage($amount): string
+    public function formatPercentage(int|float $amount): string
     {
         return app(CalculationService::class)->formatPercentage((float) $amount);
     }
 
-    public function getRoasIndicator($current, $target): string
+    public function getRoasIndicator(int|float $current, int|float $target): string
     {
         return app(CalculationService::class)->getRoasIndicator((float) $current, (float) $target);
     }

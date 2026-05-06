@@ -14,19 +14,19 @@ use Livewire\Attributes\Title;
 #[Title('Warehouse Command Center')]
 class WarehouseCommandCenter extends Component
 {
-    public $summary = [];
-    public $rackMap = [];
-    public $qcAnalytics = [];
-    public $lastSync = null;
-    public $isLoading = false;
-    public $inventoryCount = 0;
-    public $requestCount = 0;
-    public $transactionCount = 0;
-    public $syncResults = [];
+    public array $summary = [];
+    public array $rackMap = [];
+    public array $qcAnalytics = [];
+    public ?string $lastSync = null;
+    public bool $isLoading = false;
+    public int $inventoryCount = 0;
+    public int $requestCount = 0;
+    public int $transactionCount = 0;
+    public array $syncResults = [];
 
     // Date Filters for Shoe Metrics
-    public $startDate = '';
-    public $endDate = '';
+    public string $startDate = '';
+    public string $endDate = '';
 
     public function mount()
     {
@@ -108,7 +108,7 @@ class WarehouseCommandCenter extends Component
         $this->isLoading = false;
     }
 
-    public function setRange($range)
+    public function setRange(string $range)
     {
         switch ($range) {
             case 'today':
