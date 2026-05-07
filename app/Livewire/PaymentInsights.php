@@ -23,18 +23,18 @@ class PaymentInsights extends Component
     use WithPagination;
 
     public $search = '';
-    public $statusFilter = 'all'; // all, unpaid, paid
+    public $typeFilter = 'all'; // all, BEFORE, AFTER, TAMBAH_JASA, LUNAS_AWAL, ONGKIR
     public $dateFilterType = 'paid_at'; // paid_at, source_created_at
-    public $startDate;
-    public $endDate;
-    public $analyticsStartDate;
-    public $analyticsEndDate;
-    public $isSyncing = false;
-    public $lastSyncTime;
+    public ?string $startDate = null;
+    public ?string $endDate = null;
+    public ?string $analyticsStartDate = null;
+    public ?string $analyticsEndDate = null;
+    public bool $isSyncing = false;
+    public ?int $lastSyncTime = null;
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'statusFilter' => ['except' => 'all'],
+        'typeFilter' => ['except' => 'all'],
         'dateFilterType' => ['except' => 'paid_at'],
         'startDate' => ['except' => null],
         'endDate' => ['except' => null],
@@ -52,7 +52,7 @@ class PaymentInsights extends Component
         $this->resetPage();
     }
 
-    public function updatingStatusFilter()
+    public function updatingTypeFilter()
     {
         $this->resetPage();
     }
@@ -165,7 +165,7 @@ class PaymentInsights extends Component
     }
 
 
-    public function formatCurrency($amount)
+    public function formatCurrency(float|int $amount)
     {
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }
@@ -174,19 +174,8 @@ class PaymentInsights extends Component
     {
         $query = PaymentSync::query();
 
-        if ($this->statusFilter !== 'all') {
-            // Filter to show only the LATEST payment for each invoice
-            $query->whereIn('id', function($subQuery) {
-                $subQuery->select(DB::raw('MAX(id)'))
-                         ->from('payment_syncs')
-                         ->groupBy('spk_number');
-            });
-
-            if ($this->statusFilter === 'unpaid') {
-                $query->where('balance_snapshot', '>', 0);
-            } elseif ($this->statusFilter === 'paid') {
-                $query->where('balance_snapshot', '<=', 0);
-            }
+        if ($this->typeFilter !== 'all') {
+            $query->where('payment_type', $this->typeFilter);
         }
 
         return $query->when($this->search, function($query) {
@@ -216,7 +205,7 @@ class PaymentInsights extends Component
         
         $pdf = Pdf::loadView('exports.payment-pdf', [
             'payments' => $payments,
-            'statusFilter' => $this->statusFilter,
+            'typeFilter' => $this->typeFilter,
             'search' => $this->search,
         ]);
         

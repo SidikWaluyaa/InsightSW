@@ -17,12 +17,15 @@
         .type-badge { font-weight: bold; font-size: 8px; }
         .type-dp { color: #059669; }
         .type-lunas { color: #2563eb; }
+        .type-tambah { color: #4F46E5; }
+        .type-lunas-awal { color: #d97706; }
+        .type-ongkir { color: #e11d48; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Laporan Pembayaran (Payment Ledger)</h1>
-        <p>Tanggal Cetak: {{ now()->format('d M Y, H:i') }} | Filter: {{ strtoupper($statusFilter) }} | Pencarian: {{ $search ?: 'Semua' }}</p>
+        <p>Tanggal Cetak: {{ now()->format('d M Y, H:i') }} | Filter: {{ strtoupper($typeFilter) }} | Pencarian: {{ $search ?: 'Semua' }}</p>
     </div>
 
     <table>
@@ -58,11 +61,17 @@
                         <span class="customer-phone">{{ $payment->customer_phone ?: '-' }}</span>
                     </td>
                     <td>
-                        @if($payment->payment_type === 'BEFORE')
-                            <span class="type-badge type-dp">DP / AWAL</span>
-                        @else
-                            <span class="type-badge type-lunas">LUNAS / AKHIR</span>
-                        @endif
+                        @php
+                            $typeClass = match($payment->payment_type) {
+                                'BEFORE' => 'type-dp',
+                                'AFTER' => 'type-lunas',
+                                'TAMBAH_JASA' => 'type-tambah',
+                                'LUNAS_AWAL' => 'type-lunas-awal',
+                                'ONGKIR' => 'type-ongkir',
+                                default => ''
+                            };
+                        @endphp
+                        <span class="type-badge {{ $typeClass }}">{{ $payment->payment_type_label }}</span>
                     </td>
                     <td class="text-right">Rp {{ number_format($payment->total_bill_snapshot, 0, ',', '.') }}</td>
                     <td class="text-right" style="color: #4F46E5; font-weight: bold;">Rp {{ number_format($payment->amount_paid, 0, ',', '.') }}</td>

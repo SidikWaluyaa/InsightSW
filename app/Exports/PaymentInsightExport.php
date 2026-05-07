@@ -13,17 +13,19 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class PaymentInsightExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithColumnFormatting
 {
-    protected $query;
+    protected EloquentBuilder|QueryBuilder $query;
 
-    public function __construct($query)
+    public function __construct(EloquentBuilder|QueryBuilder $query)
     {
         $this->query = $query;
     }
 
-    public function query()
+    public function query(): EloquentBuilder|QueryBuilder
     {
         return $this->query;
     }
@@ -50,7 +52,7 @@ class PaymentInsightExport implements FromQuery, WithHeadings, WithMapping, With
             $payment->spk_number,
             strtoupper($payment->customer_name ?? '-'),
             $payment->customer_phone ?? '-',
-            $payment->payment_type === 'BEFORE' ? 'DP / AWAL' : 'LUNAS / AKHIR',
+            $payment->payment_type_label,
             $payment->total_bill_snapshot,
             $payment->amount_paid,
             $payment->balance_snapshot,
