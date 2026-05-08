@@ -15,12 +15,12 @@ class FinanceDashboard extends Component
 {
     use \Livewire\WithPagination;
 
-    public $lastSyncTimestamp;
-    public $isSyncing = false;
-    public $startDate;
-    public $endDate;
-    public $search = '';
-    public $statusFilter = '';
+    public ?int $lastSyncTimestamp = null;
+    public bool $isSyncing = false;
+    public string $startDate;
+    public string $endDate;
+    public string $search = '';
+    public string $statusFilter = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -37,12 +37,12 @@ class FinanceDashboard extends Component
         $this->checkSync(); // Force initial check
     }
 
-    public function updateSyncState()
+    public function updateSyncState(): void
     {
         $this->lastSyncTimestamp = app(\App\Services\SyncService::class)->getLastSyncTime('finance_sync');
     }
 
-    public function checkSync()
+    public function checkSync(): void
     {
         // Polling logic
         $this->isSyncing = true;
@@ -55,7 +55,7 @@ class FinanceDashboard extends Component
         $this->isSyncing = false;
     }
 
-    public function syncPusat(FinanceSyncService $service)
+    public function syncPusat(FinanceSyncService $service): void
     {
         $this->isSyncing = true;
         
@@ -86,7 +86,7 @@ class FinanceDashboard extends Component
     }
 
     #[Layout('layouts.app')]
-    public function render()
+    public function render(): \Illuminate\View\View
     {
         $start = $this->startDate . ' 00:00:00';
         $end = $this->endDate . ' 23:59:59';
@@ -116,7 +116,7 @@ class FinanceDashboard extends Component
             });
         }
 
-        $transactions = $query->orderBy('source_created_at', 'DESC')->paginate(10);
+        $transactions = $query->orderBy('source_created_at', 'DESC')->paginate(100);
 
         return view('livewire.finance-dashboard', [
             'transactions' => $transactions,
@@ -125,7 +125,7 @@ class FinanceDashboard extends Component
     }
 
     #[Computed]
-    public function stats()
+    public function stats(): array
     {
         $start = $this->startDate . ' 00:00:00';
         $end = $this->endDate . ' 23:59:59';
@@ -153,7 +153,7 @@ class FinanceDashboard extends Component
         ];
     }
 
-    public function formatCurrency($amount)
+    public function formatCurrency(float|int $amount): string
     {
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }

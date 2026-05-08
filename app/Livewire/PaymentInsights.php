@@ -16,15 +16,17 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PaymentInsightExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 #[Layout('layouts.app')]
 class PaymentInsights extends Component
 {
     use WithPagination;
 
-    public $search = '';
-    public $typeFilter = 'all'; // all, BEFORE, AFTER, TAMBAH_JASA, LUNAS_AWAL, ONGKIR
-    public $dateFilterType = 'paid_at'; // paid_at, source_created_at
+    public string $search = '';
+    public string $typeFilter = 'all'; // all, BEFORE, AFTER, TAMBAH_JASA, LUNAS_AWAL, ONGKIR
+    public string $dateFilterType = 'paid_at'; // paid_at, source_created_at
     public ?string $startDate = null;
     public ?string $endDate = null;
     public ?string $analyticsStartDate = null;
@@ -42,59 +44,59 @@ class PaymentInsights extends Component
         'analyticsEndDate' => ['except' => null],
     ];
 
-    public function updatingSearch()
+    public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
-    public function updatingDateFilterType()
+    public function updatingDateFilterType(): void
     {
         $this->resetPage();
     }
 
-    public function updatingTypeFilter()
+    public function updatingTypeFilter(): void
     {
         $this->resetPage();
     }
 
-    public function updatingStartDate()
+    public function updatingStartDate(): void
     {
         $this->resetPage();
     }
 
-    public function updatingEndDate()
+    public function updatingEndDate(): void
     {
         $this->resetPage();
     }
 
-    public function updatedStartDate()
+    public function updatedStartDate(): void
     {
         $this->dispatchData();
     }
 
-    public function updatedEndDate()
+    public function updatedEndDate(): void
     {
         $this->dispatchData();
     }
 
-    public function updatedAnalyticsStartDate()
+    public function updatedAnalyticsStartDate(): void
     {
         $this->dispatchData();
     }
 
-    public function updatedAnalyticsEndDate()
+    public function updatedAnalyticsEndDate(): void
     {
         $this->dispatchData();
     }
 
-    public function dispatchData()
+    public function dispatchData(): void
     {
         $this->dispatch('revenue-data-updated', [
             'revenueData' => $this->dailyRevenue
         ]);
     }
 
-    public function mount()
+    public function mount(): void
     {
         $this->updateSyncState();
         $this->syncData(); // Sync on first load
@@ -104,12 +106,12 @@ class PaymentInsights extends Component
         $this->analyticsEndDate = now()->format('Y-m-d');
     }
 
-    public function updateSyncState()
+    public function updateSyncState(): void
     {
         $this->lastSyncTime = app(SyncService::class)->getLastSyncTime('payment_insights_sync');
     }
 
-    public function syncData()
+    public function syncData(): void
     {
         $this->isSyncing = true;
         
@@ -140,7 +142,7 @@ class PaymentInsights extends Component
     }
 
     #[Computed]
-    public function dailyRevenue()
+    public function dailyRevenue(): \Illuminate\Support\Collection
     {
         // Use separate analytics filters
         $start = $this->analyticsStartDate ? Carbon::parse($this->analyticsStartDate)->startOfDay() : now()->subDays(13)->startOfDay();
@@ -159,18 +161,18 @@ class PaymentInsights extends Component
     }
 
     #[Computed]
-    public function maxDailyRevenue()
+    public function maxDailyRevenue(): float|int
     {
         return $this->dailyRevenue->max('total') ?: 1;
     }
 
 
-    public function formatCurrency(float|int $amount)
+    public function formatCurrency(float|int $amount): string
     {
         return 'Rp ' . number_format($amount, 0, ',', '.');
     }
 
-    public function getFilteredQuery()
+    public function getFilteredQuery(): Builder|QueryBuilder
     {
         $query = PaymentSync::query();
 
@@ -193,13 +195,13 @@ class PaymentInsights extends Component
             ->orderBy($this->dateFilterType, 'desc');
     }
 
-    public function exportExcel()
+    public function exportExcel(): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $query = $this->getFilteredQuery();
         return Excel::download(new PaymentInsightExport($query), 'Payment_Insights_' . now()->format('YmdHis') . '.xlsx');
     }
 
-    public function exportPdf()
+    public function exportPdf(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $payments = $this->getFilteredQuery()->get();
         
@@ -214,9 +216,9 @@ class PaymentInsights extends Component
         }, 'Payment_Insights_' . now()->format('YmdHis') . '.pdf');
     }
 
-    public function render()
+    public function render(): \Illuminate\View\View
     {
-        $payments = $this->getFilteredQuery()->paginate(15);
+        $payments = $this->getFilteredQuery()->paginate(100);
 
         return view('livewire.payment-insights', [
             'payments' => $payments
