@@ -9,6 +9,10 @@ use App\Services\FinanceSyncService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\FinanceSyncExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 
 #[Layout('layouts.app')]
 class FinanceDashboard extends Component
@@ -85,8 +89,7 @@ class FinanceDashboard extends Component
         $this->isSyncing = false;
     }
 
-    #[Layout('layouts.app')]
-    public function render(): \Illuminate\View\View
+    public function getFilteredQuery(): Builder
     {
         $start = $this->startDate . ' 00:00:00';
         $end = $this->endDate . ' 23:59:59';
@@ -95,8 +98,6 @@ class FinanceDashboard extends Component
             ->whereBetween('source_created_at', [$start, $end]);
 
         if ($this->statusFilter) {
-            // Support BB (Database BB), BL (Database BL), and L (Database L)
-            // Keep PL as catch-all for BB/BL to handle the current session transition
             if ($this->statusFilter === 'BB' || $this->statusFilter === 'B') {
                 $query->where('status_pembayaran', 'BB');
             } elseif ($this->statusFilter === 'BL' || $this->statusFilter === 'C') {
@@ -116,13 +117,29 @@ class FinanceDashboard extends Component
             });
         }
 
-        $transactions = $query->orderBy('source_created_at', 'DESC')->paginate(100);
+        return $query;
+    }
+
+    public function exportExcel(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = $this->getFilteredQuery()->orderBy('source_created_at', 'DESC');
+        return Excel::download(new FinanceSyncExport($query), 'Finance_Report_' . now()->format('YmdHis') . '.xlsx');
+    }
+
+    #[Layout('layouts.app')]
+
+    public function render(): \Illuminate\View\View
+    {
+        $transactions = $this->getFilteredQuery()
+            ->orderBy('source_created_at', 'DESC')
+            ->paginate(100);
 
         return view('livewire.finance-dashboard', [
             'transactions' => $transactions,
             'stats' => $this->stats,
         ]);
     }
+
 
     #[Computed]
     public function stats(): array

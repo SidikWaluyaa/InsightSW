@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('finance-sync', FinanceDashboard::class)->name('finance-sync');
         Route::get('finance-history', FinanceSyncHistory::class)->name('finance-history');
         Route::get('finance/payment-insights', \App\Livewire\PaymentInsights::class)->name('finance-payment-insights');
+        Route::get('finance/export-pdf', [\App\Http\Controllers\FinanceExportController::class, 'printPdf'])->name('finance.export-pdf');
     });
 
     // CX Group (Admin, Editor, CX, Viewer)

@@ -55,6 +55,27 @@
 
             {{-- Primary Action --}}
             <div class="flex items-center gap-3">
+                <button wire:click="exportExcel" wire:loading.attr="disabled"
+                    class="group relative flex items-center px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-600/20 transition-all duration-300 active:scale-95 disabled:opacity-50 overflow-hidden">
+                    <div class="flex items-center gap-2.5 relative z-10">
+                        <svg wire:loading.remove wire:target="exportExcel" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <svg wire:loading wire:target="exportExcel" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span class="text-sm font-black uppercase tracking-tight">Excel</span>
+                    </div>
+                </button>
+
+                <a href="{{ route('finance.export-pdf', ['startDate' => $startDate, 'endDate' => $endDate, 'search' => $search, 'statusFilter' => $statusFilter]) }}" 
+                    target="_blank"
+                    class="group relative flex items-center px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-600/20 transition-all duration-300 active:scale-95 overflow-hidden">
+                    <div class="flex items-center gap-2.5 relative z-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                        <span class="text-sm font-black uppercase tracking-tight">PDF</span>
+                    </div>
+                </a>
+
+
+                <div class="h-10 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
+
                 <button wire:click="syncPusat" wire:loading.attr="disabled"
                     class="group relative flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-600/20 transition-all duration-300 active:scale-95 disabled:opacity-50 overflow-hidden">
                     <div class="flex items-center gap-2.5 relative z-10">
@@ -68,6 +89,7 @@
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </button>
             </div>
+
         </div>
 
         {{-- Unified Control Toolbar --}}
@@ -215,9 +237,13 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">
-                                {{ $trx->customer_name }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">{{ $trx->customer_name }}</span>
+                                    <span class="text-[9px] font-medium text-slate-400 font-mono">{{ $trx->customer_phone ?: '-' }}</span>
+                                </div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 @php
                                     $isLunas = $trx->status_pembayaran === 'L';
