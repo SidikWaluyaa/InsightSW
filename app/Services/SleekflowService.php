@@ -188,8 +188,9 @@ class SleekflowService
                     // We don't break yet, finish the current batch in case it's unsorted
                 }
 
-                // 🔥 LOGIK FILTER BARU: Tarik kontak yang mengalami UPDATE dalam rentang tanggal
-                if ($updatedDateWibString >= $startDate->toDateString() && $updatedDateWibString <= $endDate->toDateString()) {
+                // 🔥 FILTER: Tarik semua kontak yang di-update sejak tanggal awal (tanpa membatasi batas atas)
+                // Hal ini menjamin kontak yang dibuat dalam rentang tanggal tetapi mengalami update di luar rentang tanggal tidak akan hilang.
+                if ($updatedDateWibString >= $startDate->toDateString()) {
                     $contactId = (string) $contact['id'];
                     $batchIds[] = $contactId;
                     
