@@ -51,7 +51,8 @@ class MarketingSyncService
 
         // 2. BULK SYNC & FETCH: Sleekflow
         try {
-            $this->sleekflowService->syncContacts($startDateStr, $endDateStr);
+            // Bypass slow API-based contact sync; data is imported from SQL dump
+            // $this->sleekflowService->syncContacts($startDateStr, $endDateStr);
             $sleekflowDailyStats = $this->sleekflowService->getDailyStatsInRange($startDateStr, $endDateStr);
             Log::info("Sleekflow Bulk Sync Complete for range {$startDateStr} to {$endDateStr}");
         } catch (\Exception $e) {
@@ -130,7 +131,7 @@ class MarketingSyncService
         // ... (Logic simplified as fallback)
         try {
             if (!$useLocalOnly) {
-                $this->sleekflowService->syncContacts($date, $date);
+                // $this->sleekflowService->syncContacts($date, $date);
             }
             
             $adAccountId = env('META_AD_ACCOUNT_ID', 'act_1922369221497688');
