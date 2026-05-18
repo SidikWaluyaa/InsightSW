@@ -14,8 +14,8 @@ class SleekflowService
 
     public function __construct()
     {
-        $this->apiKey = config('services.sleekflow.key');
-        $this->baseUrl = config('services.sleekflow.base_url', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api');
+        $this->apiKey = (string) config('services.sleekflow.key', '');
+        $this->baseUrl = (string) config('services.sleekflow.base_url', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api');
     }
 
     /**
@@ -78,7 +78,7 @@ class SleekflowService
                     'display_name' => $stat->contact_owner_name ?: 'Belum Ditentukan'
                 ];
             })
-            ->filter(fn($s) => ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul']) > 0)
+            ->filter(fn($s) => !empty($s['contact_owner_name']) && ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul']) > 0)
             ->sortByDesc('total_unhandled')
             ->values()
             ->toArray();
