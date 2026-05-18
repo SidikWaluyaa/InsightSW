@@ -27,10 +27,6 @@ class SleekflowService
         $endDate = $endDate ? Carbon::parse($endDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
-        
-        // Custom Backlog start date (30 days before End Date) for Unhandled
-        $backlogStart = Carbon::parse($endDate)->subDays(30)->toDateString() . ' 00:00:00';
-
         // Calculate totals using Mutually Exclusive Bucket logic (Current Status)
         // This ensures: Total = Greeting + Konsul + Closing
         $totals = SleekflowContact::query()
@@ -43,9 +39,9 @@ class SleekflowService
             ")
             ->first();
 
-        // Calculate Unhandled (selalu tarik 30 hari ke belakang dari tanggal akhir)
+        // Calculate Unhandled (mengikuti filter utama)
         $unhandledCount = SleekflowContact::query()
-            ->whereBetween('created_at_sleekflow', [$backlogStart, $end])
+            ->whereBetween('created_at_sleekflow', [$start, $end])
             ->where(function ($q) {
                 $q->whereNull('status_chat')
                   ->orWhere('status_chat', '')
@@ -78,7 +74,7 @@ class SleekflowService
             ->keyBy('contact_owner_name');
 
         $unhandledOwnerStats = SleekflowContact::query()
-            ->whereBetween('created_at_sleekflow', [$backlogStart, $end])
+            ->whereBetween('created_at_sleekflow', [$start, $end])
             ->where(function($q) {
                 $q->whereNull('status_chat')
                   ->orWhere('status_chat', '')
