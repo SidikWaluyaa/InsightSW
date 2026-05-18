@@ -141,9 +141,9 @@ class CsDashboard extends Component
     {
         $this->isSyncing = true;
 
-        // Force both
+        // Force Sleekflow sync
         app(SleekflowService::class)->syncContacts($this->startDate, $this->endDate);
-        $this->loadData(true); 
+        $this->loadData(false); 
 
         // Update timestamps manually as we forced it
         $now = time();
@@ -154,7 +154,7 @@ class CsDashboard extends Component
         
         $this->dispatch('swal', [
             'title' => 'Data Diperbarui',
-            'text' => 'Seluruh data chat dan operasional berhasil disinkronkan.',
+            'text' => 'Seluruh data chat berhasil disinkronkan.',
             'icon' => 'success',
             'toast' => true,
             'position' => 'top-end'
@@ -170,7 +170,7 @@ class CsDashboard extends Component
     {
         try {
             app(SleekflowService::class)->syncContacts($this->startDate, $this->endDate);
-            $this->loadData(true); 
+            $this->loadData(false); 
 
             $now = time();
             \Illuminate\Support\Facades\Cache::put("sync_last_time_chat_sync", $now, now()->addDays(1));
