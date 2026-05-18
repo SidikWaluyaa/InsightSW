@@ -27,61 +27,99 @@ class SleekflowService
         $endDate = $endDate ? Carbon::parse($endDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
+        
+        // Custom Backlog start date (30 days before End Date) for Unhandled
+        $backlogStart = Carbon::parse($endDate)->subDays(30)->toDateString() . ' 00:00:00';
 
         // Calculate totals using Mutually Exclusive Bucket logic (Current Status)
-        // This ensures: Total = Greeting + Konsul + Closing + Unhandled
+        // This ensures: Total = Greeting + Konsul + Closing
         $totals = SleekflowContact::query()
             ->whereBetween('created_at_sleekflow', [$start, $end])
             ->selectRaw("
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
                 COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul,
-                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing,
-                COUNT(CASE WHEN status_chat IS NULL OR status_chat = '' OR status_chat = 'Contact Filtered' THEN 1 END) as total_unhandled
+                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing
             ")
             ->first();
+
+        // Calculate Unhandled (selalu tarik 30 hari ke belakang dari tanggal akhir)
+        $unhandledCount = SleekflowContact::query()
+            ->whereBetween('created_at_sleekflow', [$backlogStart, $end])
+            ->where(function ($q) {
+                $q->whereNull('status_chat')
+                  ->orWhere('status_chat', '')
+                  ->orWhere('status_chat', 'Contact Filtered');
+            })
+            ->count();
 
         $totalContacts = (int)$totals->total_contacts;
         $totalGreeting = (int)$totals->total_greeting;
         $totalClosing = (int)$totals->total_closing;
         $totalKonsul = (int)$totals->total_konsul;
-        $unhandledCount = (int)$totals->total_unhandled;
 
         $greetingToKonsulRate = $totalGreeting > 0 ? round(($totalKonsul / $totalGreeting) * 100, 1) : 0;
+        // unhandledRate uses totalContacts today? We can keep it or use total global contacts. We'll use totalContacts today for relative comparison, or just 0 if totalContacts is 0.
         $unhandledRate = $totalContacts > 0 ? round(($unhandledCount / $totalContacts) * 100, 1) : 0;
 
         // Leaderboard stats (per owner) using Mutually Exclusive logic
-        $ownerStats = SleekflowContact::query()
+        $todayOwnerStats = SleekflowContact::query()
             ->whereBetween('created_at_sleekflow', [$start, $end])
             ->selectRaw("
                 contact_owner_name,
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
                 COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing,
-                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul,
-                COUNT(CASE WHEN status_chat IS NULL OR status_chat = '' OR status_chat = 'Contact Filtered' THEN 1 END) as total_unhandled
+                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul
             ")
+            ->where('assigned_team', '5000000659')
             ->groupBy('contact_owner_name')
             ->get()
-            ->map(function($stat) {
-                return [
-                    'contact_owner_name' => $stat->contact_owner_name,
-                    'total_contacts' => (int)$stat->total_contacts,
-                    'total_greeting' => (int)$stat->total_greeting,
-                    'total_closing' => (int)$stat->total_closing,
-                    'total_konsul' => (int)$stat->total_konsul,
-                    'total_unhandled' => (int)$stat->total_unhandled,
-                    'consultation_rate' => ($stat->total_konsul + $stat->total_greeting) > 0 
-                        ? round(($stat->total_konsul / ($stat->total_konsul + $stat->total_greeting)) * 100, 1) 
-                        : 0,
-                    'conversion_rate' => $stat->total_greeting > 0 ? round(($stat->total_closing / $stat->total_greeting) * 100, 1) : 0,
-                    'display_name' => $stat->contact_owner_name ?: 'Belum Ditentukan'
-                ];
+            ->keyBy('contact_owner_name');
+
+        $unhandledOwnerStats = SleekflowContact::query()
+            ->whereBetween('created_at_sleekflow', [$backlogStart, $end])
+            ->where(function($q) {
+                $q->whereNull('status_chat')
+                  ->orWhere('status_chat', '')
+                  ->orWhere('status_chat', 'Contact Filtered');
             })
-            ->filter(fn($s) => !empty($s['contact_owner_name']) && ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul']) > 0)
-            ->sortByDesc('total_unhandled')
-            ->values()
-            ->toArray();
+            ->where('assigned_team', '5000000659')
+            ->selectRaw("contact_owner_name, COUNT(*) as total_unhandled")
+            ->groupBy('contact_owner_name')
+            ->get()
+            ->keyBy('contact_owner_name');
+
+        $allOwners = collect($todayOwnerStats->keys())->merge($unhandledOwnerStats->keys())->unique();
+
+        $ownerStats = $allOwners->map(function($ownerName) use ($todayOwnerStats, $unhandledOwnerStats) {
+            $todayStat = $todayOwnerStats->get($ownerName);
+            $unhandledStat = $unhandledOwnerStats->get($ownerName);
+
+            $t_contacts = $todayStat ? (int)$todayStat->total_contacts : 0;
+            $t_greeting = $todayStat ? (int)$todayStat->total_greeting : 0;
+            $t_closing = $todayStat ? (int)$todayStat->total_closing : 0;
+            $t_konsul = $todayStat ? (int)$todayStat->total_konsul : 0;
+            $t_unhandled = $unhandledStat ? (int)$unhandledStat->total_unhandled : 0;
+
+            return [
+                'contact_owner_name' => $ownerName,
+                'total_contacts' => $t_contacts,
+                'total_greeting' => $t_greeting,
+                'total_closing' => $t_closing,
+                'total_konsul' => $t_konsul,
+                'total_unhandled' => $t_unhandled,
+                'consultation_rate' => ($t_konsul + $t_greeting) > 0 
+                    ? round(($t_konsul / ($t_konsul + $t_greeting)) * 100, 1) 
+                    : 0,
+                'conversion_rate' => $t_greeting > 0 ? round(($t_closing / $t_greeting) * 100, 1) : 0,
+                'display_name' => $ownerName ?: 'Belum Ditentukan'
+            ];
+        })
+        ->filter(fn($s) => !empty($s['contact_owner_name']) && ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul'] + $s['total_unhandled']) > 0)
+        ->sortByDesc('total_unhandled')
+        ->values()
+        ->toArray();
 
         return [
             'totalContacts' => $totalContacts,
@@ -110,19 +148,24 @@ class SleekflowService
         $totalSynced = 0;
 
         while (!$stop) {
-            $response = Http::withHeaders([
-                'X-Sleekflow-Api-Key' => $this->apiKey
-            ])->timeout(45)->retry(3, 2000)->get("{$this->baseUrl}/contact", [
-                'limit' => $limit,
-                'offset' => $offset,
-                'sort' => 'createdAt desc',
-                'include' => 'custom_fields'
-            ]);
-            
-            if (!$response->successful()) {
-                $errorMsg = 'Sleekflow API Error: ' . ($response->json('message') ?? $response->body());
-                Log::error($errorMsg);
-                throw new \Exception($errorMsg);
+            try {
+                $response = Http::withHeaders([
+                    'X-Sleekflow-Api-Key' => $this->apiKey
+                ])->timeout(45)->retry(5, 3000)->get("{$this->baseUrl}/contact", [
+                    'limit' => $limit,
+                    'offset' => $offset,
+                    'sort' => 'updatedAt desc',
+                    'include' => 'custom_fields'
+                ]);
+                
+                if (!$response->successful()) {
+                    $errorMsg = 'Sleekflow API Error: ' . ($response->json('message') ?? $response->body());
+                    Log::error($errorMsg);
+                    break; // Safely stop and keep what we have
+                }
+            } catch (\Exception $e) {
+                Log::error('Sleekflow API Sync Exception: ' . $e->getMessage());
+                break; // Stop syncing if server is busy after retries, but don't crash the app
             }
 
             $data = $response->json();
@@ -140,19 +183,21 @@ class SleekflowService
                 $createdAtWib = $this->parseToWib($contact['CreatedAt']);
                 $createdDateWibString = $createdAtWib->toDateString();
                 
-                // 🔥 APP SCRIPT STOP LOGIC: only stop if we are past the date range 
-                // and we've already synced the relevant ones.
-                if ($createdDateWibString < $startDate->toDateString()) {
+                $updatedAtWib = $this->parseToWib($contact['UpdatedAt'] ?? $contact['CreatedAt']);
+                $updatedDateWibString = $updatedAtWib->toDateString();
+                
+                // 🔥 LOGIK STOP BARU: Berhenti jika UPDATE terakhir sudah melewati batas tanggal awal
+                if ($updatedDateWibString < $startDate->toDateString()) {
                     $stop = true;
                     // We don't break yet, finish the current batch in case it's unsorted
                 }
 
-                // 🔥 APP SCRIPT FILTER: if (createdWIB >= startDate && createdWIB <= endDate)
-                if ($createdDateWibString >= $startDate->toDateString() && $createdDateWibString <= $endDate->toDateString()) {
+                // 🔥 LOGIK FILTER BARU: Tarik kontak yang mengalami UPDATE dalam rentang tanggal
+                if ($updatedDateWibString >= $startDate->toDateString() && $updatedDateWibString <= $endDate->toDateString()) {
                     $contactId = (string) $contact['id'];
                     $batchIds[] = $contactId;
                     
-                    $updatedAtWib = $this->parseToWib($contact['UpdatedAt'] ?? $contact['CreatedAt']);
+                    // $updatedAtWib already initialized above
                     
                     $batchData[$contactId] = [
                         'sleekflow_id' => $contactId,
@@ -166,7 +211,7 @@ class SleekflowService
                         'contact_owner_id' => $contact['ContactOwner'] ?? null,
                         'assigned_team' => $contact['AssignedTeam'] ?? null,
                         
-                        'status_chat' => $contact['status_chat'] ?? $contact['custom_fields']['status_chat'] ?? null,
+                        'status_chat' => $contact['status_chat'] ?? $contact['customFields']['status_chat'] ?? $contact['custom_fields']['status_chat'] ?? null,
                         
                         'lifecycle_stage' => $contact['lifecycleStage']['name'] ?? 
                                              (is_string($contact['lifecycleStage'] ?? null) ? $contact['lifecycleStage'] : null) ?? 
@@ -256,8 +301,11 @@ class SleekflowService
 
             $offset += $limit;
             
+            // Sleep for 500ms to prevent HTTP 400 "Server busy" rate limit errors
+            usleep(500000);
+            
             // Safety break to prevent infinite loops (Sleekflow max contacts safety)
-            if ($offset > 5000) break; 
+            if ($offset > 50000) break; 
         }
 
         return ['synced' => $totalSynced];

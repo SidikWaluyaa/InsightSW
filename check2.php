@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; $app = require_once 'bootstrap/app.php'; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo json_encode(App\Models\SleekflowContact::whereBetween('created_at_sleekflow', ['2026-04-30 00:00:00', '2026-05-17 23:59:59'])->where('contact_owner_name', 'like', '%Ferdian%')->where('status_chat', '')->first());

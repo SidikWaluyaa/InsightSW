@@ -23,7 +23,7 @@
             <div class="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 group">
                 <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <div>
+            <div wire:poll.300s="autoSync">
                 <div class="flex items-center gap-3">
                     <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Pantauan Chat & Operasional</h1>
                     <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
@@ -60,18 +60,30 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-4">
-            {{-- Robust Filter Control --}}
+            {{-- Robust Filter Control (Flatpickr Range) --}}
             <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-[32px] border border-gray-100 dark:border-gray-800">
-                <div class="flex items-center px-4 gap-3">
-                    <input type="date" 
-                        wire:model.live.debounce.500ms="startDate"
-                        wire:key="sd-{{ time() }}"
-                        class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-32 cursor-pointer">
-                    <span class="text-slate-300 dark:text-slate-700 font-black">—</span>
-                    <input type="date" 
-                        wire:model.live.debounce.500ms="endDate"
-                        wire:key="ed-{{ time() }}"
-                        class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-32 cursor-pointer">
+                <div class="flex items-center px-4" x-data="{
+                    init() {
+                        flatpickr(this.$refs.picker, {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            defaultDate: [@js($startDate), @js($endDate)],
+                            onClose: (selectedDates, dateStr) => {
+                                if(selectedDates.length > 0) {
+                                    $wire.set('dateRange', dateStr);
+                                }
+                            }
+                        });
+                    }
+                }">
+                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <input type="text" 
+                            readonly
+                            placeholder="Pilih Rentang Tanggal"
+                            class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-[160px] cursor-pointer text-center"
+                            value="{{ $startDate }} to {{ $endDate }}">
+                    </div>
                 </div>
                 
                 <button type="button"
@@ -88,7 +100,15 @@
 
             {{-- Force Sync Button --}}
             <button type="button"
-                wire:click.prevent="refreshManually" 
+                x-on:click="
+                    Swal.fire({
+                        title: 'Sinkronisasi Berjalan',
+                        text: 'Sistem sedang menarik data terbaru dari Sleekflow. Mohon tunggu sejenak...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    $wire.refreshManually();
+                "
                 class="w-14 h-14 rounded-[24px] bg-white dark:bg-slate-800 border border-gray-100 dark:border-gray-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm flex items-center justify-center group">
                 <svg class="w-6 h-6 group-hover:rotate-180 transition-transform duration-700 {{ $isLoading ? 'animate-spin' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             </button>
@@ -171,8 +191,8 @@
                         <p class="text-[10px] font-black uppercase tracking-widest text-rose-100/60 leading-none">Belum Terbalas</p>
                         <div class="bg-white/20 p-2 rounded-xl"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
                     </div>
-                    <h3 class="text-3xl font-black tracking-tighter mt-6 leading-none">{{ number_format($sleekflowMetrics['unhandledCount'] ?? 0) }}</h3>
-                    <p class="text-[9px] font-black text-rose-100/40 uppercase tracking-widest mt-2">Belum Diapa-apain</p>
+                    <h3 class="text-3xl font-black tracking-tighter mt-4 leading-none">{{ number_format($sleekflowMetrics['unhandledCount'] ?? 0) }}</h3>
+                    <p class="text-[9px] font-black text-rose-100/40 uppercase tracking-widest mt-2">Mengikuti Filter Utama</p>
                 </div>
             </div>
         </div>
@@ -345,6 +365,8 @@
         </div>
     </div>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         function chartComponent(categories, data) {

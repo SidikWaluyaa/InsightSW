@@ -13,17 +13,18 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class CsDashboard extends Component
 {
-    public $startDate;
-    public $endDate;
-    public $isLoading = false;
-    public $sleekflowMetrics = [];
-    public $apiSummary = [];
-    public $perCs = [];
-    public $errorMessage = null;
+    public ?string $startDate = null;
+    public ?string $endDate = null;
+    public ?string $dateRange = null;
+    public bool $isLoading = false;
+    public array $sleekflowMetrics = [];
+    public array $apiSummary = [];
+    public array $perCs = [];
+    public ?string $errorMessage = null;
 
-    public $lastSyncChat;
-    public $lastSyncOperational;
-    public $isSyncing = false;
+    public ?string $lastSyncChat = null;
+    public ?string $lastSyncOperational = null;
+    public bool $isSyncing = false;
 
     protected $queryString = ['startDate', 'endDate'];
 
@@ -32,6 +33,9 @@ class CsDashboard extends Component
         // Default to today to avoid heavy initial load
         $this->startDate = $this->startDate ?: Carbon::now()->format('Y-m-d');
         $this->endDate = $this->endDate ?: Carbon::now()->format('Y-m-d');
+        $this->dateRange = $this->startDate . ' to ' . $this->endDate;
+        
+
         
         $this->updateSyncState();
         $this->checkSync(); // Force initial check
@@ -159,11 +163,48 @@ class CsDashboard extends Component
         $this->isSyncing = false;
     }
 
+    /**
+     * Silent background auto-sync triggered every 5 minutes
+     */
+    public function autoSync()
+    {
+        try {
+            app(SleekflowService::class)->syncContacts($this->startDate, $this->endDate);
+            $this->loadData(true); 
+
+            $now = time();
+            \Illuminate\Support\Facades\Cache::put("sync_last_time_chat_sync", $now, now()->addDays(1));
+            \Illuminate\Support\Facades\Cache::put("sync_last_time_operational_sync", $now, now()->addDays(1));
+            
+            $this->updateSyncState();
+        } catch (\Exception $e) {
+            // Silently fail for background sync
+        }
+    }
+
+    public function updatedDateRange(string $value)
+    {
+        if (str_contains($value, ' to ')) {
+            [$start, $end] = explode(' to ', $value);
+            $this->startDate = trim($start);
+            $this->endDate = trim($end);
+            $this->loadData();
+        } elseif (strlen($value) === 10) {
+            // User selected the same day for start and end, so flatpickr only sends one date.
+            $this->startDate = $value;
+            $this->endDate = $value;
+            $this->loadData();
+        }
+    }
+
+
+
     #[On('set-date-filters')]
-    public function setDateFilters($start, $end)
+    public function setDateFilters(string $start, string $end)
     {
         $this->startDate = $start;
         $this->endDate = $end;
+        $this->dateRange = $start . ' to ' . $end;
         $this->loadData();
     }
 
