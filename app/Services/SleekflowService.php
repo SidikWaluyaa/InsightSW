@@ -79,7 +79,7 @@ class SleekflowService
                 ];
             })
             ->filter(fn($s) => ($s['total_contacts'] + $s['total_greeting'] + $s['total_closing'] + $s['total_konsul']) > 0)
-            ->sortByDesc('total_closing')
+            ->sortByDesc('total_unhandled')
             ->values()
             ->toArray();
 

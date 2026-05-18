@@ -11,10 +11,10 @@ class FinanceExportController extends Controller
 {
     public function printPdf(Request $request)
     {
-        $startDate = $request->get('startDate', now()->format('Y-m-d'));
-        $endDate = $request->get('endDate', now()->format('Y-m-d'));
-        $search = $request->get('search', '');
-        $statusFilter = $request->get('statusFilter', '');
+        $startDate = $request->input('startDate', now()->format('Y-m-d'));
+        $endDate = $request->input('endDate', now()->format('Y-m-d'));
+        $search = $request->input('search', '');
+        $statusFilter = $request->input('statusFilter', '');
 
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
