@@ -15,6 +15,33 @@ InsightSW hadir sebagai **Single Source of Truth (SSOT)** yang menjembatani selu
 
 ---
 
+## ⚡ Studi Kasus: Masalah, Solusi, & Dampak Bisnis
+
+Sebagai proyek portofolio kelas enterprise, sistem ini dibangun berdasarkan analisis kebutuhan nyata pada operasional harian *Shoe Workshop*. Berikut adalah rincian masalah yang dihadapi, solusi rekayasa perangkat lunak yang diimplementasikan, serta dampak bisnis nyata yang dihasilkan:
+
+### 🟥 1. Masalah (The Problems)
+* **Kebutuhan Iklan Tidak Terkontrol**: Anggaran iklan sering kali habis tanpa performa yang jelas. Manajer pemasaran kesulitan memetakan kontribusi kampanye Meta Ads secara real-time karena data terfragmentasi, memicu salah urus anggaran operasional (*ad spend waste*).
+* **Keterlambatan Tindak Lanjut Layanan (SLA CS)**: Agen CS membutuhkan waktu terlalu lama untuk membalas pesan konsultasi pelanggan di Sleekflow. Akibatnya, banyak *lead* potensial yang mendingin dan membatalkan niat servis sepatu karena respons lambat.
+* **Kebocoran & Rekonsiliasi Keuangan Manual**: Tim finance menghabiskan waktu berhari-hari mencocokkan pembayaran gateway dengan pesanan SPK. Terjadi risiko tinggi piutang tidak tertagih karena status pembayaran tidak sinkron.
+* **Hambatan Lini QC & Produksi**: Lemahnya pemantauan kinerja pengrajin memicu penumpukan sepatu di divisi reparasi. Di sisi lain, tim QC kesulitan melacak performa *shift* mereka terhadap target pemeriksaan harian.
+* **Kerugian Akibat Bahan Baku Habis (*Stockout*)**: Ketiadaan pencatatan stok dan prediksi pemakaian bahan baku (seperti cat sepatu premium impor dan sol khusus) membuat operasional sering kali terhenti secara tiba-tiba karena kehabisan bahan baku utama.
+
+### 🟩 2. Solusi Sistem (The Solutions)
+* **Dashboard Pemasaran & Tata Kelola Iklan**: Membangun modul analitik Meta Ads real-time dengan algoritma *Additive Aggregation* untuk menyatukan pengeluaran multi-platform dan kalkulasi ROAS secara presisi, didukung oleh sistem persetujuan transfer anggaran iklan yang aman.
+* **Pelacak SLA Respons Pelanggan**: Mengembangkan engine reaktif untuk menghitung kesenjangan respons chat Sleekflow secara instan, menyaring prospek yang terabaikan, dan memberikan visualisasi KPI responsivitas agen CS.
+* **Engine Rekonsiliasi Keuangan Massal**: Merancang worker sinkronisasi kasir dan piutang otomatis dengan kueri database `upsert chunking` untuk mencocokkan ribuan transaksi invoice dengan nomor SPK dalam hitungan milidetik.
+* **Sistem Baseline QC & Dashboard Produksi**: Mengembangkan modul Quality Control reaktif dengan sistem *Morning Baseline Snapshot* untuk melacak output riil divisi QC per shift, terhubung ke dashboard kapasitas workshop untuk mendeteksi *bottleneck*.
+* **Manajer Rantai Pasok dengan Prediksi Forecasting**: Menghadirkan Pusat Komando Gudang terpadu dengan algoritma *Warehouse Forecast* untuk menghitung sisa hari pemakaian bahan baku secara otomatis berdasarkan histori pemakaian riil.
+
+### 🟦 3. Dampak Bisnis (The Business Impacts)
+* **Peningkatan Efisiensi Anggaran Iklan (ROI)**: Penghematan pengeluaran iklan dan peningkatan performa akuisisi prospek secara signifikan berkat visualisasi akurat atas performa kampanye iklan yang menghasilkan ROAS optimal.
+* **Akselesari Respons CS & Konversi Layanan**: Mempercepat rata-rata waktu pembalasan pesan pelanggan, meminimalkan *lead* yang terabaikan, dan menaikkan persentase konversi konsultasi ke pesanan.
+* **Mangkas Waktu Rekonsiliasi Pembayaran**: Waktu audit keuangan yang awalnya memakan waktu berhari-hari dapat diselesaikan secara instan setiap pagi, dengan tingkat akurasi pencocokan invoice yang sangat tinggi dan zero kebocoran dana piutang.
+* **Peningkatan Output QC & Kapasitas Produksi**: Menghilangkan hambatan antrean di bengkel kerja, menaikkan produktivitas harian tim QC melalui pencapaian target shift, serta mempercepat durasi pengerjaan pesanan pelanggan.
+* **Zero Gangguan Operasional Akibat Stockout**: Menjamin kelancaran pengerjaan fisik sepatu dengan ketersediaan bahan baku yang terus terjaga berkat pengadaan bahan baku yang proaktif sebelum stok fisik benar-benar habis di gudang.
+
+---
+
 ## 🎯 Visi Utama & Sasaran Bisnis
 
 1. **Optimalisasi ROI Akuisisi**: Menyediakan visualisasi metrik performa iklan secara real-time dengan sinkronisasi langsung ke Meta Ads API, menghitung ROAS secara presisi, serta mengelola tata kelola transfer anggaran operasional.
