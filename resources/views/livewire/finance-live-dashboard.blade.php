@@ -1,6 +1,6 @@
 <div>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
                 Dashboard Finance <span class="text-xs px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-400/20 ml-2 uppercase font-black tracking-widest animate-pulse">Live API</span>
             </h2>

@@ -250,9 +250,11 @@ new class extends Component
                             ['route' => 'finance-live-dashboard', 'label' => 'Dashboard Finance', 'icon' => '...'],
                             ['route' => 'finance-sync', 'label' => 'Financial Dashboard', 'icon' => '...'],
                             ['route' => 'finance-payment-insights', 'label' => 'Payment Insights', 'icon' => '...'],
+                            ['route' => 'finance-piutang-before', 'label' => 'Piutang Before', 'icon' => '...'],
+                            ['route' => 'finance-piutang-after', 'label' => 'Piutang After', 'icon' => '...'],
                             ['route' => 'finance-history', 'label' => 'Riwayat Sync', 'icon' => '...'],
                         ];
-                        $isFinanceActive = request()->routeIs(['finance-live-dashboard', 'finance-sync', 'finance-payment-insights', 'finance-history']);
+                        $isFinanceActive = request()->routeIs(['finance-live-dashboard', 'finance-sync', 'finance-payment-insights', 'finance-piutang-before', 'finance-piutang-after', 'finance-history']);
                     @endphp
                     <div x-data="{ financeOpen: {{ $isFinanceActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="financeOpen = !financeOpen"
@@ -290,9 +292,12 @@ new class extends Component
                     @can('access-gudang')
                     @php
                         $gudangSubItems = [
+                            ['route' => 'warehouse-live-dashboard', 'label' => 'Dashboard Gudang'],
+                            ['route' => 'warehouse-manifest-queue', 'label' => 'Antrian Manifest'],
+                            ['route' => 'warehouse-shoes-in-rack', 'label' => 'Sepatu di Rak'],
                             ['route' => 'warehouse-command-center', 'label' => 'Pusat Komando'],
                         ];
-                        $isGudangActive = request()->routeIs(['warehouse-command-center']);
+                        $isGudangActive = request()->routeIs(['warehouse-live-dashboard', 'warehouse-manifest-queue', 'warehouse-shoes-in-rack', 'warehouse-command-center']);
                     @endphp
                     <div x-data="{ gudangOpen: {{ $isGudangActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="gudangOpen = !gudangOpen"
@@ -331,8 +336,11 @@ new class extends Component
                     @php
                         $workshopSubItems = [
                             ['route' => 'workshop-intelligence-v2', 'label' => 'Workshop Intelligence v2'],
+                            ['route' => 'workshop-data-sortir', 'label' => 'Data Sortir'],
+                            ['route' => 'workshop-data-produksi', 'label' => 'Data Produksi'],
+                            ['route' => 'workshop-data-qc', 'label' => 'Data QC'],
                         ];
-                        $isWorkshopActive = request()->routeIs(['workshop-intelligence-v2']);
+                        $isWorkshopActive = request()->routeIs(['workshop-intelligence-v2', 'workshop-data-sortir', 'workshop-data-produksi', 'workshop-data-qc']);
                     @endphp
                     <div x-data="{ workshopOpen: {{ $isWorkshopActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="workshopOpen = !workshopOpen"

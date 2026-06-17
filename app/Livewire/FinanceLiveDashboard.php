@@ -35,8 +35,8 @@ class FinanceLiveDashboard extends Component
     public int $paymentPage = 1;
     public int $perPage = 50;
 
-    // Cache TTL in seconds (5 minutes)
-    protected int $cacheTtl = 300;
+    // Cache TTL in seconds (10 seconds to keep it almost real-time while maintaining snappy search/pagination)
+    protected int $cacheTtl = 10;
 
     public function mount()
     {
