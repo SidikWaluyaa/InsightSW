@@ -343,6 +343,15 @@
                                 </svg>
                             </div>
                         </div>
+
+                        <a href="{{ route('finance-live.export-pdf', ['type' => $activeTab, 'startDate' => $startDate, 'endDate' => $endDate, 'search' => $search, 'statusFilter' => $statusFilter, 'paymentTypeFilter' => $paymentTypeFilter]) }}"
+                           target="_blank"
+                           class="flex items-center justify-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black tracking-wider transition-all shadow-md active:scale-95 whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>CETAK PDF</span>
+                        </a>
                     </div>
                 </div>
 
