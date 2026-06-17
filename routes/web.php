@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('daily-report', DailyReportForm::class)->name('daily-report');
         Route::get('budget-transfer', BudgetTransferManager::class)->name('budget-transfer');
         Route::get('weekly-report', WeeklyReportTable::class)->name('weekly-report');
+        Route::get('finance-live', \App\Livewire\FinanceLiveDashboard::class)->name('finance-live-dashboard');
         Route::get('finance-sync', FinanceDashboard::class)->name('finance-sync');
         Route::get('finance-history', FinanceSyncHistory::class)->name('finance-history');
         Route::get('finance/payment-insights', \App\Livewire\PaymentInsights::class)->name('finance-payment-insights');
