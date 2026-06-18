@@ -255,7 +255,7 @@ class WorkshopDataSortir extends Component
         // Calculate dynamic summary based on current filtered dataset
         $totalDiSortir = $filteredCollection->count();
         $totalOverdue = $filteredCollection->filter(fn($item) => $item['is_overdue'] ?? false)->count();
-        $avgDays = $filteredCollection->avg('days_in_sortir') ?? 0;
+        $avgDays = $filteredCollection->avg(fn($item) => $item['days_in_sortir'] ?? 0);
         $avgDaysFormatted = number_format($avgDays, 1, '.', ',');
 
         $summary = [

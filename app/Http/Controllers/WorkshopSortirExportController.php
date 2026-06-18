@@ -84,7 +84,7 @@ class WorkshopSortirExportController extends Controller
         // Calculate dynamic summary based on current filtered dataset
         $totalDiSortir = count($filteredItems);
         $totalOverdue = $collection->filter(fn($item) => $item['is_overdue'] ?? false)->count();
-        $avgDays = $collection->avg('days_in_sortir') ?? 0;
+        $avgDays = $collection->avg(fn($item) => $item['days_in_sortir'] ?? 0);
         $avgDaysFormatted = number_format($avgDays, 1, ',', '.');
 
         $pdf = Pdf::loadView('exports.workshop-sortir-pdf', [

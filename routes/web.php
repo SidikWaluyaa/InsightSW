@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
         Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
         Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
+        Route::get('customer-service/kpi', \App\Livewire\CsKpi::class)->name('cs-kpi');
 
         // Followup restricted to Leader CS, Admin, Editor
         Route::middleware(['role:Admin,Editor,Leader CS'])->group(function () {
