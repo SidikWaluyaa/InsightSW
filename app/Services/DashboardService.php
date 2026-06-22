@@ -24,7 +24,7 @@ class DashboardService
     {
         $monthDate = Carbon::parse($month)->startOfMonth();
         $setting = MonthlySetting::query()
-            ->where('month', $monthDate->format('Y-m-d'))
+            ->whereRaw("month = ?", [$monthDate->format('Y-m-d')])
             ->first();
 
         if (!$setting) {
@@ -39,11 +39,48 @@ class DashboardService
             ->orderBy('date')
             ->get();
 
-        $totalSpent = $reports->sum('spent');
-        $totalRevenue = $reports->sum('revenue');
-        $totalChatIn = $reports->sum('chat_in');
-        $totalChatConsul = $reports->sum('chat_consul');
-        $totalBudgeting = $reports->sum('budgeting');
+        // 1. Calculate base fallback from local PaymentSync table
+        $dailyPayments = \App\Models\PaymentSync::query()
+            ->selectRaw("DATE(paid_at) as pay_date, SUM(amount_paid) as total_paid")
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+            ->groupByRaw("DATE(paid_at)")
+            ->pluck('total_paid', 'pay_date');
+
+        $inflowByDay = [];
+        foreach ($reports as $report) {
+            $dateKey = $report->date->format('Y-m-d');
+            $inflowByDay[$report->date->day] = (float) $dailyPayments->get($dateKey, 0.0);
+        }
+
+        // 2. Try fetching from the finance live API
+        $apiData = $this->fetchFinanceData($start, $end);
+        if (!empty($apiData) && isset($apiData['chart_data']['labels']) && isset($apiData['chart_data']['cash_inflow'])) {
+            $labels = $apiData['chart_data']['labels'];
+            $inflow = $apiData['chart_data']['cash_inflow'];
+            foreach ($labels as $index => $label) {
+                $dayNum = (int) substr($label, 0, 2);
+                $inflowByDay[$dayNum] = (float) ($inflow[$index] ?? 0.0);
+            }
+        }
+
+        // 3. Override $report->revenue for each report
+        foreach ($reports as $report) {
+            $report->revenue = $inflowByDay[$report->date->day] ?? 0.0;
+        }
+
+        $totalSpent = $reports->sum(fn($r) => $r->spent);
+
+        // Use total_cash_received from API directly if available to match exactly
+        if (!empty($apiData) && isset($apiData['metrics']['total_cash_received'])) {
+            $totalRevenue = (float) $apiData['metrics']['total_cash_received'];
+        } else {
+            $totalRevenue = $reports->sum(fn($r) => (float) $r->revenue);
+        }
+
+        $totalChatIn = $reports->sum(fn($r) => $r->chat_in);
+        $totalChatConsul = $reports->sum(fn($r) => $r->chat_consul);
+        $totalBudgeting = $reports->sum(fn($r) => $r->budgeting);
         $daysReported = $reports->count();
 
         $workingDays = $setting->working_days;
@@ -99,10 +136,10 @@ class DashboardService
 
         // Chat metrics - use first weekly target for chat target
         $weeklyTargets = WeeklyTarget::query()
-            ->where('month', $monthDate->format('Y-m-d'))
+            ->whereRaw("month = ?", [$monthDate->format('Y-m-d')])
             ->get();
-        $totalTargetChatConsul = $weeklyTargets->sum('target_chat_consul');
-        $targetRoas = $weeklyTargets->avg('target_roas') ?: 0;
+        $totalTargetChatConsul = $weeklyTargets->sum(fn($t) => $t->target_chat_consul);
+        $targetRoas = $weeklyTargets->avg(fn($t) => $t->target_roas) ?: 0;
 
         $remainingChat = $this->calc->remainingChat($totalTargetChatConsul, $totalChatConsul);
         $remainingChatPerDay = $this->calc->remainingChatPerDay($remainingChat, $remainingDays);
@@ -173,10 +210,42 @@ class DashboardService
         $start = $monthDate->copy()->startOfMonth();
         $end = $monthDate->copy()->endOfMonth();
 
-        return DailyReport::query()
+        $reports = DailyReport::query()
             ->whereBetween('date', [$start, $end])
             ->orderBy('date', 'desc')
             ->get();
+
+        // 1. Calculate base fallback from local PaymentSync table
+        $dailyPayments = \App\Models\PaymentSync::query()
+            ->selectRaw("DATE(paid_at) as pay_date, SUM(amount_paid) as total_paid")
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+            ->groupByRaw("DATE(paid_at)")
+            ->pluck('total_paid', 'pay_date');
+
+        $inflowByDay = [];
+        foreach ($reports as $report) {
+            $dateKey = $report->date->format('Y-m-d');
+            $inflowByDay[$report->date->day] = (float) $dailyPayments->get($dateKey, 0.0);
+        }
+
+        // 2. Try fetching from the finance live API
+        $apiData = $this->fetchFinanceData($start, $end);
+        if (!empty($apiData) && isset($apiData['chart_data']['labels']) && isset($apiData['chart_data']['cash_inflow'])) {
+            $labels = $apiData['chart_data']['labels'];
+            $inflow = $apiData['chart_data']['cash_inflow'];
+            foreach ($labels as $index => $label) {
+                $dayNum = (int) substr($label, 0, 2);
+                $inflowByDay[$dayNum] = (float) ($inflow[$index] ?? 0.0);
+            }
+        }
+
+        // 3. Override $report->revenue for each report
+        foreach ($reports as $report) {
+            $report->revenue = $inflowByDay[$report->date->day] ?? 0.0;
+        }
+
+        return $reports;
     }
 
     /**
@@ -187,8 +256,40 @@ class DashboardService
         $monthDate = Carbon::parse($month);
 
         return MonthlySetting::query()
-            ->where('month', $monthDate->format('Y-m-d'))
+            ->whereRaw("month = ?", [$monthDate->format('Y-m-d')])
             ->first();
+    }
+
+    /**
+     * Fetch finance API data with cache.
+     */
+    protected function fetchFinanceData(Carbon $start, Carbon $end): array
+    {
+        $cacheKey = "finance_live_api_data_{$start->toDateString()}_{$end->toDateString()}";
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 10, function () use ($start, $end) {
+            try {
+                $apiKey = config('services.dashboard.key', 'sws_live_6f8g9h0j1k2l3m4n5o6p7q8r9s0');
+                $baseUrl = config('services.dashboard.base_url', 'https://info.shoeworkshop.id/api/v1');
+                $dashboardUrl = rtrim($baseUrl, '/') . '/finance/dashboard';
+
+                $response = \Illuminate\Support\Facades\Http::timeout(10)->get($dashboardUrl, [
+                    'api_key' => $apiKey,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    if (($json['status'] ?? '') === 'success' && isset($json['data'])) {
+                        return $json['data'];
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to fetch finance API data: ' . $e->getMessage());
+            }
+            return [];
+        });
     }
 
     /**

@@ -63,7 +63,7 @@ class CsKpi extends Component
         }
     }
 
-    public function updateDateRange($start, $end)
+    public function updateDateRange(string $start, string $end)
     {
         $this->startDate = $start;
         $this->endDate = $end;

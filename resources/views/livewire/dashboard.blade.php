@@ -17,7 +17,7 @@
 
             <div class="flex items-center gap-4">
                 @if($lastSyncTime)
-                    <div class="flex flex-col items-end hidden md:flex">
+                    <div class="hidden md:flex flex-col items-end">
                         <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
                         <span class="text-xs font-semibold text-slate-600 dark:text-gray-300">{{ $lastSyncTime }}</span>
                     </div>
@@ -100,7 +100,7 @@
                                 </button>
                                 <div x-show="open" x-transition.opacity
                                     class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-2 bg-slate-800 dark:bg-gray-800 text-[10px] text-white rounded-lg shadow-xl z-[70] pointer-events-none text-center leading-tight font-normal lowercase first-letter:uppercase">
-                                    <span class="font-bold text-emerald-400 font-bold uppercase">Rumus:</span><br>{{ $this->getFormula('roas') }}
+                                    <span class="font-bold text-emerald-400 uppercase">Rumus:</span><br>{{ $this->getFormula('roas') }}
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-800 dark:border-b-gray-800"></div>
                                 </div>
                             </div>
@@ -140,7 +140,7 @@
                                 </button>
                                 <div x-show="open" x-transition.opacity
                                     class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-2 bg-slate-800 dark:bg-gray-800 text-[10px] text-white rounded-lg shadow-xl z-[70] pointer-events-none text-center leading-tight font-normal lowercase first-letter:uppercase">
-                                    <span class="font-bold text-emerald-400 font-bold uppercase">Rumus:</span><br>{{ $this->getFormula('remaining_budget') }}
+                                    <span class="font-bold text-emerald-400 uppercase">Rumus:</span><br>{{ $this->getFormula('remaining_budget') }}
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-800 dark:border-b-gray-800"></div>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@
                                 </button>
                                 <div x-show="open" x-transition.opacity
                                     class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-2 bg-slate-800 dark:bg-gray-800 text-[10px] text-white rounded-lg shadow-xl z-[70] pointer-events-none text-center leading-tight font-normal lowercase first-letter:uppercase">
-                                    <span class="font-bold text-emerald-400 font-bold uppercase">Rumus:</span><br>Penjumlahan omset dari laporan harian
+                                    <span class="font-bold text-emerald-400 uppercase">Rumus:</span><br>Realisasi penerimaan pembayaran (Kas Masuk) dari finance
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-800 dark:border-b-gray-800"></div>
                                 </div>
                             </div>
@@ -220,7 +220,7 @@
                                 </button>
                                 <div x-show="open" x-transition.opacity
                                     class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-2 bg-slate-800 dark:bg-gray-800 text-[10px] text-white rounded-lg shadow-xl z-[70] pointer-events-none text-center leading-tight font-normal lowercase first-letter:uppercase">
-                                    <span class="font-bold text-emerald-400 font-bold uppercase">Rumus:</span><br>Penjumlahan chat konsul dari laporan harian
+                                    <span class="font-bold text-emerald-400 uppercase">Rumus:</span><br>Penjumlahan chat konsul dari laporan harian
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-slate-800 dark:border-b-gray-800"></div>
                                 </div>
                             </div>
