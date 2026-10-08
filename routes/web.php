@@ -52,6 +52,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Customer Service Group (Admin, Editor, CS, Leader CS, Viewer)
     Route::middleware(['role:Admin,Editor,CS,Leader CS,Viewer'])->group(function () {
+        Route::get('sleekflow', \App\Livewire\Sleekflow\Analytics::class)->name('sleekflow.analytics');
+        
         Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
         Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
         Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
