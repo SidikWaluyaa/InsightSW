@@ -42,7 +42,7 @@
         <div class="bg-[#1e2336] rounded-2xl p-5 border border-white/5 relative overflow-hidden group">
             <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
             <div class="flex items-center justify-between relative z-10 mb-4">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prospek Baru</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Enquiries</span>
                 <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                 </div>
@@ -131,7 +131,7 @@
 
                 const options = {
                     series: [{
-                        name: 'Chat Masuk',
+                        name: 'New Enquiries',
                         type: 'column',
                         data: enquiries
                     }, {
@@ -177,7 +177,7 @@
                         axisTicks: { show: false }
                     },
                     yaxis: [{
-                        title: { text: 'Total Chat Masuk', style: { color: '#10b981' } },
+                        title: { text: 'Total Enquiries', style: { color: '#10b981' } },
                         labels: { style: { colors: '#94a3b8' } },
                         min: 0
                     }, {
@@ -194,7 +194,7 @@
                         theme: 'dark',
                         y: {
                             formatter: function (val, { seriesIndex }) {
-                                if (seriesIndex === 0) return val + " Chat";
+                                if (seriesIndex === 0) return val + " Prospek";
                                 // Line chart (Minutes) -> format to mm:ss
                                 let m = Math.floor(val);
                                 let s = Math.round((val - m) * 60);
@@ -244,7 +244,7 @@
                 <thead>
                     <tr class="bg-[#151928] text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         <th class="px-6 py-4 border-b border-white/5">Tanggal</th>
-                        <th class="px-6 py-4 border-b border-white/5 text-center">Prospek Baru</th>
+                        <th class="px-6 py-4 border-b border-white/5 text-center">New Enquiries</th>
                         <th class="px-6 py-4 border-b border-white/5 text-center">Active Convs</th>
                         <th class="px-6 py-4 border-b border-white/5 text-center">Pesan Terima</th>
                     </tr>
