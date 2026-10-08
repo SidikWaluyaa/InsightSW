@@ -73,7 +73,7 @@ class Analytics extends Component
 
         foreach ($chartRecords as $row) {
             $chartDates[] = \Carbon\Carbon::parse($row->date_time)->format('d M');
-            $chartEnquiries[] = (int) $row->number_of_new_enquires;
+            $chartEnquiries[] = (int) $row->number_of_message_received; // Menggunakan Chat Masuk untuk korelasi chart
             
             // Ubah "HH:mm:ss" jadi Total Menit (karena Y-axis grafik butuh angka Decimal/Integer)
             $timeStr = $row->response_time_first_messages;
