@@ -243,7 +243,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_online'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-[#38bdf8]">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -268,7 +268,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_online_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -293,7 +293,7 @@
                                         $compVal = !empty($compareYear) ? round($compareForecastingData[$m['index']]['closing_online_per_day'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-300">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -318,7 +318,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_followup'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-amber-400">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -343,7 +343,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_followup_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-amber-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -368,7 +368,7 @@
                                         $compVal = !empty($compareYear) ? round($compareForecastingData[$m['index']]['closing_followup_per_day'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-300">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -393,7 +393,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_offline'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-violet-400">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -418,7 +418,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_offline_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-violet-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -443,7 +443,7 @@
                                         $compVal = !empty($compareYear) ? round($compareForecastingData[$m['index']]['closing_offline_per_day'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-300">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -468,7 +468,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_tidak_kirim'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-rose-400">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -493,7 +493,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['closing_tidak_kirim_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-rose-400/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -518,7 +518,7 @@
                                         $compVal = !empty($compareYear) ? round($compareForecastingData[$m['index']]['closing_tidak_kirim_per_day'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-300">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -572,7 +572,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['sepatu_masuk_online'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-[#38bdf8]">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -597,7 +597,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['sepatu_online_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -619,7 +619,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['sepatu_masuk_offline'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal);
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-violet-400">{{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -644,7 +644,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['sepatu_offline_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-violet-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -676,7 +676,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['omset_total'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-emerald-400">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -701,7 +701,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['terbayar'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-teal-400">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -726,7 +726,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['terbayar_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -751,7 +751,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['total_dp'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-200">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -776,7 +776,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['dp_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -801,7 +801,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['total_lunas_awal'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-200">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -826,7 +826,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['lunas_awal_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -851,7 +851,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['total_pelunasan'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-slate-200">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -876,7 +876,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['pelunasan_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-[#06b6d4]">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -901,7 +901,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['tambah_jasa'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-amber-500">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -926,7 +926,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['tambah_jasa_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-amber-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -951,7 +951,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['oto'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-violet-400">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -976,7 +976,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['oto_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-violet-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">
@@ -1001,7 +1001,7 @@
                                         $compVal = !empty($compareYear) ? (float) ($compareForecastingData[$m['index']]['ongkir'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'currency');
                                     @endphp
-                                    <td class="px-4 py-3 text-center">
+                                    <td wire:key="m3-{{ $m }}" class="px-4 py-3 text-center">
                                         <span class="text-sm font-bold font-mono text-blue-400">Rp {{ number_format($mainVal, 0, ',', '.') }}</span>
                                         @if($comp)
                                             <div class="text-[10px] font-bold font-mono mt-1 text-slate-500">
@@ -1026,7 +1026,7 @@
                                         $compVal = !empty($compareYear) ? ($compareForecastingData[$m['index']]['ongkir_pct'] ?? 0) : null;
                                         $comp = calcComparison($mainVal, $compVal, 'pct');
                                     @endphp
-                                    <td class="px-4 py-2.5 text-center">
+                                    <td wire:key="m25-{{ $m }}" class="px-4 py-2.5 text-center">
                                         <span class="text-xs font-bold font-mono text-blue-500/80">{{ number_format($mainVal, 2, ',', '.') }}%</span>
                                         @if($comp)
                                             <div class="text-[9px] font-semibold font-mono mt-0.5 text-slate-500">

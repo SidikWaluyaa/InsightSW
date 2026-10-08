@@ -144,7 +144,7 @@
         </div>
         <div class="flex gap-4 overflow-x-auto pb-2 custom-scrollbar snap-x">
             @foreach($campaignSpend as $item)
-                <div class="flex-none w-72 p-4 rounded-[1.5rem] bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all group snap-start">
+                <div wire:key="spend-{{ $item['campaign_id'] ?? md5(json_encode($item)) }}" class="flex-none w-72 p-4 rounded-[1.5rem] bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all group snap-start">
                     <div class="flex items-start justify-between mb-3">
                         <div class="p-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 transition-colors group-hover:bg-emerald-500/10">
                             <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
@@ -193,7 +193,7 @@
                     <select wire:model.live="selectedCampaign" class="w-full bg-white/5 border-white/10 rounded-xl text-[11px] font-black text-white py-2 pl-4 pr-10 focus:border-blue-500/50 focus:ring-0 hover:bg-white/10 transition-all appearance-none cursor-pointer">
                         <option value="" class="bg-slate-900">SEMUA KAMPANYE</option>
                         @foreach($campaigns as $campaign)
-                            <option value="{{ $campaign }}" class="bg-slate-900">{{ strtoupper($campaign) }}</option>
+                            <option wire:key="cmp-{{ $campaign }}" value="{{ $campaign }}" class="bg-slate-900">{{ strtoupper($campaign) }}</option>
                         @endforeach
                     </select>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 group-hover:text-blue-400 transition-colors">
@@ -207,7 +207,7 @@
                         @if($selectedCampaign)
                             <option value="" class="bg-slate-900">SEMUA ADSET</option>
                             @foreach($adsets as $adset)
-                                <option value="{{ $adset }}" class="bg-slate-900">{{ strtoupper($adset) }}</option>
+                                <option wire:key="adset-{{ $adset }}" value="{{ $adset }}" class="bg-slate-900">{{ strtoupper($adset) }}</option>
                             @endforeach
                         @else
                             <option value="" class="bg-slate-900 text-gray-500">PILIH KAMPANYE</option>
@@ -244,7 +244,7 @@
                         <div class="px-5 py-3 text-[10px] font-black uppercase text-blue-400 tracking-widest border-b border-white/5">Konfigurasi Data</div>
                         <div class="max-h-80 overflow-y-auto p-5 space-y-5 custom-scrollbar text-[11px] font-black">
                             @foreach(['Performance' => ['results', 'reach', 'frequency', 'cost_per_result', 'budget', 'spend', 'stop_time'], 'Awareness' => ['impressions', 'cpm'], 'Links' => ['link_click', 'cpc', 'ctr']] as $cat => $cols)
-                                <div class="space-y-3">
+                                <div wire:key="cat-{{ $cat }}" class="space-y-3">
                                     <h4 class="text-[9px] font-black uppercase text-gray-500 opacity-60 flex items-center gap-2">
                                         <span class="w-1 h-1 bg-blue-500 rounded-full"></span>
                                         {{ $cat }}
@@ -312,7 +312,7 @@
                         </th>
                         
                         @foreach($selectedColumns as $col)
-                            <th class="px-6 py-4 text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tighter border-b border-gray-100 dark:border-gray-800 text-center group/h">
+                            <th wire:key="col-{{ $col }}" class="px-6 py-4 text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tighter border-b border-gray-100 dark:border-gray-800 text-center group/h">
                                 <span class="group-hover/h:text-blue-500 transition-colors">
                                     {{ str_replace(['_all', '_'], [' (all)', ' '], $col) }}
                                 </span>
@@ -532,4 +532,5 @@
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
     </style>
     </div>
+</div>
 </div>

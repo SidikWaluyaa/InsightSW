@@ -123,7 +123,7 @@
                                 class="w-full px-3 py-2.5 bg-slate-50 dark:bg-gray-800/40 border border-slate-200/50 dark:border-gray-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none cursor-pointer transition-all shadow-sm">
                                 <option value="">Semua Jasa</option>
                                 @foreach($allServices as $service)
-                                    <option value="{{ $service }}">{{ strtoupper($service) }}</option>
+                                    <option wire:key="srv-{{ $service }}" value="{{ $service }}">{{ strtoupper($service) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -134,7 +134,7 @@
                                 class="w-full px-3 py-2.5 bg-slate-50 dark:bg-gray-800/40 border border-slate-200/50 dark:border-gray-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none cursor-pointer transition-all shadow-sm">
                                 <option value="">Semua Kategori</option>
                                 @foreach($allCategories as $cat)
-                                    <option value="{{ $cat }}">{{ strtoupper($cat) }}</option>
+                                    <option wire:key="cat-{{ $cat }}" value="{{ $cat }}">{{ strtoupper($cat) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -251,7 +251,7 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-gray-800 uppercase font-bold text-slate-700 dark:text-gray-300 text-[10px]">
                             @forelse($paginatedItems as $item)
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                                <tr wire:key="item-{{ $item->id }}" class="hover:bg-slate-50/50 dark:hover:bg-gray-800/20 transition-colors">
                                     <!-- SPK / ORDER -->
                                     <td class="px-5 py-4 font-mono font-black text-slate-800 dark:text-white">
                                         {{ $item['spk_number'] ?? '-' }}

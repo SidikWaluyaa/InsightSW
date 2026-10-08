@@ -71,7 +71,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($users as $user)
-                            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all duration-200 group">
+                            <tr wire:key="user-{{ $user->id }}" class="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all duration-200 group">
                                 <td class="px-8 py-5">
                                     <div class="flex items-center gap-4">
                                         <div class="relative shrink-0">

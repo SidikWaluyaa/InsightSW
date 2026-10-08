@@ -163,7 +163,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-800/50">
                     @forelse($bottlenecks as $bt)
-                        <tr class="group hover:bg-white/5 transition-colors">
+                        <tr wire:key="bt-{{ $bt->id ?? md5(json_encode($bt)) }}" class="group hover:bg-white/5 transition-colors">
                             <td class="py-6 px-4">
                                 <span class="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{{ $bt->spk_number }}</span>
                             </td>

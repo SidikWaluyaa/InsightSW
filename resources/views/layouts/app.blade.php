@@ -109,6 +109,21 @@ new class extends Component
                         </a>
                     </div>
 
+                    {{-- Sleekflow Analytics (Main Menu) --}}
+                    <div class="space-y-1 mb-4">
+                        <a href="{{ route('sleekflow.analytics') }}"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 {{ request()->routeIs('sleekflow.analytics') ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-400 border border-emerald-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }} group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors {{ request()->routeIs('sleekflow.analytics') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Sleekflow Analytics</span>
+                            </div>
+                        </a>
+                    </div>
+
                     {{-- Marketing (Collapsible Container) --}}
                     @can('access-marketing')
                     <div x-data="{ marketingOpen: {{ $isMarketingActive ? 'true' : 'false' }} }" class="space-y-1">
