@@ -23,7 +23,7 @@
     </div>
 
     {{-- KPI Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {{-- Card 1 --}}
         <div class="bg-[#1e2336] rounded-2xl p-5 border border-white/5 relative overflow-hidden group">
             <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
@@ -77,6 +77,34 @@
             </div>
             <div class="relative z-10">
                 <h3 class="text-3xl font-black text-white">{{ number_format($summary['total_messages_received'], 0, ',', '.') }}</h3>
+            </div>
+        </div>
+
+        {{-- Card 5 (First Response Time) --}}
+        <div class="bg-[#1e2336] rounded-2xl p-5 border border-white/5 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+            <div class="flex items-center justify-between relative z-10 mb-4">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">First Response</span>
+                <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+            </div>
+            <div class="relative z-10">
+                <h3 class="text-2xl md:text-3xl font-black text-white">{{ $summary['avg_first_response_time'] }}</h3>
+            </div>
+        </div>
+
+        {{-- Card 6 (All Response Time) --}}
+        <div class="bg-[#1e2336] rounded-2xl p-5 border border-white/5 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+            <div class="flex items-center justify-between relative z-10 mb-4">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Response</span>
+                <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+            </div>
+            <div class="relative z-10">
+                <h3 class="text-2xl md:text-3xl font-black text-white">{{ $summary['avg_response_time'] }}</h3>
             </div>
         </div>
     </div>
