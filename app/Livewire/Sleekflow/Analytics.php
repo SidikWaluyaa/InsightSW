@@ -36,10 +36,13 @@ class Analytics extends Component
             $query->whereRaw("DATE_FORMAT(date_time, '%Y-%m') = ?", [$this->month]);
         }
 
+        // Simpan query dasar sebelum di-order agar agregasi (AVG/SUM) tidak error di MySQL Strict Mode
+        $baseQuery = clone $query;
+
         $analytics = $query->orderBy('date_time', 'desc')->paginate(15);
 
-        // Mengambil rata-rata waktu respon (dari format time)
-        $avgTimeRow = (clone $query)->selectRaw('
+        // Mengambil rata-rata waktu respon (dari format time) tanpa orderBy
+        $avgTimeRow = (clone $baseQuery)->selectRaw('
             SEC_TO_TIME(AVG(TIME_TO_SEC(response_time_all_messages))) as avg_time,
             SEC_TO_TIME(AVG(TIME_TO_SEC(response_time_first_messages))) as avg_first_time
         ')->first();
@@ -54,10 +57,10 @@ class Analytics extends Component
 
         // Menghitung ringkasan metrik bulan ini
         $summary = [
-            'total_contacts' => $query->sum('number_of_contacts'),
-            'total_enquiries' => $query->sum('number_of_new_enquires'),
-            'total_messages_sent' => $query->sum('number_of_messages_sent'),
-            'total_messages_received' => $query->sum('number_of_message_received'),
+            'total_contacts' => (clone $baseQuery)->sum('number_of_contacts'),
+            'total_enquiries' => (clone $baseQuery)->sum('number_of_new_enquires'),
+            'total_messages_sent' => (clone $baseQuery)->sum('number_of_messages_sent'),
+            'total_messages_received' => (clone $baseQuery)->sum('number_of_message_received'),
             'avg_response_time' => $avgResponseTime,
             'avg_first_response_time' => $avgFirstResponseTime,
         ];
