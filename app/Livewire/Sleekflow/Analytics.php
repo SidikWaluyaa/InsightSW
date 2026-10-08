@@ -36,10 +36,13 @@ class Analytics extends Component
             $query->whereRaw("DATE_FORMAT(date_time, '%Y-%m') = ?", [$this->month]);
         }
 
+        // Simpan query dasar sebelum di-order agar agregasi (AVG/SUM) tidak error di MySQL Strict Mode
+        $baseQuery = clone $query;
+
         $analytics = $query->orderBy('date_time', 'desc')->paginate(15);
 
-        // Mengambil rata-rata waktu respon (dari format time)
-        $avgTimeRow = (clone $query)->selectRaw('
+        // Mengambil rata-rata waktu respon (dari format time) tanpa orderBy
+        $avgTimeRow = (clone $baseQuery)->selectRaw('
             SEC_TO_TIME(AVG(TIME_TO_SEC(response_time_all_messages))) as avg_time,
             SEC_TO_TIME(AVG(TIME_TO_SEC(response_time_first_messages))) as avg_first_time
         ')->first();
@@ -54,17 +57,42 @@ class Analytics extends Component
 
         // Menghitung ringkasan metrik bulan ini
         $summary = [
-            'total_contacts' => $query->sum('number_of_contacts'),
-            'total_enquiries' => $query->sum('number_of_new_enquires'),
-            'total_messages_sent' => $query->sum('number_of_messages_sent'),
-            'total_messages_received' => $query->sum('number_of_message_received'),
+            'total_contacts' => (clone $baseQuery)->sum('number_of_contacts'),
+            'total_enquiries' => (clone $baseQuery)->sum('number_of_new_enquires'),
+            'total_messages_sent' => (clone $baseQuery)->sum('number_of_messages_sent'),
+            'total_messages_received' => (clone $baseQuery)->sum('number_of_message_received'),
             'avg_response_time' => $avgResponseTime,
             'avg_first_response_time' => $avgFirstResponseTime,
         ];
 
+        // --- Data untuk Chart (Semua data dalam bulan ini, urut Ascending) ---
+        $chartRecords = (clone $baseQuery)->orderBy('date_time', 'asc')->get();
+        $chartDates = [];
+        $chartEnquiries = [];
+        $chartResponseTimes = [];
+
+        foreach ($chartRecords as $row) {
+            $chartDates[] = \Carbon\Carbon::parse($row->date_time)->format('d M');
+            $chartEnquiries[] = (int) $row->number_of_new_enquires;
+            
+            // Ubah "HH:mm:ss" jadi Total Menit (karena Y-axis grafik butuh angka Decimal/Integer)
+            $timeStr = $row->response_time_first_messages;
+            $minutes = 0;
+            if ($timeStr) {
+                $parts = explode(':', $timeStr);
+                if (count($parts) === 3) {
+                    $minutes = ($parts[0] * 60) + $parts[1] + ($parts[2] / 60);
+                }
+            }
+            $chartResponseTimes[] = round($minutes, 2);
+        }
+
         return view('livewire.sleekflow.analytics', [
             'analytics' => $analytics,
             'summary' => $summary,
+            'chartDates' => $chartDates,
+            'chartEnquiries' => $chartEnquiries,
+            'chartResponseTimes' => $chartResponseTimes,
         ]);
     }
 }

@@ -109,6 +109,127 @@
         </div>
     </div>
 
+    {{-- Combo Chart Section --}}
+    <div class="bg-[#1e2336] rounded-2xl border border-white/5 p-6" wire:ignore>
+        <div class="flex items-center gap-3 mb-4">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Korelasi Leads Masuk vs Kecepatan Respon CS</h2>
+        </div>
+        <div id="sleekflowChart" class="w-full h-[350px]"></div>
+    </div>
+
+    {{-- Script for Chart --}}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            let chart;
+            
+            const renderChart = () => {
+                const dates = @json($chartDates);
+                const enquiries = @json($chartEnquiries);
+                const responseTimes = @json($chartResponseTimes);
+
+                const options = {
+                    series: [{
+                        name: 'New Enquiries',
+                        type: 'column',
+                        data: enquiries
+                    }, {
+                        name: 'First Response Time',
+                        type: 'line',
+                        data: responseTimes
+                    }],
+                    chart: {
+                        height: 350,
+                        type: 'line',
+                        toolbar: { show: false },
+                        background: 'transparent',
+                        fontFamily: 'inherit'
+                    },
+                    stroke: {
+                        width: [0, 4],
+                        curve: 'smooth'
+                    },
+                    colors: ['#10b981', '#f43f5e'], // Emerald for Bar, Rose for Line
+                    fill: {
+                        type: ['solid', 'solid'],
+                        opacity: [0.15, 1],
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        enabledOnSeries: [1],
+                        formatter: function (val) {
+                            // Convert back minutes to MM:SS format for data labels
+                            if (val === 0) return '';
+                            let m = Math.floor(val);
+                            let s = Math.round((val - m) * 60);
+                            return m + "m " + s + "s";
+                        },
+                        style: {
+                            colors: ['#fff']
+                        }
+                    },
+                    labels: dates,
+                    xaxis: {
+                        type: 'category',
+                        labels: { style: { colors: '#94a3b8' } },
+                        axisBorder: { show: false },
+                        axisTicks: { show: false }
+                    },
+                    yaxis: [{
+                        title: { text: 'Total Enquiries', style: { color: '#10b981' } },
+                        labels: { style: { colors: '#94a3b8' } },
+                        min: 0
+                    }, {
+                        opposite: true,
+                        title: { text: 'First Response (Menit)', style: { color: '#f43f5e' } },
+                        labels: { style: { colors: '#94a3b8' } },
+                        min: 0
+                    }],
+                    grid: {
+                        borderColor: 'rgba(255,255,255,0.05)',
+                        strokeDashArray: 4
+                    },
+                    tooltip: {
+                        theme: 'dark',
+                        y: {
+                            formatter: function (val, { seriesIndex }) {
+                                if (seriesIndex === 0) return val + " Prospek";
+                                // Line chart (Minutes) -> format to mm:ss
+                                let m = Math.floor(val);
+                                let s = Math.round((val - m) * 60);
+                                return m + " menit " + s + " detik";
+                            }
+                        }
+                    },
+                    legend: {
+                        labels: { colors: '#cbd5e1' },
+                        position: 'top'
+                    }
+                };
+
+                if (chart) {
+                    chart.destroy();
+                }
+                
+                chart = new ApexCharts(document.querySelector("#sleekflowChart"), options);
+                chart.render();
+            };
+
+            // Render first time
+            renderChart();
+
+            // Re-render when Livewire updates the month
+            Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+                succeed(({ snapshot, effect }) => {
+                    setTimeout(() => {
+                        renderChart();
+                    }, 50);
+                });
+            });
+        });
+    </script>
+
     {{-- Data Table --}}
     <div class="bg-[#1e2336] rounded-2xl border border-white/5 overflow-hidden">
         <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
