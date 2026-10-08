@@ -183,7 +183,7 @@
         @endphp
 
         @foreach($opStats as $stat)
-        <div class="bg-slate-900/20 border border-slate-800/60 p-5 rounded-2xl flex items-center justify-between group hover:border-slate-700 transition-all">
+        <div wire:key="stat-{{ $stat['label'] ?? md5(json_encode($stat)) }}" class="bg-slate-900/20 border border-slate-800/60 p-5 rounded-2xl flex items-center justify-between group hover:border-slate-700 transition-all">
             <div>
                 <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{{ $stat['label'] }}</p>
                 <div class="flex items-baseline gap-2">
@@ -227,7 +227,7 @@
                 <select wire:model.live="subCategoryFilter" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 focus:ring-2 focus:ring-emerald-500/20 outline-none">
                     <option value="all">SEMUA KATEGORI</option>
                     @foreach($this->subCategories as $sc)
-                        <option value="{{ $sc }}">{{ strtoupper($sc) }}</option>
+                        <option wire:key="sc-{{ $sc }}" value="{{ $sc }}">{{ strtoupper($sc) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -246,7 +246,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-800/50 text-[11px] font-bold">
                     @forelse($this->allInventory as $item)
-                    <tr class="hover:bg-slate-800/30 transition-all group">
+                    <tr wire:key="inv-{{ $item->id }}" class="hover:bg-slate-800/30 transition-all group">
                         <td class="px-8 py-5 uppercase text-white group-hover:text-emerald-400 transition-colors">{{ $item->name }}</td>
                         <td class="px-8 py-5">
                             <span class="px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[9px] text-slate-400 uppercase tracking-widest">{{ $item->sub_category ?: '-' }}</span>

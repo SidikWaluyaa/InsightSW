@@ -349,7 +349,7 @@
                         $allCats = collect($categories)->union(collect($otoCategories))->toArray();
                     @endphp
                     @foreach($allCats as $cat => $count)
-                        <div class="flex items-center gap-1.5">
+                        <div wire:key="cat-{{ $cat }}" class="flex items-center gap-1.5">
                             <div class="w-2.5 h-2.5 rounded-full" style="background: {{ $chartColors[$loop->index % count($chartColors)] }}"></div>
                             <span class="text-[10px] font-bold text-slate-500 tracking-tighter">{{ $cat ?: 'Lainnya' }} ({{ $count }})</span>
                         </div>
@@ -394,7 +394,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                         @forelse($upsellItems as $item)
-                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                            <tr wire:key="item-{{ $item->id }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-indigo-500 transition-colors tracking-tight">{{ data_get($item, 'work_order.spk_number') ?? data_get($item, 'spk_number', '-') }}</span>
                                 </td>
@@ -464,7 +464,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                         @forelse($otoItems as $item)
-                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                            <tr wire:key="item-{{ $item->id }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">{{ data_get($item, 'work_order.spk_number') ?? data_get($item, 'spk_number', '-') }}</span>
                                 </td>

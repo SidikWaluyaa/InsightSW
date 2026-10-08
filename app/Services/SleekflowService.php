@@ -27,17 +27,23 @@ class SleekflowService
         $endDate = $endDate ? Carbon::parse($endDate, 'Asia/Jakarta')->toDateString() : Carbon::today('Asia/Jakarta')->toDateString();
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
-        // Calculate totals using Mutually Exclusive Bucket logic (Current Status)
-        // This ensures: Total = Greeting + Konsul + Closing
+        // Calculate Inbound Totals (berbasis cohort / lead masuk hari ini)
         $totals = SleekflowContact::query()
             ->whereBetween('created_at_sleekflow', [$start, $end])
             ->selectRaw("
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
-                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul,
-                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing
+                COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul
             ")
             ->first();
+
+        // Calculate Closing Performance (Time-of-event: Hitung semua deal hari ini terlepas kapan lead masuk)
+        $totalClosing = SleekflowContact::query()
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('closing_at', [$start, $end])
+                  ->orWhereBetween('penerimaan_at', [$start, $end]);
+            })
+            ->count();
 
         // Calculate Unhandled (mengikuti filter utama)
         $unhandledCount = SleekflowContact::query()
@@ -51,7 +57,7 @@ class SleekflowService
 
         $totalContacts = (int)$totals->total_contacts;
         $totalGreeting = (int)$totals->total_greeting;
-        $totalClosing = (int)$totals->total_closing;
+        // $totalClosing sudah didapatkan dari count() query terpisah di atas
         $totalKonsul = (int)$totals->total_konsul;
 
         $greetingToKonsulRate = $totalGreeting > 0 ? round(($totalKonsul / $totalGreeting) * 100, 1) : 0;
@@ -65,10 +71,20 @@ class SleekflowService
                 contact_owner_name,
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN status_chat = 'Greeting' THEN 1 END) as total_greeting,
-                COUNT(CASE WHEN status_chat IN ('Closing', 'Before Penerimaan', 'Follow Up Closing', 'Pending Payment', 'Pengiriman', 'Selesai', 'Garansi') THEN 1 END) as total_closing,
                 COUNT(CASE WHEN status_chat IN ('Konsultasi', 'Follow Up Konsultasi', 'Progress') THEN 1 END) as total_konsul
             ")
             ->where('assigned_team', '5000000659')
+            ->groupBy('contact_owner_name')
+            ->get()
+            ->keyBy('contact_owner_name');
+
+        $closingOwnerStats = SleekflowContact::query()
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('closing_at', [$start, $end])
+                  ->orWhereBetween('penerimaan_at', [$start, $end]);
+            })
+            ->where('assigned_team', '5000000659')
+            ->selectRaw("contact_owner_name, COUNT(*) as total_closing")
             ->groupBy('contact_owner_name')
             ->get()
             ->keyBy('contact_owner_name');
@@ -86,15 +102,19 @@ class SleekflowService
             ->get()
             ->keyBy('contact_owner_name');
 
-        $allOwners = collect($todayOwnerStats->keys())->merge($unhandledOwnerStats->keys())->unique();
+        $allOwners = collect($todayOwnerStats->keys())
+            ->merge($closingOwnerStats->keys())
+            ->merge($unhandledOwnerStats->keys())
+            ->unique();
 
-        $ownerStats = $allOwners->map(function($ownerName) use ($todayOwnerStats, $unhandledOwnerStats) {
+        $ownerStats = $allOwners->map(function($ownerName) use ($todayOwnerStats, $closingOwnerStats, $unhandledOwnerStats) {
             $todayStat = $todayOwnerStats->get($ownerName);
+            $closingStat = $closingOwnerStats->get($ownerName);
             $unhandledStat = $unhandledOwnerStats->get($ownerName);
 
             $t_contacts = $todayStat ? (int)$todayStat->total_contacts : 0;
             $t_greeting = $todayStat ? (int)$todayStat->total_greeting : 0;
-            $t_closing = $todayStat ? (int)$todayStat->total_closing : 0;
+            $t_closing = $closingStat ? (int)$closingStat->total_closing : 0;
             $t_konsul = $todayStat ? (int)$todayStat->total_konsul : 0;
             $t_unhandled = $unhandledStat ? (int)$unhandledStat->total_unhandled : 0;
 

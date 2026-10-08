@@ -26,7 +26,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @forelse($logs as $log)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                        <tr wire:key="log-{{ $log->id }}" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                             <td class="px-6 py-4">
                                 <div class="text-sm font-bold text-slate-800 dark:text-white">{{ $log->created_at->translatedFormat('d M Y') }}</div>
                                 <div class="text-[10px] text-slate-400 font-medium">{{ $log->created_at->format('H:i:s') }}</div>

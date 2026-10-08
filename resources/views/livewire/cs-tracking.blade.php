@@ -140,7 +140,7 @@
             </thead>
             <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50">
                 @forelse($stats as $row)
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                    <tr wire:key="trk-{{ $row['date'] ?? ($detail['id'] ?? md5(json_encode($row ?? $detail ?? ''))) }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                         <td class="px-10 py-7">
                             <div class="flex items-center gap-5">
                                 <div class="w-12 h-12 rounded-[20px] bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-500 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
@@ -246,7 +246,7 @@
                     @endphp
 
                     @forelse($currentData as $detail)
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                        <tr wire:key="trk-{{ $row['date'] ?? ($detail['id'] ?? md5(json_encode($row ?? $detail ?? ''))) }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                             <td class="px-10 py-6">
                                 <div class="flex flex-col">
                                     <span class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-{{ $accentColor }}-500 transition-colors">{{ $detail['first_name'] }} {{ $detail['last_name'] }}</span>
