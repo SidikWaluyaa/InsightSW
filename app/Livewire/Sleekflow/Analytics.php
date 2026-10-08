@@ -65,9 +65,34 @@ class Analytics extends Component
             'avg_first_response_time' => $avgFirstResponseTime,
         ];
 
+        // --- Data untuk Chart (Semua data dalam bulan ini, urut Ascending) ---
+        $chartRecords = (clone $baseQuery)->orderBy('date_time', 'asc')->get();
+        $chartDates = [];
+        $chartEnquiries = [];
+        $chartResponseTimes = [];
+
+        foreach ($chartRecords as $row) {
+            $chartDates[] = \Carbon\Carbon::parse($row->date_time)->format('d M');
+            $chartEnquiries[] = (int) $row->number_of_new_enquires;
+            
+            // Ubah "HH:mm:ss" jadi Total Menit (karena Y-axis grafik butuh angka Decimal/Integer)
+            $timeStr = $row->response_time_first_messages;
+            $minutes = 0;
+            if ($timeStr) {
+                $parts = explode(':', $timeStr);
+                if (count($parts) === 3) {
+                    $minutes = ($parts[0] * 60) + $parts[1] + ($parts[2] / 60);
+                }
+            }
+            $chartResponseTimes[] = round($minutes, 2);
+        }
+
         return view('livewire.sleekflow.analytics', [
             'analytics' => $analytics,
             'summary' => $summary,
+            'chartDates' => $chartDates,
+            'chartEnquiries' => $chartEnquiries,
+            'chartResponseTimes' => $chartResponseTimes,
         ]);
     }
 }
