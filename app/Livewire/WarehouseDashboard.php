@@ -103,7 +103,7 @@ class WarehouseDashboard extends Component
     public function stockHealthScore()
     {
         $total = WarehouseInventory::count();
-        if ($total === 0) return ['score' => 100, 'grade' => 'A'];
+        if ($total === 0) return ['score' => 100, 'healthy' => 0, 'low' => 0, 'out' => 0, 'total' => 0, 'grade' => 'A'];
 
         $outOfStock = WarehouseInventory::where('status', 'Out of Stock')->count();
         $lowStock = WarehouseInventory::whereColumn('current_stock', '<=', 'min_stock')

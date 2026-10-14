@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use App\Services\WarehouseApiService;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 #[Title('Antrian Manifest Live')]
 class WarehouseManifestQueue extends Component
 {
+    use WithDateRange;
+
     public string $startDate = '';
     public string $endDate = '';
 
@@ -33,13 +36,15 @@ class WarehouseManifestQueue extends Component
         $this->startDate = request()->query('startDate') ?? '';
         $this->endDate = request()->query('endDate') ?? '';
 
-        // Default to last 8 days (7 days ago to today) to display a nice chart trend
+        // Default: 7 hari terakhir termasuk hari ini (sama dengan preset "7 Hari")
         if (empty($this->startDate)) {
-            $this->startDate = now()->subDays(7)->format('Y-m-d');
+            $this->startDate = now()->subDays(6)->format('Y-m-d');
         }
         if (empty($this->endDate)) {
             $this->endDate = now()->format('Y-m-d');
         }
+
+        [$this->startDate, $this->endDate] = $this->normalizeDateRange($this->startDate, $this->endDate);
     }
 
     public function loadData()
@@ -66,6 +71,9 @@ class WarehouseManifestQueue extends Component
      */
     protected function getManifestData(): array
     {
+        // Reset agar error lama tidak menempel setelah percobaan ulang berhasil
+        $this->errorMessage = null;
+
         try {
             $cacheKey = "warehouse_manifest_summary_{$this->startDate}_{$this->endDate}";
 
