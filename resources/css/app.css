@@ -14,3 +14,7 @@ body {
 .anim-pulse-slow {
     animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+[x-cloak] {
+    display: none !important;
+}
