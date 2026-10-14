@@ -43,9 +43,10 @@ return [
     'sleekflow' => [
         'key' => env('SLEEKFLOW_API_KEY'),
         'base_url' => env('SLEEKFLOW_BASE_URL', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api'),
-        // Endpoint penuh untuk Daily Analytics (payload: from, to, dailyAnalytics[]).
-        // Contoh: https://.../api/analytics/daily  — diisi via .env SLEEKFLOW_ANALYTICS_URL
-        'analytics_url' => env('SLEEKFLOW_ANALYTICS_URL'),
+        // Endpoint Daily Analytics: GET {base_url}/analytic?startDate=Y-m-d&endDate=Y-m-d
+        // (respons: from, to, dailyAnalytics[]). Bisa di-override via .env SLEEKFLOW_ANALYTICS_URL
+        'analytics_url' => env('SLEEKFLOW_ANALYTICS_URL')
+            ?: rtrim(env('SLEEKFLOW_BASE_URL', 'https://sleekflow-core-app-seas-production.azurewebsites.net/api'), '/') . '/analytic',
         // Header autentikasi untuk endpoint analytics (default sama dengan endpoint contact)
         'analytics_auth_header' => env('SLEEKFLOW_ANALYTICS_AUTH_HEADER', 'X-Sleekflow-Api-Key'),
     ],

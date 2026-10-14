@@ -391,12 +391,19 @@ class SleekflowService
             return $this->analyticsResult(false, 0, 0, "Tanggal awal ({$startDate}) lebih besar dari tanggal akhir ({$endDate}).");
         }
 
-        // Bucket harian Sleekflow memakai format "YYYY-MM-DDT00:00:00Z".
-        // 'to' dikirim H+1 agar hari terakhir pasti ikut (aman jika API memperlakukan 'to' eksklusif);
-        // data di luar rentang yang diminta difilter lagi di bawah.
+        // Sleekflow menolak (HTTP 400) tanggal hari berjalan: data harian baru tersedia sampai H-1.
+        $latest = Carbon::yesterday('UTC');
+        if ($end->gt($latest)) {
+            $end = $latest;
+        }
+        if ($start->gt($end)) {
+            return $this->analyticsResult(true, 0, 0, 'Sleekflow baru menyediakan data harian sampai kemarin (H-1); belum ada data baru untuk ditarik.');
+        }
+
+        // Endpoint GET /api/analytic memakai startDate & endDate (Y-m-d), keduanya inklusif.
         $params = [
-            'from' => $start->format('Y-m-d\TH:i:s\Z'),
-            'to'   => $end->copy()->addDay()->format('Y-m-d\TH:i:s\Z'),
+            'startDate' => $start->toDateString(),
+            'endDate'   => $end->toDateString(),
         ];
 
         try {
