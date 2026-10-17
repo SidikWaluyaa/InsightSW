@@ -143,14 +143,25 @@ class ExecutiveOverview extends Component
                 ),
             ],
             'akurasi' => [
-                'judul' => 'Tingkat Akurasi Data',
-                'endpoint' => 'Belum ada',
+                'judul' => 'Tingkat Akurasi Data (Matching Rate)',
+                'endpoint' => 'Belum ada (menunggu Tim Data)',
                 'field' => '–',
-                'nilai' => 'Menyusul',
-                'definisi' => 'Kecocokan data di sistem dengan kondisi lapangan (PRD: target ≥ 98%). Cara mencocokkan dan sumber datanya masih didiskusikan dengan Tim Data, jadi belum dihitung.',
-                'rumus_db' => "Usulan PRD: (1 − selisih ÷ total) × 100%\n-- selisih dan total belum didefinisikan (data apa dibanding data apa)",
-                'langkah' => [],
-                'cek' => [],
+                'nilai' => 'Belum bisa dihitung',
+                'definisi' => 'Seberapa cocok transaksi di sistem dengan uang yang benar-benar masuk rekening (mutasi bank yang sudah diverifikasi Finance). '
+                    . 'Diverifikasi 3 kali sebulan: tanggal 10, 20, dan akhir bulan. Target sehat ≥ 98%. '
+                    . 'Rumus sudah ditetapkan (PRD), tetapi menurut Tim Data datanya belum bisa dihitung, jadi kartu belum berisi angka.',
+                'rumus_db' => "Akurasi (%) = (1 − Selisih ÷ Total Transaksi) × 100%\n\n"
+                    . "Total Transaksi = jumlah SPK / tagihan yang diaudit pada periode\n"
+                    . "Data Cocok      = transaksi yang nominal & statusnya sama dengan mutasi bank\n"
+                    . "Selisih         = Total Transaksi − Data Cocok (selisih / salah ketik)\n\n"
+                    . "Contoh PRD: 720 SPK, 716 cocok, 4 selisih → (1 − 4 ÷ 720) × 100% = 99,44%\n"
+                    . "Target: ≥ 98,0%",
+                'langkah' => [
+                    ['op' => '−', 'teks' => 'Selisih = total transaksi − data cocok', 'rumus' => 'Total Transaksi − Data Cocok', 'hasil' => 'belum ada data'],
+                    ['op' => '÷', 'teks' => 'Porsi selisih = selisih ÷ total transaksi', 'rumus' => 'Selisih ÷ Total Transaksi', 'hasil' => 'belum ada data'],
+                    ['op' => '=', 'teks' => 'Akurasi = (1 − porsi selisih) × 100%', 'rumus' => '(1 − Selisih ÷ Total) × 100%', 'hasil' => 'belum bisa dihitung'],
+                ],
+                'cek' => [['ok' => false, 'teks' => 'Sumber data mutasi bank dan proses audit belum tersedia (menurut Tim Data). Kartu akan terisi setelah datanya ada.']],
             ],
             'funnel_3' => [
                 'judul' => 'Corong 3 · SPK closing',

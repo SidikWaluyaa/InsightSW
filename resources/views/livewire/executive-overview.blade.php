@@ -52,9 +52,9 @@
                     :info-call="$showFormula ? 'showFormula(\'roas\')' : null"
                     :badge="$momBadge($cards['roas'])" :badge-tone="$momTone($cards['roas'])"
                     :note="'Omset ÷ biaya iklan Meta (tanpa pajak). Semua omset dianggap dari iklan. Bulan lalu: ' . ($cards['roas']['lalu'] === null ? '–' : number_format($cards['roas']['lalu'], 2, ',', '.') . 'x') . '.'" />
-                <x-ui.stat-card label="Tingkat Akurasi Data" value="Menyusul" icon="check-circle" compact
+                <x-ui.stat-card label="Tingkat Akurasi Data" value="Belum dihitung" icon="check-circle" compact badge="Target ≥ 98%" badge-tone="slate"
                     :info-call="$showFormula ? 'showFormula(\'akurasi\')' : null"
-                    note="Kecocokan data sistem dengan kondisi lapangan. Rumus dan cara pengecekannya masih didiskusikan dengan Tim Data." />
+                    note="Rumus: (1 − Selisih ÷ Total Transaksi) × 100%. Selisih = transaksi di sistem yang tidak cocok dengan mutasi bank. Diaudit tanggal 10, 20, dan akhir bulan; datanya belum tersedia." />
             </div>
 
             {{-- Alur 2: corong chat sampai sepatu tiba --}}
