@@ -435,16 +435,20 @@ class Analytics extends Component
         $dates = [];
         $enquiries = [];
         $responseTimes = [];
+        $sundays = [];
+        $offDays = [];
 
         foreach ($records as $row) {
             $dates[] = Carbon::parse($row->date_time)->translatedFormat($format);
             $enquiries[] = (int) $row->number_of_new_enquires;
+            $sundays[] = Carbon::parse($row->date_time)->isSunday();
+            $offDays[] = static::isOffDay($row);
 
             // Ubah "HH:mm:ss" jadi Total Menit (karena Y-axis grafik butuh angka Decimal/Integer)
             $timeStr = $row->response_time_first_messages;
             $minutes = 0;
 
-            // Hari libur CS: kosongkan titiknya agar garis tidak turun ke 0; batang Prospek Baru tetap tampil
+            // Hari libur CS: tidak ada nilai (null); di grafik garisnya disambung lurus ke hari kerja berikutnya
             if (static::isOffDay($row)) {
                 $responseTimes[] = null;
 
@@ -463,6 +467,8 @@ class Analytics extends Component
             'dates' => $dates,
             'enquiries' => $enquiries,
             'responseTimes' => $responseTimes,
+            'sundays' => $sundays,
+            'offDays' => $offDays,
         ];
     }
 

@@ -71,6 +71,10 @@
             <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
             <h2 class="text-sm font-bold text-white uppercase tracking-wider">Perbandingan Prospek Baru dan Kecepatan Balasan CS</h2>
         </div>
+        <p class="-mt-2 mb-2 text-[11px] text-slate-400">
+            <span class="inline-block w-2.5 h-2.5 rounded-sm bg-red-500 align-middle mr-1"></span>Batang merah = hari Minggu.
+            Di hari libur CS garis waktu balas disambung lurus ke hari kerja berikutnya (bukan angka hari itu).
+        </p>
         <div id="sleekflowChart" class="w-full h-[350px]"></div>
     </div>
 
@@ -80,9 +84,21 @@
         document.addEventListener('livewire:initialized', () => {
             let chart;
             
-            const renderChart = ({ dates, enquiries, responseTimes }) => {
+            const renderChart = ({ dates, enquiries, responseTimes, sundays = [], offDays = [] }) => {
                 // Rentang panjang: sembunyikan label titik & kurangi tick agar grafik tetap terbaca
                 const dense = dates.length > 31;
+
+                // Hari libur CS tidak punya nilai; isi dengan titik di garis lurus antara hari kerja sebelum
+                // dan sesudahnya supaya garis tersambung (label & tooltip hari itu tetap ditandai libur)
+                const line = responseTimes.map((val, i) => {
+                    if (val !== null) return val;
+                    let prev = i - 1, next = i + 1;
+                    while (prev >= 0 && responseTimes[prev] === null) prev--;
+                    while (next < responseTimes.length && responseTimes[next] === null) next++;
+                    if (prev < 0 || next >= responseTimes.length) return null;
+                    const t = (i - prev) / (next - prev);
+                    return +(responseTimes[prev] + (responseTimes[next] - responseTimes[prev]) * t).toFixed(2);
+                });
 
                 const options = {
                     series: [{
@@ -92,7 +108,7 @@
                     }, {
                         name: 'Waktu Balas Pertama',
                         type: 'line',
-                        data: responseTimes
+                        data: line
                     }],
                     chart: {
                         height: 350,
@@ -105,17 +121,18 @@
                         width: [0, dense ? 2 : 4],
                         curve: 'smooth'
                     },
-                    colors: ['#10b981', '#f43f5e'], // Emerald for Bar, Rose for Line
+                    // Batang hari Minggu merah, lainnya emerald; garis rose
+                    colors: [({ dataPointIndex }) => sundays[dataPointIndex] ? '#ef4444' : '#10b981', '#f43f5e'],
                     fill: {
                         type: ['solid', 'solid'],
-                        opacity: [0.15, 1],
+                        opacity: [0.35, 1],
                     },
                     dataLabels: {
                         enabled: !dense,
                         enabledOnSeries: [1],
-                        formatter: function (val) {
+                        formatter: function (val, { dataPointIndex }) {
                             // Convert back minutes to MM:SS format for data labels
-                            if (!val) return '';
+                            if (!val || offDays[dataPointIndex]) return '';
                             let m = Math.floor(val);
                             let s = Math.round((val - m) * 60);
                             return m + " mnt";
@@ -154,9 +171,9 @@
                     tooltip: {
                         theme: 'dark',
                         y: {
-                            formatter: function (val, { seriesIndex }) {
-                                if (seriesIndex === 0) return val + " prospek";
-                                if (val === null || val === undefined) return "Tidak ada balasan staf";
+                            formatter: function (val, { seriesIndex, dataPointIndex }) {
+                                if (seriesIndex === 0) return val + " prospek" + (sundays[dataPointIndex] ? " (Minggu)" : "");
+                                if (offDays[dataPointIndex] || val === null || val === undefined) return "Libur CS, tidak dihitung";
                                 // Line chart (Minutes) -> format to mm:ss
                                 let m = Math.floor(val);
                                 let s = Math.round((val - m) * 60);
