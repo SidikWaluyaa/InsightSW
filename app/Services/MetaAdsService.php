@@ -67,6 +67,7 @@ class MetaAdsService
         $url = "{$this->baseUrl}/{$adAccountId}/insights";
         $totalSynced = 0;
         $pageCount = 0;
+        $failed = false;
 
         do {
             Log::info("Meta Ads: Syncing page {$pageCount}...");
@@ -74,6 +75,7 @@ class MetaAdsService
 
             if ($response->failed()) {
                 Log::error("Meta Ads API Sync Failed: " . $response->body());
+                $failed = true;
                 break;
             }
 
@@ -104,7 +106,8 @@ class MetaAdsService
                 ->update(['budget' => $amount]);
         }
 
-        return true;
+        // Gagal di tengah jalan = laporkan gagal (sebelumnya selalu true, jadi command/halaman bilang "selesai")
+        return ! $failed;
     }
 
     /**

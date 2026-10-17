@@ -17,123 +17,46 @@
             }, 1000);
         }
      }">
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Meta Ads Insights
-            </h2>
-        </div>
-    </x-slot>
-
     <div class="space-y-4">
-        {{-- Control Bar --}}
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all duration-300 mb-2">
-            <div>
-                <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none mb-2">Kontrol Iklan Meta</h2>
-                <div class="flex items-center gap-3">
-                    <p class="text-[10px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest leading-none">Live Sync from Meta Graph API</p>
-                    
-                    <div class="flex items-center gap-2 border-l border-gray-100 dark:border-gray-800 ml-2 pl-3">
-                        <template x-if="isSyncing">
-                            <div class="flex items-center gap-2 animate-pulse">
-                                <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
-                            </div>
-                        </template>
-                        <template x-if="!isSyncing && seconds > 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Auto-update: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
-                        </template>
-                        <template x-if="!isSyncing && seconds <= 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <button wire:click="sync" 
-                    wire:loading.attr="disabled"
-                    class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-300 active:scale-95 disabled:opacity-75">
-                    <svg wire:loading.class="animate-spin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span wire:loading.remove>Sync Data</span>
-                    <span wire:loading>Syncing...</span>
-                </button>
-            </div>
-        </div>
+        <x-ui.page-header title="Meta Ads" subtitle="Biaya, chat, dan efisiensi iklan Meta (CTWA) per kampanye dan materi iklan.">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="$maxDate" :presets="$presets" refresh="sync" refresh-label="Tarik dari Meta" />
+        </x-ui.page-header>
 
-    {{-- Hub Area --}}
-    <div class="relative bg-slate-900 rounded-[2rem] p-6 mb-2 overflow-hidden border border-white/5 shadow-2xl">
-        <div class="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px]"></div>
-        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"></div>
-        
-        <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div class="flex items-center gap-5">
-                <div class="p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-[1.5rem] border border-white/10 shadow-inner group transition-all duration-500 hover:scale-105 active:scale-95">
-                    <svg class="w-6 h-6 text-indigo-400 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black text-white tracking-tighter uppercase italic leading-none mb-1">Meta Analytics Hub</h1>
-                    <p class="text-[9px] font-black text-indigo-400/60 uppercase tracking-[0.2em]">Real-time Performance Data</p>
-                </div>
-            </div>
+        <x-ui.range-info :start="$startDate" :end="$endDate">
+            {{-- Status sinkron otomatis hari ini (setiap 2 menit selama rentang mencakup hari ini) --}}
+            <template x-if="isSyncing">
+                <span class="font-semibold text-indigo-500 animate-pulse">Sinkronisasi…</span>
+            </template>
+            <template x-if="!isSyncing && seconds > 0 && endDate === '{{ now()->format('Y-m-d') }}'">
+                <span>Pembaruan otomatis dalam <span x-text="seconds" class="font-mono text-indigo-500"></span> detik</span>
+            </template>
+        </x-ui.range-info>
 
-            <div class="flex flex-wrap items-center gap-10">
-                <div class="flex flex-col items-end">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5 mr-1">Total Results</span>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-white tracking-tighter">{{ number_format($metaSummary['total_results'] ?? 0, 0, ',', '.') }}</span>
-                        <span class="text-[10px] font-black text-emerald-500 uppercase italic tracking-widest">Conv.</span>
-                    </div>
-                </div>
-                <div class="w-px h-10 bg-white/10 hidden md:block"></div>
-                <div class="flex flex-col items-end">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5 mr-1">Avg. Cost Per Result</span>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Rp</span>
-                        <span class="text-3xl font-black text-white tracking-tighter">{{ number_format($metaSummary['avg_cost_per_result'] ?? 0, 0, ',', '.') }}</span>
-                        <span class="text-[9px] font-black text-indigo-500 uppercase italic tracking-widest">Precision</span>
-                    </div>
-                </div>
-            </div>
+        @php
+            $c = $kpi['cards'];
+            $tones = ['hijau' => 'emerald', 'kuning' => 'amber', 'merah' => 'rose'];
+            $momBadge = fn ($k) => $k['perubahan'] === null ? null : ($k['perubahan'] >= 0 ? '▲ ' : '▼ ') . number_format(abs($k['perubahan']), 1, ',', '.') . '% vs bulan lalu';
+            $momTone = fn ($k) => $tones[$k['status']] ?? 'slate';
+            $rp = fn ($v) => $v === null ? '–' : 'Rp ' . number_format($v, 0, ',', '.');
+        @endphp
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <x-ui.stat-card label="Biaya Iklan" :value="$rp($c['spend']['nilai'])" icon="cash" compact
+                :badge="$momBadge($c['spend'])" badge-tone="slate"
+                :note="'± ' . $rp($c['spend']['nilai'] / max($kpi['days'], 1)) . '/hari, tanpa pajak. Bulan lalu: ' . $rp($c['spend']['lalu']) . '.'" />
+            <x-ui.stat-card label="Chat dari Iklan" :value="number_format($c['results']['nilai'], 0, ',', '.')" unit="chat" icon="chat"
+                :badge="$momBadge($c['results'])" :badge-tone="$momTone($c['results'])"
+                :note="'Hasil iklan (percakapan WhatsApp dimulai). Bulan lalu: ' . number_format($c['results']['lalu'], 0, ',', '.') . '.'" />
+            <x-ui.stat-card label="Biaya per Chat" :value="$rp($c['cpr']['nilai'])" icon="cursor-click" compact
+                :badge="$momBadge($c['cpr'])" :badge-tone="$momTone($c['cpr'])"
+                :note="'Biaya iklan ÷ chat dari iklan. Turun = lebih baik. Bulan lalu: ' . $rp($c['cpr']['lalu']) . '.'" />
+            <x-ui.stat-card label="% Klik dari Tayangan (CTR)" :value="$c['ctr']['nilai'] === null ? '–' : number_format($c['ctr']['nilai'], 2, ',', '.') . '%'" icon="eye"
+                :badge="$momBadge($c['ctr'])" :badge-tone="$momTone($c['ctr'])"
+                :note="'Klik link ÷ tayangan. Bulan lalu: ' . ($c['ctr']['lalu'] === null ? '–' : number_format($c['ctr']['lalu'], 2, ',', '.') . '%') . '.'" />
         </div>
-    </div>
-
-    {{-- Scoreboard Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
-        <div class="relative bg-white dark:bg-gray-900 rounded-[1.5rem] p-6 border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <svg class="w-20 h-20 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-            </div>
-            <div class="flex items-center gap-5">
-                <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
-                    <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <div>
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 block">Total Spend</span>
-                    <div class="flex items-baseline gap-1.5">
-                        <span class="text-[10px] font-black text-gray-400 uppercase leading-none">Rp</span>
-                        <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{{ number_format($metaSummary['total_spend'] ?? 0, 0, ',', '.') }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="relative bg-white dark:bg-gray-900 rounded-[1.5rem] p-6 border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden group">
-            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <svg class="w-20 h-20 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-            </div>
-            <div class="flex items-center gap-5">
-                <div class="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 group-hover:scale-110 transition-transform duration-500">
-                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                </div>
-                <div>
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 block">Total Impressions</span>
-                    <span class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{{ number_format($metaSummary['total_impressions'] ?? 0, 0, ',', '.') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
+        <p class="text-[11px] text-slate-400 dark:text-gray-500">
+            Lampu membandingkan dengan {{ \Carbon\Carbon::parse($kpi['prevRange'][0])->translatedFormat('j M') }} – {{ \Carbon\Carbon::parse($kpi['prevRange'][1])->translatedFormat('j M Y') }}, mengikuti filter kampanye, adset, dan pencarian.
+            Biaya iklan tidak diberi lampu (bukan baik atau buruk); biaya dan chat dibandingkan per hari.
+        </p>
 
     {{-- Campaign Spend Breakdown --}}
     @if(count($campaignSpend) > 0)
@@ -171,21 +94,6 @@
     {{-- Premium Filter & Toolbar Section --}}
     <div class="bg-slate-900/40 backdrop-blur-md rounded-[2rem] p-5 border border-white/5 shadow-2xl mb-2">
         <div class="flex flex-wrap items-center gap-6">
-            {{-- Date Context Group --}}
-            <div class="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/5">
-                <div class="flex items-center gap-2 px-3 py-1">
-                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Periode</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <input type="date" wire:model.live="startDate" class="bg-transparent border-0 text-[11px] font-black text-white focus:ring-0 p-1 w-32 cursor-pointer hover:bg-white/5 rounded-lg transition-colors">
-                    <span class="text-gray-600 text-xs">—</span>
-                    <input type="date" wire:model.live="endDate" class="bg-transparent border-0 text-[11px] font-black text-white focus:ring-0 p-1 w-32 cursor-pointer hover:bg-white/5 rounded-lg transition-colors">
-                </div>
-            </div>
-
-            <div class="h-10 w-px bg-white/10 hidden xl:block"></div>
-
             {{-- Core Filters Group --}}
             <div class="flex flex-1 flex-wrap items-center gap-4">
                 {{-- Campaign Select --}}
@@ -266,6 +174,18 @@
 
     {{-- Table Area with Breadcrumbs --}}
     <div class="mt-8">
+        {{-- Pilihan tampilan: drill-down kampanye (lama) atau tabel berjenjang per tanggal & materi iklan (PRD) --}}
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+            @foreach(['campaign' => 'Per Kampanye', 'materi' => 'Per Tanggal & Materi Iklan'] as $mode => $modeLabel)
+                @php $active = $mode === 'materi' ? $groupBy === 'materi' : $groupBy !== 'materi'; @endphp
+                <button type="button" wire:click="{{ $mode === 'materi' ? "\$set('groupBy', 'materi')" : 'resetNavigation' }}"
+                    class="px-4 py-2 rounded-xl text-xs font-bold border transition-colors {{ $active ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-gray-900 text-slate-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-emerald-500' }}">
+                    {{ $modeLabel }}
+                </button>
+            @endforeach
+        </div>
+
+        @if($groupBy !== 'materi')
         {{-- Hierarchical Breadcrumbs --}}
         <div class="flex items-center gap-3 mb-6 px-4 py-2.5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-fit">
             <button wire:click="resetNavigation" class="flex items-center gap-2 group">
@@ -295,6 +215,58 @@
             @endif
         </div>
 
+        @endif
+
+    @if($hierarchy)
+    {{-- Tabel berjenjang PRD: sel tanggal dan materi iklan yang sama dengan baris sebelumnya dikosongkan --}}
+    <div class="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <th class="px-5 py-3 whitespace-nowrap">Tanggal</th>
+                        <th class="px-5 py-3">Materi Iklan</th>
+                        <th class="px-5 py-3">Kampanye</th>
+                        <th class="px-5 py-3 text-right whitespace-nowrap">Biaya</th>
+                        <th class="px-5 py-3 text-right">Tayang</th>
+                        <th class="px-5 py-3 text-right whitespace-nowrap">Klik Link</th>
+                        <th class="px-5 py-3 text-right">Chat</th>
+                        <th class="px-5 py-3 text-right whitespace-nowrap">Biaya per Chat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($hierarchy->items() as $date => $ads)
+                        @foreach($ads as $adName => $campaignRows)
+                            @foreach($campaignRows as $i => $row)
+                                @php $firstOfDay = $loop->parent->first && $loop->first; @endphp
+                                <tr wire:key="h-{{ $date }}-{{ md5($adName . $row->campaign_name) }}"
+                                    class="{{ $firstOfDay ? 'border-t-2 border-gray-200 dark:border-gray-700' : ($loop->first ? 'border-t border-gray-100 dark:border-gray-800' : '') }} hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                                    <td class="px-5 py-2.5 align-top whitespace-nowrap font-bold text-slate-700 dark:text-gray-200">
+                                        {{ $firstOfDay ? \Carbon\Carbon::parse($date)->translatedFormat('d M Y') : '' }}
+                                    </td>
+                                    <td class="px-5 py-2.5 align-top whitespace-nowrap font-semibold text-slate-800 dark:text-white">{{ $loop->first ? $adName : '' }}</td>
+                                    <td class="px-5 py-2.5 whitespace-nowrap text-slate-500 dark:text-gray-400">{{ $row->campaign_name }}</td>
+                                    <td class="px-5 py-2.5 text-right whitespace-nowrap font-bold text-slate-800 dark:text-gray-100">Rp {{ number_format($row->spend, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-2.5 text-right text-slate-600 dark:text-gray-300">{{ number_format($row->impressions, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-2.5 text-right text-slate-600 dark:text-gray-300">{{ number_format($row->link_click, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-2.5 text-right font-bold text-blue-600 dark:text-blue-400">{{ number_format($row->results, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-2.5 text-right whitespace-nowrap text-slate-600 dark:text-gray-300">{{ $row->results > 0 ? 'Rp ' . number_format($row->spend / $row->results, 0, ',', '.') : '–' }}</td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    @empty
+                        <tr><td colspan="8" class="px-6 py-16 text-center text-sm italic text-slate-400">Belum ada data Meta Ads untuk rentang dan filter ini.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($hierarchy->hasPages())
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
+                {{ $hierarchy->links() }}
+            </div>
+        @endif
+    </div>
+    @else
     {{-- Main Table --}}
     <div class="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden scroll-smooth">
         <div class="overflow-x-auto custom-scrollbar">
@@ -408,6 +380,7 @@
             </div>
         @endif
     </div>
+    @endif
 
     {{-- Detail Slide-over: Premium Redesign --}}
     <div x-data="{ open: @entangle('showDetail') }" 
