@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class CsSalesExportController extends Controller
 {
     /**
-     * PDF halaman Penjualan CS: 4 kartu, peringkat CS, dan rincian harian untuk rentang ?dari=&sampai=.
+     * PDF Dashboard CS (PRD halaman 3): 4 kartu, peringkat CS, dan rincian harian untuk rentang ?dari=&sampai=.
      * Rentang dibatasi sampai kemarin (H-1), sama dengan halamannya.
      */
     public function printPdf(Request $request, CsSalesReportService $report)
@@ -37,6 +37,6 @@ class CsSalesExportController extends Controller
             'end' => $end,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream("Penjualan_CS_{$s}_{$e}.pdf");
+        return $pdf->stream("Dashboard_CS_{$s}_{$e}.pdf");
     }
 }

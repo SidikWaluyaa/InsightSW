@@ -29,15 +29,15 @@
 </head>
 <body>
     <div class="header">
-        <h1>Penjualan CS</h1>
+        <h1>Dashboard CS</h1>
         <p>Periode {{ $start->translatedFormat('j M Y') }} – {{ $end->translatedFormat('j M Y') }} · dibanding {{ \Carbon\Carbon::parse($prevRange[0])->translatedFormat('j M') }} – {{ \Carbon\Carbon::parse($prevRange[1])->translatedFormat('j M Y') }} · dicetak {{ now()->translatedFormat('j M Y H:i') }}</p>
     </div>
 
     <table class="cards">
         <tr>
-            @foreach($cards as $card)
+            @foreach($cards as $no => $card)
                 <td class="card">
-                    <div class="label">{{ $card['nama'] }}</div>
+                    <div class="label">{{ [20 => 'Closing Biodata', 27 => 'Chat-to-SPK CR', 29 => 'Average Order Value', 26 => 'Multi-Pair Ratio'][$no] ?? $card['nama'] }}</div>
                     <div class="value">{{ $card['nilai'] }}</div>
                     @if($card['badge'])<div style="color: {{ $toneColor[$card['status']] ?? '#64748b' }}; font-weight: bold;">{{ $card['badge'] }}</div>@endif
                     <div class="note">Bulan lalu: {{ $card['lalu'] }}</div>
@@ -46,13 +46,13 @@
         </tr>
     </table>
 
-    <h2>Peringkat CS (urut omset tagihan)</h2>
+    <h2>Leaderboard Kinerja Penjualan CS (ranking omset riil)</h2>
     @if($leaderboard === null)
         <p>Data per CS belum tersedia dari sistem pusat.</p>
     @else
         <table class="data">
             <thead>
-                <tr><th>#</th><th>CS</th><th class="r">Isi Data Diri</th><th class="r">SPK Closing</th><th class="r">Tagihan</th><th class="r">Omset Tagihan</th><th class="r">Sepatu / Tagihan</th><th class="r">Nilai / Tagihan</th></tr>
+                <tr><th>Rank</th><th>Nama Agen CS</th><th class="r">SPK Terbit</th><th class="r">Total Invoices</th><th class="r">Omset Deal Pipeline (Net)</th><th class="r">Multi-Pair Ratio</th></tr>
             </thead>
             <tbody>
                 @foreach($leaderboard as $i => $row)
@@ -60,22 +60,20 @@
                         {{-- Medali 3 teratas: sel berwarna emas / perak / perunggu --}}
                         <td @if(isset($medal[$i])) style="background: {{ $medal[$i] }}; color: #fff; font-weight: bold; text-align: center;" @endif>{{ $i + 1 }}</td>
                         <td><strong>{{ $row['nama'] }}</strong></td>
-                        <td class="r">{{ $num($row['leads']) }}</td>
-                        <td class="r">{{ $num($row['spk']) }}</td>
-                        <td class="r">{{ $num($row['tagihan']) }}</td>
+                        <td class="r">{{ $num($row['spk']) }} psg</td>
+                        <td class="r">{{ $num($row['tagihan']) }} inv</td>
                         <td class="r"><strong>{{ $rp($row['omset']) }}</strong></td>
                         <td class="r">{{ $row['per_tagihan'] === null ? '–' : number_format($row['per_tagihan'], 2, ',', '.') }}</td>
-                        <td class="r">{{ $rp($row['nilai_tagihan']) }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
     @endif
 
-    <h2>Rincian Harian</h2>
+    <h2>Rincian Transaksi Harian</h2>
     <table class="data">
         <thead>
-            <tr><th>Tanggal</th><th class="r">Isi Data Diri</th><th class="r">SPK Closing</th><th class="r">Tagihan</th><th class="r">Omset Tagihan</th><th class="r">Nilai / Tagihan</th><th class="r">Biaya Iklan</th><th class="r">Biaya / SPK</th></tr>
+            <tr><th>Tanggal</th><th class="r">Biodata (CRM)</th><th class="r">SPK Terbit</th><th class="r">Invoices Valid</th><th class="r">Deal Pipeline Net</th><th class="r">AOV Bersih</th><th class="r">Cost per SPK</th></tr>
         </thead>
         <tbody>
             @foreach($daily['rows'] as $row)
@@ -86,7 +84,6 @@
                     <td class="r">{{ $num($row['tagihan']) }}</td>
                     <td class="r">{{ $rp($row['omset']) }}</td>
                     <td class="r">{{ $rp($row['nilai_tagihan']) }}</td>
-                    <td class="r">{{ $rp($row['biaya']) }}</td>
                     <td class="r">{{ $rp($row['biaya_spk']) }}</td>
                 </tr>
             @endforeach

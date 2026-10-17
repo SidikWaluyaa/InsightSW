@@ -62,24 +62,24 @@ class CsSales extends Component
     {
         $leaderboard = $report->leaderboard($this->startDate, $this->endDate);
         $daily = $report->daily($this->startDate, $this->endDate);
-        $name = "penjualan-cs_{$this->startDate}_{$this->endDate}.csv";
+        $name = "dashboard-cs_{$this->startDate}_{$this->endDate}.csv";
 
         return response()->streamDownload(function () use ($leaderboard, $daily) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM supaya Excel membaca UTF-8
             $put = fn (array $row) => fputcsv($out, $row, ',', '"', '');
 
-            $put(["Penjualan CS {$this->startDate} s/d {$this->endDate}"]);
+            $put(["Dashboard CS {$this->startDate} s/d {$this->endDate}"]);
             $put([]);
-            $put(['Peringkat', 'CS', 'Isi data diri', 'SPK closing', 'Tagihan', 'Omset tagihan', 'Sepatu per tagihan', 'Nilai per tagihan']);
+            $put(['Rank', 'Nama Agen CS', 'SPK Terbit', 'Total Invoices', 'Omset Deal Pipeline (Net)', 'Multi-Pair Ratio', 'Biodata (CRM)', 'AOV']);
             foreach ($leaderboard ?? [] as $i => $row) {
-                $put([$i + 1, $row['nama'], $row['leads'], $row['spk'], $row['tagihan'], $row['omset'], $row['per_tagihan'], $row['nilai_tagihan']]);
+                $put([$i + 1, $row['nama'], $row['spk'], $row['tagihan'], $row['omset'], $row['per_tagihan'], $row['leads'], $row['nilai_tagihan']]);
             }
 
             $put([]);
-            $put(['Tanggal', 'Isi data diri', 'SPK closing', 'Tagihan', 'Omset tagihan', 'Nilai per tagihan', 'Biaya iklan', 'Biaya per SPK']);
+            $put(['Tanggal', 'Biodata (CRM)', 'SPK Terbit', 'Invoices Valid', 'Deal Pipeline Net', 'AOV Bersih', 'Cost per SPK', 'Biaya iklan']);
             foreach ($daily['rows'] as $row) {
-                $put([$row['tanggal'], $row['leads'], $row['spk'], $row['tagihan'], $row['omset'], $row['nilai_tagihan'], $row['biaya'], $row['biaya_spk']]);
+                $put([$row['tanggal'], $row['leads'], $row['spk'], $row['tagihan'], $row['omset'], $row['nilai_tagihan'], $row['biaya_spk'], $row['biaya']]);
             }
 
             fclose($out);
