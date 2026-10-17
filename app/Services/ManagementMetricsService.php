@@ -158,6 +158,104 @@ class ManagementMetricsService
         };
     }
 
+    /**
+     * Rentang pembanding bulan lalu (MoM). Rentang satu bulan penuh dibandingkan dengan bulan lalu penuh;
+     * selain itu tanggalnya digeser satu bulan (1–17 Okt → 1–17 Sep; 31 Okt → 30 Sep).
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function previousRange(string $start, string $end): array
+    {
+        $s = Carbon::parse($start);
+        $e = Carbon::parse($end);
+
+        if ($s->isSameDay($s->copy()->startOfMonth()) && $e->isSameDay($e->copy()->endOfMonth())) {
+            return [$s->copy()->subMonthNoOverflow()->startOfMonth()->toDateString(), $e->copy()->startOfMonth()->subMonthNoOverflow()->endOfMonth()->toDateString()];
+        }
+
+        return [$s->copy()->subMonthNoOverflow()->toDateString(), $e->copy()->subMonthNoOverflow()->toDateString()];
+    }
+
+    /**
+     * Status lampu dibanding bulan lalu (kesepakatan Tim Data: MoM).
+     * hijau = sama / lebih baik, kuning = lebih buruk sampai `batas_kuning` %, merah = lebih buruk dari itu.
+     * Data bertipe jumlah dibandingkan per hari supaya rentang dengan jumlah hari berbeda tetap adil.
+     * Data tanpa arah (mis. biaya iklan) atau tanpa nilai bulan lalu → status null, lalu kartu memakai target Kamus.
+     *
+     * @return array{perubahan: float|null, status: string|null}
+     */
+    public function compare(int $no, ?float $now, ?float $prev, int $days, int $prevDays): array
+    {
+        return $this->compareValues(
+            $now, $prev,
+            config("management_metrics.mom.arah.{$no}"),
+            in_array($no, config('management_metrics.mom.jumlah'), true),
+            $days, $prevDays
+        );
+    }
+
+    /**
+     * Inti perbandingan MoM untuk nilai apa saja (dipakai juga kartu utama Dashboard).
+     *
+     * @param  string|null  $arah  naik | turun | null (tanpa lampu)
+     * @param  bool  $perDay  bandingkan nilai per hari (untuk data jumlah)
+     * @return array{perubahan: float|null, status: string|null}
+     */
+    public function compareValues(?float $now, ?float $prev, ?string $arah, bool $perDay, int $days, int $prevDays): array
+    {
+        if ($now === null || $prev === null || $prev == 0) {
+            return ['perubahan' => null, 'status' => null];
+        }
+
+        if ($perDay) {
+            $now /= max($days, 1);
+            $prev /= max($prevDays, 1);
+        }
+
+        $change = ($now - $prev) / abs($prev) * 100;
+
+        if (! $arah) {
+            return ['perubahan' => $change, 'status' => null];
+        }
+
+        $worse = $arah === 'naik' ? -$change : $change;
+
+        return ['perubahan' => $change, 'status' => match (true) {
+            $worse <= 0 => 'hijau',
+            $worse <= config('management_metrics.mom.batas_kuning') => 'kuning',
+            default => 'merah',
+        }];
+    }
+
+    /**
+     * Omset tagihan per tanggal (Y-m-d => rupiah) dari finance/dashboard chart_data.omset_tagihan_harian.
+     * null = field belum dikirim ERP.
+     */
+    public function dailyRevenue(string $start, string $end): ?array
+    {
+        return Cache::remember("mgmt_inv_daily_{$start}_{$end}", now()->addMinutes(self::CACHE_MINUTES), function () use ($start, $end) {
+            $daily = $this->pusat('finance/dashboard', $start, $end, 'chart_data')['omset_tagihan_harian'] ?? null;
+
+            return is_array($daily) ? array_map('floatval', $daily) : null;
+        });
+    }
+
+    /** Biaya iklan Meta per tanggal (Y-m-d => rupiah, tanpa pajak). */
+    public function dailySpend(string $start, string $end): array
+    {
+        return array_map(fn ($row) => $row['spend'], $this->metaDaily($start, $end));
+    }
+
+    /** Omset tagihan satu rentang saja (untuk pembanding proyeksi akhir bulan). */
+    public function revenue(string $start, string $end): ?float
+    {
+        try {
+            return $this->invoiceCounts($start, $end)['revenue'];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     public function format(int $no, ?float $value): string
     {
         if ($value === null) {
@@ -307,6 +405,17 @@ class ManagementMetricsService
             30 => ['Meta Insights + API pusat warehouse-summary', 'spend ÷ total_incoming', $ratio('spend', 'spk'), [], []],
         };
 
+        [$prevStart, $prevEnd] = $this->previousRange($start, $end);
+        $prevData = $this->collect($prevStart, $prevEnd);
+        $mom = $this->compare($no, $value, $prevData['values'][$no], $data['days'], $prevData['days']);
+        $cek[] = [
+            'ok' => $mom['status'] !== 'merah',
+            'teks' => 'Bulan lalu (' . $prevStart . ' s/d ' . $prevEnd . '): ' . $this->format($no, $prevData['values'][$no])
+                . ($mom['perubahan'] === null ? '' : '; perubahan ' . ($mom['perubahan'] >= 0 ? '+' : '') . $n($mom['perubahan'], 1) . '%'
+                    . (in_array($no, config('management_metrics.mom.jumlah'), true) ? ' (per hari)' : ''))
+                . ($mom['status'] ? '; lampu ' . $mom['status'] : '; tanpa lampu MoM, memakai target Kamus bila ada'),
+        ];
+
         if (($target = $def['target'] ?? null) && $value !== null) {
             $met = $this->meetsTarget($no, $value, $data['days']);
             $compared = empty($target['per_hari'])
@@ -348,7 +457,7 @@ class ManagementMetricsService
         foreach (['totals', 'daily'] as $kind) {
             Cache::forget("mgmt_meta_{$kind}_{$start}_{$end}");
         }
-        foreach (['gudang', 'leads', 'inv'] as $kind) {
+        foreach (['gudang', 'leads', 'inv', 'inv_daily'] as $kind) {
             Cache::forget("mgmt_{$kind}_{$start}_{$end}");
         }
     }
@@ -439,13 +548,14 @@ class ManagementMetricsService
         return Cache::remember("mgmt_gudang_{$start}_{$end}", now()->addMinutes(self::CACHE_MINUTES), function () use ($start, $end) {
             $summary = data_get(app(WarehouseApiService::class)->fetchSummary($start, $end), 'summary', []);
 
+            // spk_rd_periode (SPK R&D, nomor RD-) opsional: kartu Gudang menampilkan "menyusul" sampai ERP mengirimnya
             return $this->pick($summary, 'summary', [
                 'spk' => 'total_incoming',
                 'spk_non_gr' => 'spk_periode_non_gr',
                 'spk_gr' => 'spk_gr_periode',
                 'arrived' => 'spk_tiba_periode',
                 'not_arrived' => 'spk_belum_tiba_periode',
-            ]);
+            ]) + (isset($summary['spk_rd_periode']) ? ['spk_rd' => (float) $summary['spk_rd_periode']] : []);
         });
     }
 

@@ -31,6 +31,7 @@
     $badgeTones = [
         'emerald' => 'bg-emerald-500/10 text-emerald-500',
         'amber' => 'bg-amber-500/10 text-amber-500',
+        'rose' => 'bg-rose-500/10 text-rose-500',
         'slate' => 'bg-slate-500/10 text-slate-500',
     ];
 @endphp

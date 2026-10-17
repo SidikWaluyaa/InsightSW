@@ -8,7 +8,8 @@
             <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Data Iklan & CS</h2>
             <p class="text-xs text-slate-500 dark:text-gray-400 max-w-3xl leading-relaxed">
                 Diurutkan mengikuti perjalanan customer: iklan dilihat, diklik, jadi chat, lalu jadi SPK. Nomor sesuai dokumen Tim Data.
-                Rumus dan target sehat mengikuti Kamus Metrik v2.0. Kartu bercatatan merah belum layak jadi patokan.
+                Lampu membandingkan dengan periode yang sama bulan lalu ({{ \Carbon\Carbon::parse($prevRange[0] ?? now())->translatedFormat('j M') }} – {{ \Carbon\Carbon::parse($prevRange[1] ?? now())->translatedFormat('j M Y') }}): hijau sama atau lebih baik, kuning lebih buruk sampai {{ config('management_metrics.mom.batas_kuning') }}%, merah lebih buruk dari itu.
+                Data tanpa lampu bulan lalu memakai target Kamus Metrik v2.0. Kartu bercatatan merah belum layak jadi patokan.
                 @if($trimmed)
                     <span class="font-semibold text-amber-600 dark:text-amber-400">Dihitung sampai {{ \Carbon\Carbon::parse($range[1])->translatedFormat('j M Y') }} (H-1), karena data Sleekflow hari ini belum tersedia.</span>
                 @endif
@@ -44,7 +45,7 @@
                                         :badge="$metric['badge']" :badge-tone="$metric['badgeTone']"
                                         :info-call="$showFormula ? 'showFormula(' . $no . ')' : null"
                                         :warning="$metric['peringatan'] ?? null"
-                                        :note="$metric['singkat'] . (isset($metric['target']) ? ' Target sehat: ' . $metric['target']['teks'] . '.' : '')" />
+                                        :note="$metric['singkat'] . ($metric['bulanLalu'] !== null ? ' Bulan lalu: ' . $metric['bulanLalu'] . '.' : '') . (isset($metric['target']) ? ' Target Kamus: ' . $metric['target']['teks'] . '.' : '')" />
                                 @endforeach
                             </div>
                         </div>
@@ -54,8 +55,8 @@
 
             <p class="text-[11px] text-slate-400 dark:text-gray-500 leading-relaxed">
                 Biaya iklan di bagian ini tanpa pajak, sesuai dokumen Tim Data. Kolom "Terpakai" di tabel harian sudah termasuk pajak.
-                Label target hanya menandai sesuai atau di luar target sehat; batas lampu merah, kuning, dan hijau (MoM) belum ditetapkan.
-                Target "/hari" dibandingkan dengan nilai dibagi jumlah hari kalender rentang.
+                Data jumlah (biaya, tayang, chat, SPK, tagihan) dibandingkan per hari. Batas kuning {{ config('management_metrics.mom.batas_kuning') }}% belum angka resmi Tim Data.
+                Target Kamus "/hari" dibandingkan dengan nilai dibagi jumlah hari kalender rentang.
                 Angka dibaca per hari ini: tambah jasa, invoice batal, dan sepatu yang terlambat datang ikut mengubah angka periode lama.
             </p>
         </div>

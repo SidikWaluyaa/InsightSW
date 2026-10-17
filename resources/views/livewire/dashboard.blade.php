@@ -1,6 +1,6 @@
 <div>
     <div class="space-y-6 relative" wire:poll.60s="checkSync" x-cloak>
-        <x-ui.page-header title="Ringkasan Performa" subtitle="Iklan Meta, chat Sleekflow, dan SPK sistem pusat pada rentang terpilih.">
+        <x-ui.page-header title="Ringkasan Performa" subtitle="Omset, SPK, efektivitas iklan, dan corong chat pada rentang terpilih. Rincian 31 data ada di menu Data Manajemen SW.">
             <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="$maxDate" :presets="$presets" refresh="syncAll" refresh-label="Tarik Data Live" />
         </x-ui.page-header>
 
@@ -53,8 +53,8 @@
         </div>
         
         <div wire:loading.class="opacity-25 transition-opacity" wire:target="setDateRange" class="space-y-8">
-        {{-- Data Manajemen SW: data Iklan & CS yang sudah fix (mengikuti rentang terpilih). Kartu KPI lama (ROAS, anggaran, omset, kalender kerja, dll.) disembunyikan dulu. --}}
-        <livewire:management-metrics :start="$startDate" :end="$endDate" />
+        {{-- Executive Overview (PRD): 4 kartu utama, corong chat, tren, SPK per jenis. 31 data Iklan & CS ada di halaman Data Manajemen SW. --}}
+        <livewire:executive-overview :start="$startDate" :end="$endDate" />
 
         {{-- Main Table Section --}}
         <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">

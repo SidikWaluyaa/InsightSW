@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Marketing Group (Admin, Editor, Viewer)
     Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
+        Route::get('data-manajemen', \App\Livewire\DataManajemen::class)->name('data-manajemen');
         Route::get('meta-ads', MetaAdsIndex::class)->name('meta-ads');
     });
 

@@ -22,9 +22,8 @@
 |                                                        jumlah_spk_tagihan, ongkir_tagihan
 |
 | - format     : rp | angka | persen | kali | pasang | durasi (detik → jj:mm:dd)
-| - target     : target sehat (lt = kurang dari, gt = lebih dari, antara = [min, max]). `per_hari` = dibandingkan
-|                dengan nilai dibagi jumlah hari kalender rentang. Batas lampu merah/kuning (MoM) belum ditetapkan,
-|                jadi kartu hanya menandai sesuai / di luar target.
+| - target     : target sehat Kamus (lt = kurang dari, gt = lebih dari, antara = [min, max]). `per_hari` = dibandingkan
+|                dengan nilai dibagi jumlah hari kalender rentang. Hanya cadangan: lampu utama memakai `mom`.
 | - peringatan : catatan merah di kartu untuk data yang belum layak jadi patokan.
 |
 */
@@ -282,5 +281,25 @@ return [
             'rumus' => 'Biaya iklan ÷ Jumlah SPK terbit',
             'target' => ['teks' => 'Rp 35.000 – Rp 40.000', 'antara' => [35000, 40000]],
         ],
+    ],
+
+    /*
+    | Lampu MoM (kesepakatan Tim Data): nilai periode dibanding periode yang sama bulan lalu.
+    | - arah         : naik = makin besar makin baik, turun = makin kecil makin baik. Data yang tidak ada di sini
+    |                  (biaya iklan, frekuensi, % chat dari iklan, ROAS Meta) tidak diberi lampu MoM; kartunya memakai
+    |                  target Kamus bila ada.
+    | - jumlah       : data bertipe jumlah, dibandingkan per hari (rentang bulan lalu bisa beda jumlah harinya).
+    | - batas_kuning : lebih buruk sampai sekian persen (relatif) = kuning, lebih dari itu = merah. Belum angka resmi.
+    */
+    'mom' => [
+        'batas_kuning' => 10,
+        'arah' => [
+            2 => 'naik', 3 => 'naik', 5 => 'turun', 6 => 'naik', 7 => 'naik', 8 => 'turun',
+            9 => 'naik', 10 => 'turun', 11 => 'naik', 13 => 'naik', 14 => 'naik',
+            15 => 'naik', 17 => 'turun', 18 => 'turun', 19 => 'turun', 20 => 'naik', 21 => 'naik', 22 => 'naik',
+            23 => 'turun', 24 => 'turun', 25 => 'naik', 26 => 'naik', 27 => 'naik', 28 => 'naik', 29 => 'naik',
+            30 => 'turun', 31 => 'turun',
+        ],
+        'jumlah' => [1, 2, 3, 6, 9, 15, 20, 22, 23, 25],
     ],
 ];

@@ -9,13 +9,13 @@ use Livewire\Attributes\Reactive;
 use Livewire\Component;
 
 /**
- * Bagian "Data Manajemen SW" di Dashboard: data Iklan & CS yang definisinya sudah fix
- * (config/management_metrics.php). Mengikuti rentang tanggal yang dipilih di Dashboard.
+ * Data Iklan & CS (config/management_metrics.php) di halaman Data Manajemen SW, dengan lampu MoM
+ * (dibanding periode yang sama bulan lalu). Mengikuti rentang tanggal halaman induknya.
  */
 #[Lazy]
 class ManagementMetrics extends Component
 {
-    /** Rentang dari filter Dashboard (Y-m-d). */
+    /** Rentang dari filter halaman induk (Y-m-d). */
     #[Reactive]
     public string $start;
 
@@ -65,24 +65,41 @@ class ManagementMetrics extends Component
     {
         $range = $this->range();
         $data = $range ? $service->collect(...$range) : null;
+        $prevRange = $range ? $service->previousRange(...$range) : null;
+        $prev = $prevRange ? $service->collect(...$prevRange) : null;
+        $tones = ['hijau' => 'emerald', 'kuning' => 'amber', 'merah' => 'rose'];
 
         $groups = [];
         foreach (config('management_metrics.data') as $no => $def) {
             $value = $data['values'][$no] ?? null;
-            $met = $service->meetsTarget($no, $value, $data['days'] ?? 1);
+            $prevValue = $prev['values'][$no] ?? null;
+            $mom = $service->compare($no, $value, $prevValue, $data['days'] ?? 1, $prev['days'] ?? 1);
+
+            if ($mom['status']) {
+                // Lampu utama: dibanding bulan lalu
+                $badge = ($mom['perubahan'] >= 0 ? '▲ ' : '▼ ') . number_format(abs($mom['perubahan']), 1, ',', '.') . '% vs bulan lalu';
+                $tone = $tones[$mom['status']];
+            } else {
+                // Cadangan: target Kamus (data tanpa arah MoM atau tanpa nilai bulan lalu)
+                $met = $service->meetsTarget($no, $value, $data['days'] ?? 1);
+                $badge = $met === null ? null : ($met ? 'Sesuai target Kamus' : 'Di luar target Kamus');
+                $tone = $met ? 'emerald' : 'slate';
+            }
 
             $groups[$def['kelompok']][$def['tahap']][$no] = $def + [
                 'nilai' => $service->format($no, $value),
-                'badge' => $met === null ? null : ($met ? 'Sesuai target' : 'Di luar target'),
-                'badgeTone' => $met ? 'emerald' : 'slate',
+                'badge' => $badge,
+                'badgeTone' => $tone,
+                'bulanLalu' => $prevValue === null ? null : $service->format($no, $prevValue),
             ];
         }
 
         return view('livewire.management-metrics', [
             'range' => $range,
+            'prevRange' => $prevRange,
             'trimmed' => $range && $range[1] !== $this->end,
             'groups' => $groups,
-            'sourceErrors' => $data['errors'] ?? [],
+            'sourceErrors' => ($data['errors'] ?? []) + array_map(fn ($e) => 'Bulan lalu: ' . $e, $prev['errors'] ?? []),
             'showFormula' => auth()->user()?->isAdmin() ?? false,
         ]);
     }
