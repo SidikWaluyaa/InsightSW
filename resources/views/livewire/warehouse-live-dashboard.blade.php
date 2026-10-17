@@ -87,6 +87,10 @@
                     'shoes_in_rack_count' => [
                         ['ok' => $same($heatShoes, $raw('shoes_in_rack_count')), 'teks' => "penghitung rak sepatu (heatmap shoes) = {$heatShoes} ; shoes_in_rack_count = {$raw('shoes_in_rack_count')}"],
                     ],
+                    'pending_reception_period' => [
+                        ['ok' => $raw('pending_reception_period') <= $raw('total_incoming'), 'teks' => "pending_reception_period {$raw('pending_reception_period')} ≤ total_incoming (SPK Dibuat) {$raw('total_incoming')}"],
+                        ['ok' => $raw('pending_reception_period') <= $raw('pending_reception'), 'teks' => "pending_reception_period {$raw('pending_reception_period')} ≤ pending_reception (semua SPK pending) {$raw('pending_reception')}"],
+                    ],
                     'finished_day' => [
                         ['ok' => $same($raw('total_finished'), $raw('finished_day')), 'teks' => "total_finished = {$raw('total_finished')} ; finished_day = {$raw('finished_day')}"],
                     ],
@@ -197,9 +201,14 @@
             </div>
 
             {{-- Angka pendukung (mengikuti periode): tanggal acuannya berbeda dari kartu bernomor di atas --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <x-ui.stat-card label="SPK Dibuat" :info="$info('total_incoming', 'SPK Dibuat')" :value="$n('total_incoming')" unit="SPK" icon="clipboard-list"
                     note="SPK yang dibuat pada periode ini, semua status. Berbeda dari Sepatu Masuk, yang memakai tanggal masuk dan hanya menghitung yang sudah diterima gudang." />
+                {{-- Bagian dari SPK Dibuat yang sepatunya belum datang; persen = pending periode ÷ SPK Dibuat --}}
+                <x-ui.stat-card label="SPK Pending (Periode)" :info="$info('pending_reception_period', 'SPK Pending (Periode)')" :value="$n('pending_reception_period')" unit="SPK" icon="inbox-in"
+                    :tone="($summary['pending_reception_period'] ?? 0) > 0 ? 'amber' : 'slate'"
+                    :badge="$raw('total_incoming') > 0 ? number_format($raw('pending_reception_period') / $raw('total_incoming') * 100, 1, ',', '.') . '% dari SPK Dibuat' : null" badge-tone="amber"
+                    note="SPK yang dibuat pada periode ini dan sepatunya sampai sekarang belum diterima gudang. Untuk periode lama angkanya terus turun saat sepatu akhirnya datang." />
                 <x-ui.stat-card label="Berstatus Selesai (Terakhir Diubah)" :info="$info('finished_day', 'Berstatus Selesai (Terakhir Diubah)')" :value="$n('finished_day')" unit="SPK" icon="check-circle"
                     note="SPK berstatus selesai yang terakhir diubah pada periode ini. Berbeda dari Selesai Dikerjakan, yang memakai tanggal selesai." />
                 <x-ui.stat-card label="Diproses QC Gudang" :info="$info('total_qc_processed', 'Diproses QC Gudang')" :value="$n('total_qc_processed')" unit="SPK" icon="tag"

@@ -230,6 +230,22 @@ WHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL;
 -- Kolom tanggal: work_orders.created_at. Semua status.
 SQL,
     ],
+    'pending_reception_period' => [
+        'sifat' => 'periode',
+        'satuan' => 'SPK',
+        'definisi' => 'SPK yang dibuat pada periode ini dan sampai sekarang masih pending (sepatu belum diterima gudang). '
+            . 'Status dibaca saat ini, jadi untuk periode lama angkanya terus turun saat sepatu akhirnya datang.',
+        'rumus_db' => <<<'SQL'
+SELECT COUNT(*) FROM work_orders
+WHERE status = 'SPK_PENDING'
+  AND created_at BETWEEN :start AND :end
+  AND deleted_at IS NULL;
+
+-- Field baru di WarehouseDashboardApiService::getHeroMetrics (deploy ERP 16 Okt 2026).
+-- Kolom tanggal: work_orders.created_at, sama dengan SPK Dibuat (total_incoming).
+SQL,
+        'turunan' => 'Bagian dari SPK Dibuat: pending_reception_period ≤ total_incoming, dan ≤ pending_reception (semua SPK pending).',
+    ],
     'finished_day' => [
         'sifat' => 'periode',
         'satuan' => 'SPK',
