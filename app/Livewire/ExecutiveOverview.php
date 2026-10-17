@@ -153,15 +153,17 @@ class ExecutiveOverview extends Component
                 'cek' => [],
             ],
             'funnel_3' => [
-                'judul' => 'Corong 3 · SPK terbit',
+                'judul' => 'Corong 3 · SPK closing',
                 'endpoint' => $gudang,
-                'field' => 'data.summary.spk_periode_non_gr',
-                'nilai' => $this->n($in['spk_non_gr'] ?? null),
-                'definisi' => 'SPK yang dibuat di periode ini tanpa SPK garansi -GR (garansi tidak berasal dari chat baru). Persen = SPK terbit ÷ isi data diri.',
-                'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')",
+                'field' => 'data.summary.spk_periode_non_gr − spk_rd_periode',
+                'nilai' => $this->n($in['spk_closing'] ?? null),
+                'definisi' => 'SPK yang dibuat di periode ini tanpa SPK garansi -GR dan tanpa R&D (sama dengan kartu SPK Closing). Persen = SPK closing ÷ isi data diri. '
+                    . 'Ringkasan di bawah corong: chat-to-SPK = SPK closing ÷ chat masuk, nilai deal = omset tagihan.',
+                'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')\n  AND spk_number NOT LIKE 'RD-%'",
                 'langkah' => [
-                    ['op' => '−', 'teks' => 'Semua SPK terbit − SPK garansi -GR', 'rumus' => $this->n($in['spk'] ?? 0) . ' − ' . $this->n($in['spk_gr'] ?? 0), 'hasil' => $this->n($in['spk_non_gr'] ?? null)],
-                    ['op' => '÷', 'teks' => 'Persen di corong: SPK terbit ÷ isi data diri', 'rumus' => $this->n($in['spk_non_gr'] ?? 0) . ' ÷ ' . $this->n($in['leads'] ?? 0), 'hasil' => $this->pct($in['spk_non_gr'] ?? null, $in['leads'] ?? null)],
+                    ['op' => '−', 'teks' => 'Semua SPK terbit − garansi -GR − R&D', 'rumus' => $this->n($in['spk'] ?? 0) . ' − ' . $this->n($in['spk_gr'] ?? 0) . ' − ' . $this->n($rd ?? 0), 'hasil' => $this->n($in['spk_closing'] ?? null)],
+                    ['op' => '÷', 'teks' => 'Persen di corong: SPK closing ÷ isi data diri', 'rumus' => $this->n($in['spk_closing'] ?? 0) . ' ÷ ' . $this->n($in['leads'] ?? 0), 'hasil' => $this->pct($in['spk_closing'] ?? null, $in['leads'] ?? null)],
+                    ['op' => '÷', 'teks' => 'Chat-to-SPK keseluruhan: SPK closing ÷ chat masuk', 'rumus' => $this->n($in['spk_closing'] ?? 0) . ' ÷ ' . $this->n($in['chats'] ?? 0), 'hasil' => $this->pct($in['spk_closing'] ?? null, $in['chats'] ?? null)],
                 ],
                 'cek' => [['ok' => true, 'teks' => 'Satu isi data diri bisa menghasilkan beberapa SPK (beberapa pasang), jadi persen ini bisa mendekati atau melewati 100%.']],
             ],
@@ -170,17 +172,18 @@ class ExecutiveOverview extends Component
                 'endpoint' => $gudang,
                 'field' => 'data.summary.spk_tiba_periode',
                 'nilai' => $this->n($in['arrived'] ?? null),
-                'definisi' => 'Dari SPK terbit (tanpa -GR) di periode ini, yang sepatunya sudah tiba dan dicek QC awal gudang. Status dibaca per hari ini, jadi angka periode lama bisa bertambah.',
+                'definisi' => 'Dari SPK terbit (tanpa -GR) di periode ini, yang sepatunya sudah tiba dan dicek QC awal gudang. Masih termasuk SPK R&D yang sudah tiba (belum ada rinciannya), '
+                    . 'jadi persennya sedikit lebih tinggi. Status dibaca per hari ini, jadi angka periode lama bisa bertambah.',
                 'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')\n  AND warehouse_qc_at IS NOT NULL",
                 'langkah' => [
-                    ['op' => '÷', 'teks' => 'Persen di corong: sepatu tiba ÷ SPK terbit', 'rumus' => $this->n($in['arrived'] ?? 0) . ' ÷ ' . $this->n($in['spk_non_gr'] ?? 0), 'hasil' => $this->pct($in['arrived'] ?? null, $in['spk_non_gr'] ?? null)],
+                    ['op' => '÷', 'teks' => 'Persen di corong: sepatu tiba ÷ SPK closing', 'rumus' => $this->n($in['arrived'] ?? 0) . ' ÷ ' . $this->n($in['spk_closing'] ?? 0), 'hasil' => $this->pct($in['arrived'] ?? null, $in['spk_closing'] ?? null)],
                 ],
                 'cek' => isset($in['spk_non_gr'], $in['arrived'], $in['not_arrived']) ? [
                     ['ok' => $in['spk_non_gr'] - $in['arrived'] == $in['not_arrived'], 'teks' => 'SPK terbit − sepatu tiba = sepatu belum dikirim (' . $this->n($in['not_arrived']) . ')'],
                 ] : [],
             ],
             'proyeksi' => $this->explainProjection($service, $range, $in['revenue'] ?? null, $days, $rp),
-            'intake' => [
+            'intake' => isset($in['fisik_berbayar'], $in['fisik_garansi'], $in['fisik_rd']) ? $this->explainFisik($in, $gudang) : [
                 'judul' => 'SPK Terbit per Jenis',
                 'endpoint' => $gudang,
                 'field' => 'total_incoming, spk_gr_periode, spk_periode_non_gr, spk_rd_periode',
@@ -196,6 +199,8 @@ class ExecutiveOverview extends Component
                 'cek' => array_merge(
                     isset($in['spk']) ? [['ok' => ($closing($in) ?? 0) + ($in['spk_gr'] ?? 0) + ($rd ?? 0) == $in['spk'], 'teks' => 'Jumlah ketiga jenis = total SPK terbit (total_incoming ' . $this->n($in['spk']) . ')']] : [],
                     $rdNote,
+                    [['ok' => false, 'teks' => 'Rincian sepatu yang fisiknya tiba per jenis (intake_fisik_*) belum dikirim sistem pusat, jadi panel memakai SPK terbit. '
+                        . 'Total sepatu tiba pada periode (total_qc_processed): ' . $this->n($in['fisik_total'] ?? null)]],
                 ),
             ],
             default => null,
@@ -222,6 +227,29 @@ class ExecutiveOverview extends Component
             'label_nilai' => 'Nilai di Dashboard',
             'label_rumus' => 'Rumus',
             'sumber_rumus' => 'Acuan: PRD Master Blueprint v3.0 dan Kamus Metrik v2.0. Periode ' . $range[0] . ' s/d ' . $range[1] . '.',
+        ];
+    }
+
+    /** Rincian panel gudang mode fisik (Kamus No. 32 Intake Fisik per jenis). */
+    protected function explainFisik(array $in, string $gudang): array
+    {
+        $sum = $in['fisik_berbayar'] + $in['fisik_garansi'] + $in['fisik_rd'];
+
+        return [
+            'judul' => 'Sepatu Masuk per Jenis (Fisik Tiba)',
+            'endpoint' => $gudang,
+            'field' => 'intake_fisik_berbayar, intake_fisik_garansi, intake_fisik_rd, total_qc_processed',
+            'nilai' => $this->n($sum) . ' pasang',
+            'definisi' => 'Sepatu yang benar-benar tiba di gudang pada periode ini (Kamus No. 32 Intake Fisik), menurut tanggal tiba, dibagi menurut nomor SPK: '
+                . 'klaim garansi -GR, riset R&D (RD-), sisanya berbayar. Berbeda dari SPK terbit, yang memakai tanggal SPK dibuat.',
+            'rumus_db' => "Tanggal tiba sepatu di gudang di dalam periode\nGaransi : spk_number LIKE '%-GR' OR '%-GR-%'\nR&D     : spk_number LIKE 'RD-%'\nBerbayar: sisanya",
+            'langkah' => [
+                ['op' => '+', 'teks' => 'Berbayar + garansi + R&D', 'rumus' => $this->n($in['fisik_berbayar']) . ' + ' . $this->n($in['fisik_garansi']) . ' + ' . $this->n($in['fisik_rd']), 'hasil' => $this->n($sum)],
+            ],
+            'cek' => isset($in['fisik_total']) ? [[
+                'ok' => $sum == $in['fisik_total'],
+                'teks' => 'Total per jenis vs total sepatu tiba (total_qc_processed ' . $this->n($in['fisik_total']) . '). Beda bisa terjadi kalau sepatu garansi dicatat tiba tanpa QC gudang.',
+            ]] : [],
         ];
     }
 
@@ -318,7 +346,7 @@ class ExecutiveOverview extends Component
         $funnel = [
             ['label' => 'Chat masuk baru', 'nilai' => $in['chats'] ?? null, 'ket' => 'Sleekflow'],
             ['label' => 'Isi data diri', 'nilai' => $in['leads'] ?? null, 'ket' => 'Formulir customer di sistem pusat'],
-            ['label' => 'SPK terbit', 'nilai' => $in['spk_non_gr'] ?? null, 'ket' => 'Tanpa SPK garansi -GR'],
+            ['label' => 'SPK closing', 'nilai' => $in['spk_closing'] ?? null, 'ket' => 'Tanpa garansi -GR dan R&D'],
             ['label' => 'Sepatu tiba di gudang', 'nilai' => $in['arrived'] ?? null, 'ket' => 'Sudah QC awal gudang'],
         ];
 
@@ -329,6 +357,11 @@ class ExecutiveOverview extends Component
             'days' => $now['days'],
             'cards' => $cards,
             'funnel' => $funnel,
+            // Catatan di bawah tahap SPK (PRD): chat-to-SPK keseluruhan dan nilai deal (omset tagihan)
+            'funnelSummary' => [
+                'chat_to_spk' => isset($in['spk_closing'], $in['chats']) && $in['chats'] > 0 ? $in['spk_closing'] / $in['chats'] * 100 : null,
+                'omset' => $in['revenue'] ?? null,
+            ],
             'intake' => $this->intake($in),
             'projection' => $this->projection($service, $range, $in['revenue'] ?? null, $now['days']),
             'chart' => $this->chart($service, $range),
@@ -337,9 +370,23 @@ class ExecutiveOverview extends Component
         ]);
     }
 
-    /** SPK terbit per jenis: berbayar, garansi (-GR), R&D (RD-). */
+    /**
+     * Status sepatu masuk per jenis (PRD Alur 3 kanan). Mode "fisik" (Kamus No. 32, sepatu yang benar-benar tiba)
+     * dipakai bila ERP sudah mengirim intake_fisik_*; sebelum itu jatuh ke SPK terbit per jenis.
+     */
     protected function intake(array $in): ?array
     {
+        if (isset($in['fisik_berbayar'], $in['fisik_garansi'], $in['fisik_rd'])) {
+            return [
+                'mode' => 'fisik',
+                'berbayar' => $in['fisik_berbayar'],
+                'garansi' => $in['fisik_garansi'],
+                'rd' => $in['fisik_rd'],
+                'total' => $in['fisik_berbayar'] + $in['fisik_garansi'] + $in['fisik_rd'],
+                'tiba' => $in['fisik_total'] ?? null,
+            ];
+        }
+
         if (! isset($in['spk'], $in['spk_non_gr'], $in['spk_gr'])) {
             return null;
         }
@@ -347,11 +394,12 @@ class ExecutiveOverview extends Component
         $rd = $in['spk_rd'] ?? null;
 
         return [
+            'mode' => 'spk',
             'berbayar' => $in['spk_non_gr'] - ($rd ?? 0),
             'garansi' => $in['spk_gr'],
             'rd' => $rd,
             'total' => $in['spk'],
-            'tiba' => $in['arrived'] ?? null,
+            'tiba' => $in['fisik_total'] ?? null,
         ];
     }
 

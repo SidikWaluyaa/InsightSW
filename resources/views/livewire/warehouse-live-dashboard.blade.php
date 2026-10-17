@@ -115,6 +115,68 @@
                 ]);
             @endphp
 
+            {{-- ================= INTAKE FISIK & ALUR WORKSHOP (PRD halaman 5, Kamus No. 32) ================= --}}
+            @php
+                // Rincian per jenis & tahap WIP = field baru API pusat (opsional). Sebelum ada, hanya total yang tampil.
+                $fisik = ['berbayar' => $summary['intake_fisik_berbayar'] ?? null, 'garansi' => $summary['intake_fisik_garansi'] ?? null, 'rd' => $summary['intake_fisik_rd'] ?? null];
+                $hasFisik = ! in_array(null, $fisik, true);
+                $fisikTotal = $hasFisik ? array_sum($fisik) : (float) ($summary['total_qc_processed'] ?? 0);
+                $fisikPct = fn ($v) => $v === null || $fisikTotal <= 0 ? null : number_format($v / $fisikTotal * 100, 1, ',', '.') . '%';
+                $wip = is_array($summary['wip_tahap'] ?? null) ? $summary['wip_tahap'] : null;
+                $wipSteps = ['fisik_tiba' => 'Fisik tiba', 'sortir' => 'Sortir', 'produksi' => 'Produksi / Sol', 'qc_finishing' => 'QC / Finishing', 'siap_kirim' => 'Siap kirim'];
+                $fisikInfo = fn (string $judul, string $field, $nilai, string $definisi) => ! $showFormula ? null : [
+                    'judul' => $judul,
+                    'sifat' => 'periode',
+                    'endpoint' => 'GET /warehouse-summary?start_date=' . $startDate . '&end_date=' . $endDate,
+                    'field' => 'data.summary.' . $field,
+                    'nilai' => $nilai === null ? 'belum dikirim API' : (string) $nilai,
+                    'definisi' => $definisi,
+                    'rumus_db' => "Sepatu yang tiba di gudang (QC awal gudang) dengan tanggal tiba di dalam periode.\nGaransi : nomor SPK berakhiran -GR\nR&D     : nomor SPK diawali RD-\nBerbayar: sisanya",
+                    'cek' => $hasFisik ? [['ok' => abs(array_sum($fisik) - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + garansi + R&D = ' . array_sum($fisik) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?')]] : [],
+                    'sumber_rumus' => 'Acuan: Kamus Metrik No. 32 Intake Fisik dan PRD halaman 5.',
+                ];
+            @endphp
+            <x-ui.section-note title="Sepatu Masuk Fisik" tag="Mengikuti filter tanggal">
+                Sepatu yang benar-benar tiba di gudang pada periode ini (Kamus No. 32), menurut tanggal tiba, bukan tanggal SPK dibuat.
+            </x-ui.section-note>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <x-ui.stat-card label="Sepatu Berbayar" :value="$fisik['berbayar'] === null ? 'Menyusul' : number_format($fisik['berbayar'], 0, ',', '.')" :unit="$fisik['berbayar'] === null ? null : 'pasang'" icon="cash"
+                    :badge="$fisikPct($fisik['berbayar'])" badge-tone="emerald"
+                    :info="$fisikInfo('Sepatu Berbayar', 'intake_fisik_berbayar', $fisik['berbayar'], 'Sepatu reguler (bukan garansi, bukan R&D) yang tiba di gudang pada periode.')"
+                    note="Masuk jalur berbayar." />
+                <x-ui.stat-card label="Klaim Garansi (-GR)" :value="$fisik['garansi'] === null ? 'Menyusul' : number_format($fisik['garansi'], 0, ',', '.')" :unit="$fisik['garansi'] === null ? null : 'pasang'" icon="check-circle"
+                    :badge="$fisikPct($fisik['garansi'])" badge-tone="amber"
+                    :info="$fisikInfo('Klaim Garansi (-GR)', 'intake_fisik_garansi', $fisik['garansi'], 'Sepatu klaim garansi (nomor SPK berakhiran -GR) yang tiba di gudang pada periode.')"
+                    note="Perlu audit QC." />
+                <x-ui.stat-card label="Proyek Riset (R&D)" :value="$fisik['rd'] === null ? 'Menyusul' : number_format($fisik['rd'], 0, ',', '.')" :unit="$fisik['rd'] === null ? null : 'pasang'" icon="sparkles"
+                    :badge="$fisikPct($fisik['rd'])" badge-tone="slate"
+                    :info="$fisikInfo('Proyek Riset (R&D)', 'intake_fisik_rd', $fisik['rd'], 'Sepatu riset internal (nomor SPK diawali RD-) yang tiba di gudang pada periode.')"
+                    note="Riset internal." />
+                <x-ui.stat-card label="Total Fisik Pintu Gudang" :value="number_format($fisikTotal, 0, ',', '.')" unit="pasang" icon="inbox-in" tone="emerald"
+                    :info="$fisikInfo('Total Fisik Pintu Gudang', $hasFisik ? 'intake_fisik_* (dijumlah)' : 'total_qc_processed', $fisikTotal, 'Semua sepatu yang benar-benar tiba di gudang pada periode. Sebelum rincian per jenis tersedia, memakai total_qc_processed (SPK yang di-QC gudang pada periode).')"
+                    note="Kedatangan fisik riil." />
+            </div>
+
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Alur Workshop (Sedang Dikerjakan)</h3>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">Jumlah sepatu di tiap tahap saat ini (tidak mengikuti filter tanggal).</p>
+                </div>
+                @if($wip === null)
+                    <p class="text-sm text-amber-600 dark:text-amber-400">Menunggu data tahap pengerjaan dari sistem pusat (field baru).</p>
+                @else
+                    <div class="flex flex-wrap items-center gap-2">
+                        @foreach($wipSteps as $key => $label)
+                            <div class="flex-1 min-w-[130px] rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 p-4">
+                                <p class="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">{{ $label }}</p>
+                                <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ number_format((float) ($wip[$key] ?? 0), 0, ',', '.') }}</p>
+                            </div>
+                            @if(! $loop->last)<span class="hidden md:block text-slate-300 dark:text-gray-600" aria-hidden="true">→</span>@endif
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             {{-- ================= KONDISI SAAT INI (tidak mengikuti filter tanggal) ================= --}}
             <x-ui.section-note title="Kondisi Gudang Saat Ini" tag="Tidak mengikuti filter tanggal">
                 Posisi terkini saat data diambil, bukan jumlah selama periode yang dipilih. Mengganti rentang tanggal tidak mengubah angka di kelompok ini.

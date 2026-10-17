@@ -79,6 +79,10 @@
                         </div>
                     @endforeach
                 </div>
+                <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-600 dark:text-gray-300">
+                    <span>Chat-to-SPK keseluruhan: <span class="font-bold">{{ $funnelSummary['chat_to_spk'] === null ? '–' : number_format($funnelSummary['chat_to_spk'], 2, ',', '.') . '%' }}</span></span>
+                    <span>Nilai deal (omset tagihan): <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $rp($funnelSummary['omset']) }}</span></span>
+                </div>
             </section>
 
             {{-- Alur 3: tren omset vs biaya iklan (kiri) dan SPK per jenis (kanan) --}}
@@ -137,10 +141,12 @@
                 <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
                     <div>
                         <h3 class="flex items-center gap-2 font-bold text-lg text-slate-800 dark:text-white">
-                            SPK Terbit per Jenis
-                            @if($showFormula)<x-ui.info-button call="showFormula('intake')" label="SPK Terbit per Jenis" />@endif
+                            {{ ($intake['mode'] ?? 'spk') === 'fisik' ? 'Status Sepatu Masuk' : 'SPK Terbit per Jenis' }}
+                            @if($showFormula)<x-ui.info-button call="showFormula('intake')" label="Sepatu masuk per jenis" />@endif
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-gray-400">SPK yang dibuat pada rentang ini, dibaca dari nomor SPK.</p>
+                        <p class="text-xs text-slate-500 dark:text-gray-400">
+                            {{ ($intake['mode'] ?? 'spk') === 'fisik' ? 'Sepatu yang fisiknya tiba di gudang pada rentang ini, menurut tanggal tiba.' : 'SPK yang dibuat pada rentang ini, dibaca dari nomor SPK. Rincian sepatu yang fisiknya tiba per jenis menyusul.' }}
+                        </p>
                     </div>
                     @if(! $intake)
                         <p class="text-sm text-slate-400">Data SPK dari sistem pusat belum tersedia.</p>
@@ -170,8 +176,10 @@
                             @endforeach
                         </div>
                         <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1 text-sm">
-                            <div class="flex justify-between"><span class="font-bold text-slate-700 dark:text-gray-200">Total SPK terbit</span><span class="font-black text-slate-800 dark:text-white">{{ $num($intake['total']) }}</span></div>
-                            <div class="flex justify-between text-xs text-slate-500 dark:text-gray-400"><span>Sepatu sudah tiba (tanpa -GR)</span><span>{{ $num($intake['tiba']) }}</span></div>
+                            <div class="flex justify-between"><span class="font-bold text-slate-700 dark:text-gray-200">{{ $intake['mode'] === 'fisik' ? 'Total fisik pintu gudang' : 'Total SPK terbit' }}</span><span class="font-black text-slate-800 dark:text-white">{{ $num($intake['total']) }}</span></div>
+                            @if($intake['mode'] === 'spk')
+                                <div class="flex justify-between text-xs text-slate-500 dark:text-gray-400"><span>Sepatu fisik tiba di periode (semua jenis)</span><span>{{ $num($intake['tiba']) }}</span></div>
+                            @endif
                         </div>
                         @if($intake['rd'] === null)
                             <p class="text-[11px] text-slate-400 dark:text-gray-500">Jumlah R&D menunggu field baru dari sistem pusat; sementara masih ikut di baris Berbayar.</p>

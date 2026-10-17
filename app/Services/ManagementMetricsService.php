@@ -595,7 +595,15 @@ class ManagementMetricsService
                 'spk_gr' => 'spk_gr_periode',
                 'arrived' => 'spk_tiba_periode',
                 'not_arrived' => 'spk_belum_tiba_periode',
-            ]) + (isset($summary['spk_rd_periode']) ? ['spk_rd' => (float) $summary['spk_rd_periode']] : []);
+            ]) + (isset($summary['spk_rd_periode']) ? ['spk_rd' => (float) $summary['spk_rd_periode']] : [])
+                + $this->optional($summary, [
+                    // Kamus No. 32 Intake Fisik: sepatu yang tiba (QC gudang) pada periode, menurut tanggal tiba
+                    'fisik_total' => 'total_qc_processed',
+                    // Rincian per jenis (field baru ERP, opsional)
+                    'fisik_berbayar' => 'intake_fisik_berbayar',
+                    'fisik_garansi' => 'intake_fisik_garansi',
+                    'fisik_rd' => 'intake_fisik_rd',
+                ]);
         });
     }
 
@@ -635,6 +643,19 @@ class ManagementMetricsService
         }
 
         return $response->json("data.{$section}") ?? [];
+    }
+
+    /** Ambil field opsional dari respons API pusat; yang tidak ada dilewati. */
+    protected function optional(array $node, array $map): array
+    {
+        $out = [];
+        foreach ($map as $key => $field) {
+            if (isset($node[$field]) && is_numeric($node[$field])) {
+                $out[$key] = (float) $node[$field];
+            }
+        }
+
+        return $out;
     }
 
     /** Ambil field wajib dari respons API pusat; field yang hilang = ERP belum di-deploy. */
