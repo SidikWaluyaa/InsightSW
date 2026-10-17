@@ -179,7 +179,7 @@ class ExecutiveOverview extends Component
                 'cek' => [['ok' => true, 'teks' => 'Satu isi data diri bisa menghasilkan beberapa SPK (beberapa pasang), jadi persen ini bisa mendekati atau melewati 100%.']],
             ],
             'funnel_4' => [
-                'judul' => 'Corong 4 · Sepatu tiba di gudang',
+                'judul' => 'Corong 4 · Sepatu masuk gudang',
                 'endpoint' => $gudang,
                 'field' => 'data.summary.spk_tiba_periode',
                 'nilai' => $this->n($in['arrived'] ?? null),
@@ -361,7 +361,7 @@ class ExecutiveOverview extends Component
             ['label' => 'Chat masuk baru', 'nilai' => $in['chats'] ?? null, 'ket' => 'Sleekflow'],
             ['label' => 'Isi data diri', 'nilai' => $in['leads'] ?? null, 'ket' => 'Formulir customer di sistem pusat'],
             ['label' => 'SPK closing', 'nilai' => $in['spk_closing'] ?? null, 'ket' => 'Tanpa garansi -GR dan R&D'],
-            ['label' => 'Sepatu tiba di gudang', 'nilai' => $in['arrived'] ?? null, 'ket' => 'Sudah QC awal gudang'],
+            ['label' => 'Sepatu masuk gudang', 'nilai' => $in['arrived'] ?? null, 'ket' => 'Sudah QC awal gudang'],
         ];
 
         return view('livewire.executive-overview', [
