@@ -14,7 +14,9 @@
 |   purchase_value                                     → Meta Insights level akun (rentang utuh)
 |   chats, resp_first, resp_all                        → Sleekflow, tabel sleekflow_daily_analytics
 |                                                        (waktu balas: rata-rata harian, hari libur CS tidak dihitung)
-|   spk                                                → API pusat warehouse-summary.total_incoming
+|   spk                                                → API pusat warehouse-summary.total_incoming (semua SPK)
+|   spk_rd                                             → warehouse-summary.spk_rd_periode (SPK R&D, nomor RD-)
+|   spk_closing                                        → spk_non_gr − spk_rd (dihitung di service; = SPK Closing Dashboard)
 |   spk_non_gr, arrived, not_arrived                   → warehouse-summary.spk_periode_non_gr, spk_tiba_periode,
 |                                                        spk_belum_tiba_periode (tanpa SPK garansi -GR)
 |   leads, leads_converted                             → dashboard-summary.total_leads, total_leads_converted
@@ -211,15 +213,16 @@ return [
         ],
         22 => [
             'kelompok' => 'cs', 'tahap' => 'spk', 'nama' => 'Jumlah SPK terbit', 'format' => 'angka', 'icon' => 'clipboard-list',
-            'singkat' => 'SPK yang dibuat pada periode, semua status (1 SPK = 1 pasang).',
-            'definisi' => 'SPK dengan tanggal dibuat pada periode, apa pun statusnya, termasuk SPK garansi -GR. Sama dengan kartu SPK Dibuat di Dashboard Gudang.',
-            'rumus' => 'warehouse-summary → summary.total_incoming (API pusat)',
+            'singkat' => 'SPK yang dibuat pada periode, tanpa garansi -GR dan R&D (1 SPK = 1 pasang).',
+            'definisi' => 'SPK dengan tanggal dibuat pada periode, apa pun statusnya, tanpa SPK klaim garansi (nomor berakhiran -GR) dan tanpa SPK riset (nomor RD-). '
+                . 'Sama dengan kartu SPK Closing di Dashboard. Kartu SPK Dibuat di Dashboard Gudang menghitung semua SPK, jadi angkanya lebih besar.',
+            'rumus' => 'warehouse-summary → summary.spk_periode_non_gr − summary.spk_rd_periode (API pusat)',
             'target' => ['teks' => '> 35 SPK/hari', 'gt' => 35, 'per_hari' => true],
         ],
         27 => [
             'kelompok' => 'cs', 'tahap' => 'spk', 'nama' => '% chat jadi SPK', 'format' => 'persen', 'icon' => 'chart',
             'singkat' => 'Dari 100 chat masuk, berapa yang jadi SPK.',
-            'definisi' => 'Jumlah SPK terbit dibagi total chat masuk baru.',
+            'definisi' => 'Jumlah SPK terbit (tanpa -GR dan R&D, No. 22) dibagi total chat masuk baru.',
             'rumus' => 'Jumlah SPK terbit ÷ Total chat masuk baru × 100%',
             'target' => ['teks' => '> 7,0%', 'gt' => 7],
         ],
@@ -277,7 +280,7 @@ return [
         30 => [
             'kelompok' => 'cs', 'tahap' => 'biaya', 'nama' => 'Biaya iklan per SPK', 'format' => 'rp', 'icon' => 'cash',
             'singkat' => 'Rata-rata biaya iklan untuk satu SPK.',
-            'definisi' => 'Biaya iklan (tanpa pajak) dibagi jumlah SPK terbit. Masih biaya di atas kertas: belum tentu sepatunya dikirim.',
+            'definisi' => 'Biaya iklan (tanpa pajak) dibagi jumlah SPK terbit (tanpa -GR dan R&D, No. 22). Masih biaya di atas kertas: belum tentu sepatunya dikirim.',
             'rumus' => 'Biaya iklan ÷ Jumlah SPK terbit',
             'target' => ['teks' => 'Rp 35.000 – Rp 40.000', 'antara' => [35000, 40000]],
         ],

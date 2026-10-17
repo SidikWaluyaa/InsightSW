@@ -31,7 +31,8 @@ class ManagementMetricsService
         'ad_chats' => 'Jumlah chat dari iklan',
         'chats' => 'Total chat masuk baru',
         'purchase_value' => 'Nilai pembelian pixel Meta',
-        'spk' => 'Jumlah SPK terbit',
+        'spk' => 'Semua SPK terbit',
+        'spk_closing' => 'SPK closing (tanpa -GR dan R&D)',
         'spk_non_gr' => 'SPK terbit tanpa -GR',
         'not_arrived' => 'Sepatu tidak dikirim',
         'arrived' => 'Sepatu tiba',
@@ -78,6 +79,11 @@ class ManagementMetricsService
             }
         }
 
+        // SPK closing = sama dengan kartu SPK Closing di Dashboard: tanpa garansi -GR dan tanpa R&D (nomor RD-)
+        if (isset($inputs['spk_non_gr'])) {
+            $inputs['spk_closing'] = $inputs['spk_non_gr'] - ($inputs['spk_rd'] ?? 0);
+        }
+
         if (isset($inputs['chats'], $inputs['leads'])) {
             $inputs['not_leads'] = max($inputs['chats'] - $inputs['leads'], 0);
         }
@@ -120,15 +126,15 @@ class ManagementMetricsService
             19 => $pct('not_leads', 'chats'),
             20 => $in['leads'] ?? null,
             21 => $pct('leads', 'chats'),
-            22 => $in['spk'] ?? null,
+            22 => $in['spk_closing'] ?? null,
             23 => $in['not_arrived'] ?? null,
             24 => $pct('not_arrived', 'spk_non_gr'),
             25 => $in['invoices'] ?? null,
             26 => $div('invoice_spk', 'invoices'),
-            27 => $pct('spk', 'chats'),
+            27 => $pct('spk_closing', 'chats'),
             28 => $div('revenue', 'invoice_spk'),
             29 => $div('revenue', 'invoices'),
-            30 => $div('spend', 'spk'),
+            30 => $div('spend', 'spk_closing'),
             31 => $div('spend', 'arrived'),
             default => null,
         };
@@ -329,12 +335,17 @@ class ManagementMetricsService
             15 => $this->explainChats($start, $end, $in),
             22 => [
                 'API pusat GET /warehouse-summary?start_date=' . $start . '&end_date=' . $end,
-                'data.summary.total_incoming',
+                'data.summary.spk_periode_non_gr − spk_rd_periode',
                 [
-                    ['op' => '=', 'teks' => 'Diambil langsung dari sistem pusat (dihitung di database pusat, bukan di InsightSW)', 'rumus' => null, 'hasil' => $result],
+                    ['op' => '−', 'teks' => 'Semua SPK terbit − SPK garansi -GR', 'rumus' => $show('spk') . ' − ' . $show('spk_gr'), 'hasil' => $show('spk_non_gr')],
+                    ['op' => '−', 'teks' => 'Dikurangi SPK R&D (nomor RD-)', 'rumus' => $show('spk_non_gr') . ' − ' . $show('spk_rd'), 'hasil' => $show('spk_closing')],
+                    ['op' => '=', 'teks' => 'Nilai di kartu (sama dengan SPK Closing di Dashboard)', 'rumus' => null, 'hasil' => $result],
                 ],
                 [],
-                [],
+                isset($in['spk'], $in['spk_gr'], $in['spk_non_gr']) ? [
+                    ['ok' => $in['spk'] - $in['spk_gr'] == $in['spk_non_gr'], 'teks' => 'total_incoming − spk_gr_periode = spk_periode_non_gr (' . $n($in['spk_non_gr']) . ')'],
+                    ['ok' => isset($in['spk_rd']), 'teks' => isset($in['spk_rd']) ? 'SPK R&D yang tidak dihitung: ' . $n($in['spk_rd']) : 'Field spk_rd_periode tidak ada di respons; R&D ikut terhitung'],
+                ] : [],
             ],
             23 => [
                 'API pusat GET /warehouse-summary?start_date=' . $start . '&end_date=' . $end,
@@ -401,8 +412,8 @@ class ManagementMetricsService
             10 => [$this->metaSource($start, $end), 'spend, actions[' . self::CHAT_ACTION . ']', $ratio('spend', 'ad_chats'), [], []],
             11 => [$this->metaSource($start, $end), 'actions[' . self::CHAT_ACTION . '], inline_link_clicks', $ratio('ad_chats', 'link_clicks', 100), [], []],
             16 => ['Meta Insights + tabel sleekflow_daily_analytics', 'ad_chats (Meta) ÷ number_of_new_enquires (Sleekflow)', $ratio('ad_chats', 'chats', 100), [], []],
-            27 => ['API pusat warehouse-summary + tabel sleekflow_daily_analytics', 'total_incoming ÷ number_of_new_enquires', $ratio('spk', 'chats', 100), [], []],
-            30 => ['Meta Insights + API pusat warehouse-summary', 'spend ÷ total_incoming', $ratio('spend', 'spk'), [], []],
+            27 => ['API pusat warehouse-summary + tabel sleekflow_daily_analytics', '(spk_periode_non_gr − spk_rd_periode) ÷ number_of_new_enquires', $ratio('spk_closing', 'chats', 100), [], []],
+            30 => ['Meta Insights + API pusat warehouse-summary', 'spend ÷ (spk_periode_non_gr − spk_rd_periode)', $ratio('spend', 'spk_closing'), [], []],
         };
 
         [$prevStart, $prevEnd] = $this->previousRange($start, $end);

@@ -96,7 +96,7 @@ class ExecutiveOverview extends Component
         $period = "start_date={$range[0]}&end_date={$range[1]}";
         $gudang = "API pusat GET /warehouse-summary?{$period}";
         $rd = $in['spk_rd'] ?? null;
-        $closing = fn (array $i) => isset($i['spk_non_gr']) ? $i['spk_non_gr'] - ($i['spk_rd'] ?? 0) : null;
+        $closing = fn (array $i) => $i['spk_closing'] ?? null;
         $rp = fn ($v) => $v === null ? '–' : 'Rp ' . $this->n($v);
         $rdNote = $rd === null
             ? [['ok' => false, 'teks' => 'Field spk_rd_periode (SPK R&D, nomor RD-) belum dikirim sistem pusat; sementara R&D masih ikut terhitung.']]
@@ -304,8 +304,8 @@ class ExecutiveOverview extends Component
         $in = $now['inputs'];
         $pin = $prev['inputs'];
 
-        // SPK closing = SPK terbit tanpa garansi -GR dan tanpa R&D (R&D dikurangi setelah ERP mengirim spk_rd_periode)
-        $closing = fn (array $i) => isset($i['spk_non_gr']) ? $i['spk_non_gr'] - ($i['spk_rd'] ?? 0) : null;
+        // SPK closing = SPK terbit tanpa garansi -GR dan tanpa R&D (dihitung di ManagementMetricsService::collect)
+        $closing = fn (array $i) => $i['spk_closing'] ?? null;
 
         $mom = fn (?float $a, ?float $b, string $arah, bool $perDay) => $service->compareValues($a, $b, $arah, $perDay, $now['days'], $prev['days']);
 
