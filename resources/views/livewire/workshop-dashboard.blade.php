@@ -1,77 +1,12 @@
 <div class="max-w-[1600px] mx-auto space-y-10 pb-20 bg-[#F8FAFC] dark:bg-[#0B0E14] min-h-screen" wire:poll.30s="checkSync">
     
-    {{-- 1. HERO HEADER (Premium Banner) --}}
-    <div class="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-[#10B981] via-[#059669] to-[#F59E0B] p-10 lg:p-16 shadow-2xl shadow-emerald-500/20 mt-4">
-        {{-- Decorative Circles --}}
-        <div class="absolute -right-20 -top-20 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-black/10 rounded-full blur-3xl"></div>
-        
-        <div class="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-            <div class="space-y-4">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
-                    <div class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></div>
-                    <span class="text-[10px] font-black text-white uppercase tracking-[0.2em]">Live Monitoring • UNIVERSE V2</span>
-                </div>
-                <h1 class="text-5xl lg:text-7xl font-black text-white tracking-tighter leading-none">Workshop<br>Dashboard</h1>
-                <p class="text-lg text-emerald-50/70 font-medium max-w-md leading-relaxed">Laporan Hasil Kerja & Pantauan Bengkel (Waktu Nyata)</p>
-            </div>
+    {{-- Header standar: judul di kiri, rentang tanggal & tarik data di kanan --}}
+    <div class="space-y-4">
+        <x-ui.page-header title="Dashboard Workshop" subtitle="Hasil kerja dan pantauan bengkel (waktu nyata)." badge="Live">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="sync" refresh-label="Tarik Data" />
+        </x-ui.page-header>
 
-            <div class="space-y-5">
-                {{-- Preset Filter Badges --}}
-                @php
-                    $filters = [
-                        'hari_ini'   => 'Hari Ini',
-                        'kemarin'    => 'Kemarin',
-                        'minggu_ini' => 'Minggu Ini',
-                        '7_hari'     => '7 Hari',
-                        'bulan_ini'  => 'Bulan Ini',
-                        '30_hari'    => '30 Hari',
-                        '3_bulan'    => '3 Bulan',
-                        'tahun_ini'  => 'Tahun Ini',
-                    ];
-                @endphp
-                <div class="flex items-center gap-2 flex-wrap bg-black/20 backdrop-blur-xl p-2 rounded-2xl border border-white/10">
-                    @foreach($filters as $key => $label)
-                        <button wire:click="applyFilter('{{ $key }}')" wire:loading.attr="disabled"
-                            class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 
-                            {{ $activeFilter === $key 
-                                ? 'bg-white text-emerald-700 shadow-xl shadow-white/20 scale-105' 
-                                : 'text-white/40 hover:text-white hover:bg-white/10' }}">
-                            {{ $label }}
-                        </button>
-                    @endforeach
-                </div>
-
-                <div class="flex items-center gap-4">
-                    {{-- Custom Date Range --}}
-                    <div class="flex items-center gap-3 bg-white/95 backdrop-blur-md px-5 py-3.5 rounded-2xl shadow-xl border border-white shadow-emerald-900/10 flex-1 {{ $activeFilter === 'kustom' ? 'ring-2 ring-emerald-400/50' : '' }}">
-                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <input type="date" wire:model.live="startDate" class="bg-transparent border-none p-0 focus:ring-0 text-xs font-black text-slate-800 uppercase tracking-widest w-full">
-                        <span class="text-slate-300 font-black">—</span>
-                        <input type="date" wire:model.live="endDate" class="bg-transparent border-none p-0 focus:ring-0 text-xs font-black text-slate-800 uppercase tracking-widest w-full">
-                    </div>
-                    
-                    {{-- Sync Button --}}
-                    <button wire:click="sync" wire:loading.attr="disabled" 
-                        class="flex items-center gap-3 px-8 py-3.5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl group shrink-0">
-                        <svg wire:loading.class="animate-spin" class="w-5 h-5 text-emerald-400 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span wire:loading.remove>Tarik Data</span>
-                        <span wire:loading>Memuat...</span>
-                    </button>
-                </div>
-
-                {{-- Active Period Badge --}}
-                <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
-                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <span class="text-[9px] font-black text-white/70 uppercase tracking-[0.2em]">
-                        Periode: {{ $this->filterLabel }} 
-                        <span class="text-white/40 ml-1">({{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }})</span>
-                    </span>
-                </div>
-            </div>
-        </div>
+        <x-ui.range-info :start="$startDate" :end="$endDate" />
     </div>
 
     {{-- @include('livewire.workshop_kpi_cards') --}}
@@ -95,7 +30,7 @@
 
         <div class="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {{-- Loading Overlay for Matrix --}}
-            <div wire:loading wire:target="sync, startDate, endDate" class="absolute inset-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-[2px] rounded-[3rem] flex items-center justify-center">
+            <div wire:loading wire:target="sync, setDateRange" class="absolute inset-0 z-50 bg-white/20 dark:bg-black/20 backdrop-blur-[2px] rounded-[3rem] flex items-center justify-center">
                 <div class="flex flex-col items-center gap-4">
                     <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Memperbarui Matriks...</span>
@@ -145,7 +80,7 @@
 
     <div class="relative space-y-8">
         {{-- Loading Overlay for Analytics --}}
-        <div wire:loading wire:target="sync, startDate, endDate" class="absolute inset-0 z-50 bg-white/10 dark:bg-black/10 backdrop-blur-[1px] rounded-[3rem] flex items-center justify-center">
+        <div wire:loading wire:target="sync, setDateRange" class="absolute inset-0 z-50 bg-white/10 dark:bg-black/10 backdrop-blur-[1px] rounded-[3rem] flex items-center justify-center">
             <div class="bg-white/90 dark:bg-gray-900/90 px-8 py-4 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-4">
                 <div class="w-6 h-6 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                 <span class="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-widest">Memperbarui Analitik...</span>

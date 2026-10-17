@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use App\Models\WarehouseInventory;
 use App\Models\WarehouseRequest;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 class WarehouseDashboard extends Component
 {
     use WithPagination;
+    use WithDateRange;
 
     public bool $isSyncing = false;
     public string $search = '';
@@ -38,6 +40,13 @@ class WarehouseDashboard extends Component
         $this->startDate = date('Y-m-01');
         $this->endDate = date('Y-m-d');
         $this->lastSync = now()->format('H:i:s');
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPage();
+        $this->syncAll();
     }
 
     public function setRange(string $range)
