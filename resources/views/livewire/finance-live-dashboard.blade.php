@@ -1,51 +1,12 @@
 <div>
-    <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Dashboard Finance <span class="text-xs px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-400/20 ml-2 uppercase font-black tracking-widest animate-pulse">Live API</span>
-            </h2>
-            <div class="flex items-center gap-3">
-                @if($metadata && isset($metadata['last_updated']))
-                    <div class="hidden md:flex flex-col items-end">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
-                        <span class="text-xs font-semibold text-slate-600 dark:text-gray-300 font-mono">
-                            {{ \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() }}
-                        </span>
-                    </div>
-                @endif
-                <div class="flex items-center gap-3 bg-slate-100 dark:bg-gray-800/50 p-2 rounded-2xl border border-gray-200/50 dark:border-gray-800"
-                    x-data="{
-                        picker: null,
-                        init() {
-                            this.picker = flatpickr($refs.picker, {
-                                mode: 'range',
-                                dateFormat: 'Y-m-d',
-                                defaultDate: ['{{ $startDate }}', '{{ $endDate }}'],
-                                onClose: (selectedDates) => {
-                                    if (selectedDates.length === 2) {
-                                        const start = this.picker.formatDate(selectedDates[0], 'Y-m-d');
-                                        const end = this.picker.formatDate(selectedDates[1], 'Y-m-d');
-                                        @this.set('startDate', start);
-                                        @this.set('endDate', end);
-                                    }
-                                }
-                            });
-                        }
-                    }">
-                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <input type="text" readonly
-                            class="bg-transparent border-none text-[11px] font-black text-indigo-600 dark:text-indigo-400 focus:ring-0 p-0 w-[180px] cursor-pointer text-center outline-none"
-                            placeholder="RENTANG TANGGAL"
-                            value="{{ $startDate && $endDate ? \Carbon\Carbon::parse($startDate)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->format('d M Y') : 'RENTANG TANGGAL' }}">
-                    </div>
-                </div>
+    <div class="space-y-4 mb-8">
+        <x-ui.page-header title="Dashboard Finance" subtitle="Tagihan, pembayaran, dan kas masuk langsung dari sistem pusat." badge="Live API">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="refreshData" />
+        </x-ui.page-header>
 
-            </div>
-        </div>
-    </x-slot>
+        <x-ui.range-info :start="$startDate" :end="$endDate"
+            :updated="$metadata && isset($metadata['last_updated']) ? \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() : null" />
+    </div>
 
     <div class="space-y-8" wire:init="loadData">
         @if (!$isLoaded)
@@ -568,75 +529,4 @@
         @endif
     </div>
 
-    {{-- Flatpickr Stylesheets and Scripts --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>
-        /* Flatpickr Custom Solid Dark Theme with Indigo Accent */
-        .flatpickr-calendar {
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
-            border-radius: 1rem !important;
-            color: #f8fafc !important;
-            width: 320px !important;
-        }
-        
-        .flatpickr-months .flatpickr-month {
-            background: #1e293b !important;
-            color: #f8fafc !important;
-            fill: #f8fafc !important;
-            height: 50px !important;
-        }
-
-        .flatpickr-current-month {
-            font-size: 1.1rem !important;
-            font-weight: 800 !important;
-            padding-top: 10px !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-monthDropdown-months {
-            background: #1e293b !important;
-            color: #fff !important;
-            padding: 2px 8px !important;
-            border-radius: 4px !important;
-            border: 1px solid #334155 !important;
-            outline: none !important;
-        }
-
-        .flatpickr-monthDropdown-month {
-            background: #1e293b !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-weekday {
-            color: #94a3b8 !important;
-            font-weight: 700 !important;
-        }
-
-        .flatpickr-day {
-            color: #cbd5e1 !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-        }
-
-        .flatpickr-day:hover {
-            background: #334155 !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
-            background: #6366f1 !important;
-            border-color: #6366f1 !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-day.inRange {
-            background: rgba(99, 102, 241, 0.15) !important;
-            box-shadow: none !important;
-            color: #818cf8 !important;
-        }
-    </style>
 </div>

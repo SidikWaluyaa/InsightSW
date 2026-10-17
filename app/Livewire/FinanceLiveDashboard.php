@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 #[Layout('layouts.app')]
 class FinanceLiveDashboard extends Component
 {
+    use WithDateRange;
+
     public string $search = '';
     public string $statusFilter = 'all';
     public string $paymentTypeFilter = 'all';
@@ -50,6 +53,12 @@ class FinanceLiveDashboard extends Component
         if (empty($this->endDate)) {
             $this->endDate = now()->format('Y-m-d');
         }
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPagination();
     }
 
     public function updatedStartDate()
