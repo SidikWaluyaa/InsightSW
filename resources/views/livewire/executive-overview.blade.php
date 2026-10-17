@@ -9,6 +9,9 @@
 @endphp
 
 <div class="space-y-6">
+    {{-- Modal rumus (tombol "i", hanya Admin); di luar blok yang di-render ulang agar Alpine tidak rusak --}}
+    <div wire:ignore><x-ui.formula-modal /></div>
+
     @assets
         <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     @endassets
@@ -38,15 +41,19 @@
             {{-- Alur 1: 4 kartu utama --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <x-ui.stat-card label="Total Omset (Net)" :value="$rp($cards['omset']['nilai'])" icon="cash" compact
+                    :info-call="$showFormula ? 'showFormula(\'omset\')' : null"
                     :badge="$momBadge($cards['omset'])" :badge-tone="$momTone($cards['omset'])"
                     :note="'Nilai jasa di tagihan valid, sudah dikurangi diskon, tanpa ongkir. Bulan lalu: ' . $rp($cards['omset']['lalu']) . '.'" />
                 <x-ui.stat-card label="SPK Closing" :value="$num($cards['spk']['nilai'])" unit="pasang" icon="clipboard-list"
+                    :info-call="$showFormula ? 'showFormula(\'spk\')' : null"
                     :badge="$momBadge($cards['spk'])" :badge-tone="$momTone($cards['spk'])"
                     :note="'± ' . number_format(($cards['spk']['nilai'] ?? 0) / $days, 1, ',', '.') . ' pasang/hari. Tanpa SPK garansi -GR' . ($intake && $intake['rd'] !== null ? ' dan R&D' : '') . '. Bulan lalu: ' . $num($cards['spk']['lalu']) . '.'" />
                 <x-ui.stat-card label="ROAS (MER)" :value="$cards['roas']['nilai'] === null ? '–' : number_format($cards['roas']['nilai'], 2, ',', '.') . 'x'" icon="chart"
+                    :info-call="$showFormula ? 'showFormula(\'roas\')' : null"
                     :badge="$momBadge($cards['roas'])" :badge-tone="$momTone($cards['roas'])"
                     :note="'Omset ÷ biaya iklan Meta (tanpa pajak). Semua omset dianggap dari iklan. Bulan lalu: ' . ($cards['roas']['lalu'] === null ? '–' : number_format($cards['roas']['lalu'], 2, ',', '.') . 'x') . '.'" />
                 <x-ui.stat-card label="Tingkat Akurasi Data" value="Menyusul" icon="check-circle" compact
+                    :info-call="$showFormula ? 'showFormula(\'akurasi\')' : null"
                     note="Kecocokan data sistem dengan kondisi lapangan. Rumus dan cara pengecekannya masih didiskusikan dengan Tim Data." />
             </div>
 
@@ -60,7 +67,10 @@
                     @foreach($funnel as $i => $step)
                         @php $fromPrev = $i > 0 ? $pct($step['nilai'], $funnel[$i - 1]['nilai']) : null; @endphp
                         <div class="relative rounded-2xl p-4 border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30">
-                            <p class="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">{{ $i + 1 }}. {{ $step['label'] }}</p>
+                            <p class="flex items-center gap-1.5 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">
+                                <span>{{ $i + 1 }}. {{ $step['label'] }}</span>
+                                @if($showFormula)<x-ui.info-button :call="'showFormula(\'funnel_' . ($i + 1) . '\')'" :label="$step['label']" />@endif
+                            </p>
                             <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ $num($step['nilai']) }}</p>
                             <p class="text-[11px] text-slate-500 dark:text-gray-400 mt-1">{{ $step['ket'] }}</p>
                             @if($fromPrev !== null)
@@ -85,7 +95,10 @@
                         </div>
                         @if($projection)
                             <div class="text-right">
-                                <p class="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Proyeksi Omset Akhir Bulan</p>
+                                <p class="flex items-center justify-end gap-1.5 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">
+                                    <span>Proyeksi Omset Akhir Bulan</span>
+                                    @if($showFormula)<x-ui.info-button call="showFormula('proyeksi')" label="Proyeksi Omset Akhir Bulan" />@endif
+                                </p>
                                 <p class="text-xl font-black text-slate-800 dark:text-white">{{ $rp($projection['nilai']) }}</p>
                                 @if($projection['bulan_lalu'])
                                     <p class="text-[11px] text-slate-500 dark:text-gray-400">{{ $projection['nama_bulan_lalu'] }}: {{ $rp($projection['bulan_lalu']) }}
@@ -123,7 +136,10 @@
 
                 <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
                     <div>
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white">SPK Terbit per Jenis</h3>
+                        <h3 class="flex items-center gap-2 font-bold text-lg text-slate-800 dark:text-white">
+                            SPK Terbit per Jenis
+                            @if($showFormula)<x-ui.info-button call="showFormula('intake')" label="SPK Terbit per Jenis" />@endif
+                        </h3>
                         <p class="text-xs text-slate-500 dark:text-gray-400">SPK yang dibuat pada rentang ini, dibaca dari nomor SPK.</p>
                     </div>
                     @if(! $intake)

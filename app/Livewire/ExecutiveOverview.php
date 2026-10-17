@@ -49,6 +49,247 @@ class ExecutiveOverview extends Component
         }
     }
 
+    /** Tombol "i" (Admin): isi modal rumus untuk angka di Executive Overview. */
+    public function showFormula(string $key, ManagementMetricsService $service): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if (! ($range = $this->range())) {
+            return;
+        }
+
+        $info = $this->explain($key, $service, $range);
+
+        if ($info) {
+            $this->dispatch('show-formula', ...$info);
+        }
+    }
+
+    /**
+     * Rincian rumus per angka: sumber, definisi, langkah hitung dengan angka periode ini, dan cek silang.
+     * Format mengikuti <x-ui.formula-modal> (sama dengan ManagementMetricsService::explain).
+     */
+    protected function explain(string $key, ManagementMetricsService $service, array $range): ?array
+    {
+        // Data yang sama persis dengan kartu: No. 13 (MER), 15 (chat), 20 (isi data diri) memakai rincian Data Manajemen SW
+        $reuse = ['roas' => [13, 'ROAS (MER)'], 'funnel_1' => [15, 'Corong 1 · Chat masuk baru'], 'funnel_2' => [20, 'Corong 2 · Isi data diri']];
+
+        if (isset($reuse[$key])) {
+            [$no, $title] = $reuse[$key];
+            $info = $service->explain($no, ...$range);
+            $info['judul'] = $title;
+
+            if ($key === 'funnel_2') {
+                $in = $service->collect(...$range)['inputs'];
+                $info['cek'][] = ['ok' => true, 'teks' => 'Persen di corong: isi data diri ÷ chat masuk = ' . $this->n($in['leads'] ?? 0) . ' ÷ ' . $this->n($in['chats'] ?? 0) . ' = ' . $this->pct($in['leads'] ?? null, $in['chats'] ?? null)];
+            }
+
+            return $info;
+        }
+
+        $now = $service->collect(...$range);
+        [$ps, $pe] = $service->previousRange(...$range);
+        $prev = $service->collect($ps, $pe);
+        $in = $now['inputs'];
+        $pin = $prev['inputs'];
+        $days = $now['days'];
+        $period = "start_date={$range[0]}&end_date={$range[1]}";
+        $gudang = "API pusat GET /warehouse-summary?{$period}";
+        $rd = $in['spk_rd'] ?? null;
+        $closing = fn (array $i) => isset($i['spk_non_gr']) ? $i['spk_non_gr'] - ($i['spk_rd'] ?? 0) : null;
+        $rp = fn ($v) => $v === null ? '–' : 'Rp ' . $this->n($v);
+        $rdNote = $rd === null
+            ? [['ok' => false, 'teks' => 'Field spk_rd_periode (SPK R&D, nomor RD-) belum dikirim sistem pusat; sementara R&D masih ikut terhitung.']]
+            : [];
+
+        $info = match ($key) {
+            'omset' => [
+                'judul' => 'Total Omset (Net)',
+                'endpoint' => "API pusat GET /finance/dashboard?{$period}",
+                'field' => 'data.metrics.omset_tagihan',
+                'nilai' => $rp($in['revenue'] ?? null),
+                'definisi' => 'Nilai jasa pada tagihan (invoice) yang dibuat di periode ini, sudah dikurangi diskon. Tagihan Batal dan tagihan '
+                    . 'bernilai jasa 0 (garansi / rework) tidak dihitung. Ongkir tidak termasuk omset. Sama dengan omset di MER dan Data Manajemen SW.',
+                'rumus_db' => "SUM(nilai jasa − diskon) dari invoices\nWHERE invoices.created_at BETWEEN :start AND :end\n  AND status <> 'Batal'\n  AND nilai jasa > 0\n-- ongkir (invoices.shipping_cost) dicatat terpisah: ongkir_tagihan",
+                'langkah' => array_merge(
+                    [['op' => '=', 'teks' => 'Diambil langsung dari sistem pusat (dihitung di database pusat)', 'rumus' => null, 'hasil' => $rp($in['revenue'] ?? null)]],
+                    $this->momSteps($in['revenue'] ?? null, $pin['revenue'] ?? null, $days, $prev['days'], true, $rp),
+                ),
+                'cek' => array_merge(
+                    isset($in['shipping']) ? [['ok' => true, 'teks' => 'Ongkir ' . $rp($in['shipping']) . ' tidak termasuk omset']] : [],
+                    isset($in['invoices']) ? [['ok' => true, 'teks' => 'Dari ' . $this->n($in['invoices']) . ' tagihan berisi ' . $this->n($in['invoice_spk'] ?? 0) . ' SPK']] : [],
+                    $this->momCek($service, $in['revenue'] ?? null, $pin['revenue'] ?? null, $days, $prev['days'], true, $ps, $pe, $rp),
+                ),
+            ],
+            'spk' => [
+                'judul' => 'SPK Closing',
+                'endpoint' => $gudang,
+                'field' => 'data.summary.spk_periode_non_gr' . ($rd === null ? '' : ' − spk_rd_periode'),
+                'nilai' => $this->n($closing($in)) . ' pasang',
+                'definisi' => 'SPK (1 SPK = 1 pasang) yang dibuat di periode ini, tanpa SPK klaim garansi (nomor berakhiran -GR) dan tanpa SPK riset (R&D, nomor diawali RD-).',
+                'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end\n  AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')\n  AND category_spk <> 'RD'   -- setelah field spk_rd_periode tersedia",
+                'langkah' => array_merge(
+                    [
+                        ['op' => '−', 'teks' => 'Semua SPK terbit − SPK garansi -GR', 'rumus' => $this->n($in['spk'] ?? 0) . ' − ' . $this->n($in['spk_gr'] ?? 0), 'hasil' => $this->n($in['spk_non_gr'] ?? 0)],
+                        ['op' => '−', 'teks' => 'Dikurangi SPK R&D', 'rumus' => $this->n($in['spk_non_gr'] ?? 0) . ' − ' . ($rd === null ? '(belum tersedia)' : $this->n($rd)), 'hasil' => $this->n($closing($in))],
+                        ['op' => '÷', 'teks' => 'Rata-rata per hari', 'rumus' => $this->n($closing($in)) . ' ÷ ' . $days . ' hari', 'hasil' => $this->n(($closing($in) ?? 0) / $days, 1) . ' pasang/hari'],
+                    ],
+                    $this->momSteps($closing($in), $closing($pin), $days, $prev['days'], true, fn ($v) => $this->n($v, fmod($v, 1) ? 1 : 0) . ' pasang'),
+                ),
+                'cek' => array_merge(
+                    isset($in['spk'], $in['spk_gr'], $in['spk_non_gr']) ? [['ok' => $in['spk'] - $in['spk_gr'] == $in['spk_non_gr'], 'teks' => 'total_incoming − spk_gr_periode = spk_periode_non_gr (' . $this->n($in['spk_non_gr']) . ')']] : [],
+                    $rdNote,
+                    $this->momCek($service, $closing($in), $closing($pin), $days, $prev['days'], true, $ps, $pe, fn ($v) => $this->n($v) . ' pasang'),
+                ),
+            ],
+            'akurasi' => [
+                'judul' => 'Tingkat Akurasi Data',
+                'endpoint' => 'Belum ada',
+                'field' => '–',
+                'nilai' => 'Menyusul',
+                'definisi' => 'Kecocokan data di sistem dengan kondisi lapangan (PRD: target ≥ 98%). Cara mencocokkan dan sumber datanya masih didiskusikan dengan Tim Data, jadi belum dihitung.',
+                'rumus_db' => "Usulan PRD: (1 − selisih ÷ total) × 100%\n-- selisih dan total belum didefinisikan (data apa dibanding data apa)",
+                'langkah' => [],
+                'cek' => [],
+            ],
+            'funnel_3' => [
+                'judul' => 'Corong 3 · SPK terbit',
+                'endpoint' => $gudang,
+                'field' => 'data.summary.spk_periode_non_gr',
+                'nilai' => $this->n($in['spk_non_gr'] ?? null),
+                'definisi' => 'SPK yang dibuat di periode ini tanpa SPK garansi -GR (garansi tidak berasal dari chat baru). Persen = SPK terbit ÷ isi data diri.',
+                'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')",
+                'langkah' => [
+                    ['op' => '−', 'teks' => 'Semua SPK terbit − SPK garansi -GR', 'rumus' => $this->n($in['spk'] ?? 0) . ' − ' . $this->n($in['spk_gr'] ?? 0), 'hasil' => $this->n($in['spk_non_gr'] ?? null)],
+                    ['op' => '÷', 'teks' => 'Persen di corong: SPK terbit ÷ isi data diri', 'rumus' => $this->n($in['spk_non_gr'] ?? 0) . ' ÷ ' . $this->n($in['leads'] ?? 0), 'hasil' => $this->pct($in['spk_non_gr'] ?? null, $in['leads'] ?? null)],
+                ],
+                'cek' => [['ok' => true, 'teks' => 'Satu isi data diri bisa menghasilkan beberapa SPK (beberapa pasang), jadi persen ini bisa mendekati atau melewati 100%.']],
+            ],
+            'funnel_4' => [
+                'judul' => 'Corong 4 · Sepatu tiba di gudang',
+                'endpoint' => $gudang,
+                'field' => 'data.summary.spk_tiba_periode',
+                'nilai' => $this->n($in['arrived'] ?? null),
+                'definisi' => 'Dari SPK terbit (tanpa -GR) di periode ini, yang sepatunya sudah tiba dan dicek QC awal gudang. Status dibaca per hari ini, jadi angka periode lama bisa bertambah.',
+                'rumus_db' => "SELECT COUNT(*) FROM work_orders\nWHERE created_at BETWEEN :start AND :end AND deleted_at IS NULL\n  AND NOT (spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%')\n  AND warehouse_qc_at IS NOT NULL",
+                'langkah' => [
+                    ['op' => '÷', 'teks' => 'Persen di corong: sepatu tiba ÷ SPK terbit', 'rumus' => $this->n($in['arrived'] ?? 0) . ' ÷ ' . $this->n($in['spk_non_gr'] ?? 0), 'hasil' => $this->pct($in['arrived'] ?? null, $in['spk_non_gr'] ?? null)],
+                ],
+                'cek' => isset($in['spk_non_gr'], $in['arrived'], $in['not_arrived']) ? [
+                    ['ok' => $in['spk_non_gr'] - $in['arrived'] == $in['not_arrived'], 'teks' => 'SPK terbit − sepatu tiba = sepatu belum dikirim (' . $this->n($in['not_arrived']) . ')'],
+                ] : [],
+            ],
+            'proyeksi' => $this->explainProjection($service, $range, $in['revenue'] ?? null, $days, $rp),
+            'intake' => [
+                'judul' => 'SPK Terbit per Jenis',
+                'endpoint' => $gudang,
+                'field' => 'total_incoming, spk_gr_periode, spk_periode_non_gr, spk_rd_periode',
+                'nilai' => $this->n($in['spk'] ?? null) . ' SPK',
+                'definisi' => 'SPK yang dibuat di periode ini dibagi menurut nomor SPK: klaim garansi berakhiran -GR, riset (R&D) diawali RD-, sisanya berbayar. Persen = bagian ÷ total SPK terbit.',
+                'rumus_db' => "Garansi : spk_number LIKE '%-GR' OR spk_number LIKE '%-GR-%'\nR&D     : category_spk = 'RD' (nomor RD-)\nBerbayar: spk_periode_non_gr − R&D",
+                'langkah' => [
+                    ['op' => '−', 'teks' => 'Berbayar = SPK tanpa -GR − SPK R&D', 'rumus' => $this->n($in['spk_non_gr'] ?? 0) . ' − ' . ($rd === null ? '(belum tersedia)' : $this->n($rd)), 'hasil' => $this->n($closing($in))],
+                    ['op' => '=', 'teks' => 'Klaim garansi (-GR)', 'rumus' => null, 'hasil' => $this->n($in['spk_gr'] ?? null)],
+                    ['op' => '=', 'teks' => 'Riset (R&D)', 'rumus' => null, 'hasil' => $rd === null ? 'menyusul' : $this->n($rd)],
+                    ['op' => '+', 'teks' => 'Total = berbayar + garansi + R&D', 'rumus' => $this->n($closing($in)) . ' + ' . $this->n($in['spk_gr'] ?? 0) . ' + ' . $this->n($rd ?? 0), 'hasil' => $this->n(($closing($in) ?? 0) + ($in['spk_gr'] ?? 0) + ($rd ?? 0))],
+                ],
+                'cek' => array_merge(
+                    isset($in['spk']) ? [['ok' => ($closing($in) ?? 0) + ($in['spk_gr'] ?? 0) + ($rd ?? 0) == $in['spk'], 'teks' => 'Jumlah ketiga jenis = total SPK terbit (total_incoming ' . $this->n($in['spk']) . ')']] : [],
+                    $rdNote,
+                ),
+            ],
+            default => null,
+        };
+
+        if (! $info) {
+            return null;
+        }
+
+        foreach (array_merge($now['errors'], $prev['errors']) as $error) {
+            $info['cek'][] = ['ok' => false, 'teks' => $error];
+        }
+
+        return [
+            'judul' => $info['judul'],
+            'sifat' => 'periode',
+            'endpoint' => $info['endpoint'],
+            'field' => $info['field'],
+            'nilai' => $info['nilai'],
+            'definisi' => $info['definisi'],
+            'rumus_db' => $info['rumus_db'],
+            'hitung' => $info['langkah'] ? ['langkah' => $info['langkah'], 'rincian' => []] : null,
+            'cek' => $info['cek'],
+            'label_nilai' => 'Nilai di Dashboard',
+            'label_rumus' => 'Rumus',
+            'sumber_rumus' => 'Acuan: PRD Master Blueprint v3.0 dan Kamus Metrik v2.0. Periode ' . $range[0] . ' s/d ' . $range[1] . '.',
+        ];
+    }
+
+    protected function explainProjection(ManagementMetricsService $service, array $range, ?float $revenue, int $days, \Closure $rp): array
+    {
+        $projection = $this->projection($service, $range, $revenue, $days);
+        $daysInMonth = Carbon::parse($range[0])->daysInMonth;
+
+        return [
+            'judul' => 'Proyeksi Omset Akhir Bulan',
+            'endpoint' => 'API pusat GET /finance/dashboard (omset_tagihan rentang ini dan bulan lalu penuh)',
+            'field' => 'data.metrics.omset_tagihan',
+            'nilai' => $rp($projection['nilai'] ?? null),
+            'definisi' => 'Perkiraan omset sebulan penuh kalau laju harian sejauh ini berlanjut. Hanya muncul kalau rentang dimulai tanggal 1 dan bulannya belum selesai.',
+            'rumus_db' => "(omset tanggal 1 s/d kemarin ÷ jumlah hari berjalan) × jumlah hari dalam bulan",
+            'langkah' => $projection ? [
+                ['op' => '÷', 'teks' => 'Omset ÷ hari berjalan = laju per hari', 'rumus' => $rp($revenue) . ' ÷ ' . $days . ' hari', 'hasil' => $rp($revenue / $days)],
+                ['op' => '×', 'teks' => 'Laju per hari × hari dalam bulan', 'rumus' => $rp($revenue / $days) . ' × ' . $daysInMonth . ' hari', 'hasil' => $rp($projection['nilai'])],
+            ] : [],
+            'cek' => $projection && $projection['bulan_lalu'] ? [[
+                'ok' => $projection['nilai'] >= $projection['bulan_lalu'],
+                'teks' => 'Omset ' . $projection['nama_bulan_lalu'] . ' penuh: ' . $rp($projection['bulan_lalu']) . '; proyeksi ' . ($projection['nilai'] >= $projection['bulan_lalu'] ? 'di atas' : 'di bawah') . ' bulan lalu ' . $this->n(abs($projection['nilai'] / $projection['bulan_lalu'] * 100 - 100), 1) . '%',
+            ]] : [],
+        ];
+    }
+
+    /** Langkah perbandingan MoM untuk modal: (per hari) bulan ini vs bulan lalu → perubahan. */
+    protected function momSteps(?float $now, ?float $prev, int $days, int $prevDays, bool $perDay, \Closure $fmt): array
+    {
+        if ($now === null || ! $prev) {
+            return [];
+        }
+
+        $a = $perDay ? $now / $days : $now;
+        $b = $perDay ? $prev / $prevDays : $prev;
+        $steps = [];
+
+        if ($perDay) {
+            $steps[] = ['op' => '÷', 'teks' => 'Periode ini per hari', 'rumus' => $fmt($now) . ' ÷ ' . $days . ' hari', 'hasil' => $fmt($a)];
+            $steps[] = ['op' => '÷', 'teks' => 'Bulan lalu per hari', 'rumus' => $fmt($prev) . ' ÷ ' . $prevDays . ' hari', 'hasil' => $fmt($b)];
+        }
+
+        $steps[] = ['op' => '÷', 'teks' => 'Perubahan dibanding bulan lalu: (ini − lalu) ÷ lalu × 100', 'rumus' => '(' . $fmt($a) . ' − ' . $fmt($b) . ') ÷ ' . $fmt($b) . ' × 100', 'hasil' => (($a - $b) >= 0 ? '+' : '') . $this->n(($a - $b) / $b * 100, 1) . '%'];
+
+        return $steps;
+    }
+
+    /** Cek lampu MoM untuk modal. */
+    protected function momCek(ManagementMetricsService $service, ?float $now, ?float $prev, int $days, int $prevDays, bool $perDay, string $ps, string $pe, \Closure $fmt): array
+    {
+        $mom = $service->compareValues($now, $prev, 'naik', $perDay, $days, $prevDays);
+
+        return [[
+            'ok' => $mom['status'] !== 'merah',
+            'teks' => "Bulan lalu ({$ps} s/d {$pe}): " . $fmt($prev) . ($mom['status'] ? '; lampu ' . $mom['status'] . ' (kuning = lebih buruk sampai ' . config('management_metrics.mom.batas_kuning') . '%)' : ''),
+        ]];
+    }
+
+    protected function n(?float $v, int $dec = 0): string
+    {
+        return $v === null ? '–' : number_format($v, $dec, ',', '.');
+    }
+
+    protected function pct(?float $a, ?float $b): string
+    {
+        return $a === null || ! $b ? '–' : number_format($a / $b * 100, 1, ',', '.') . '%';
+    }
+
     public function render(ManagementMetricsService $service)
     {
         $range = $this->range();
@@ -92,6 +333,7 @@ class ExecutiveOverview extends Component
             'projection' => $this->projection($service, $range, $in['revenue'] ?? null, $now['days']),
             'chart' => $this->chart($service, $range),
             'sourceErrors' => $now['errors'] + array_map(fn ($e) => 'Bulan lalu: ' . $e, $prev['errors']),
+            'showFormula' => auth()->user()?->isAdmin() ?? false,
         ]);
     }
 
