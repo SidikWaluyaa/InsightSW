@@ -246,6 +246,35 @@ class ManagementMetricsService
         });
     }
 
+    /**
+     * Rincian penjualan CS dari dashboard-summary dengan definisi Kamus (field baru ERP, opsional):
+     * - per_cs_kamus : [{cs_id, cs_name, leads, spk_closing, jumlah_tagihan, jumlah_spk_tagihan, omset_tagihan}]
+     * - harian_kamus : {Y-m-d: {leads, spk_closing, jumlah_tagihan, jumlah_spk_tagihan, omset_tagihan}}
+     * Bagian yang belum dikirim ERP bernilai null. per_cs lama tidak dipakai (closing memakai updated_at).
+     *
+     * @return array{per_cs: array|null, harian: array|null}
+     */
+    public function csBreakdown(string $start, string $end): array
+    {
+        return Cache::remember("mgmt_cs_{$start}_{$end}", now()->addMinutes(self::CACHE_MINUTES), function () use ($start, $end) {
+            $response = Http::timeout(60)
+                ->withHeaders(['X-API-KEY' => config('services.dashboard.key'), 'Accept' => 'application/json'])
+                ->get(rtrim(config('services.dashboard.base_url'), '/') . '/dashboard-summary', ['start_date' => $start, 'end_date' => $end]);
+
+            if ($response->failed()) {
+                throw new \RuntimeException('dashboard-summary HTTP ' . $response->status());
+            }
+
+            $perCs = $response->json('data.per_cs_kamus');
+            $daily = $response->json('data.harian_kamus');
+
+            return [
+                'per_cs' => is_array($perCs) ? $perCs : null,
+                'harian' => is_array($daily) ? $daily : null,
+            ];
+        });
+    }
+
     /** Biaya iklan Meta per tanggal (Y-m-d => rupiah, tanpa pajak). */
     public function dailySpend(string $start, string $end): array
     {
@@ -468,7 +497,7 @@ class ManagementMetricsService
         foreach (['totals', 'daily'] as $kind) {
             Cache::forget("mgmt_meta_{$kind}_{$start}_{$end}");
         }
-        foreach (['gudang', 'leads', 'inv', 'inv_daily'] as $kind) {
+        foreach (['gudang', 'leads', 'inv', 'inv_daily', 'cs'] as $kind) {
             Cache::forget("mgmt_{$kind}_{$start}_{$end}");
         }
     }

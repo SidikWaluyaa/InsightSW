@@ -170,6 +170,7 @@ new class extends Component
                     @php
                         $csSubItems = [
                             ['route' => 'cs-dashboard', 'label' => 'Dashboard', 'icon' => '...'],
+                            ['route' => 'cs-sales', 'label' => 'Penjualan CS', 'icon' => '...'],
                             ['route' => 'cs-kpi', 'label' => 'KPI CS', 'icon' => '...'],
                             ['route' => 'cs-forecasting', 'label' => 'Forecasting CS', 'icon' => '...'],
                             ['route' => 'chat-masuk', 'label' => 'Chat Masuk', 'icon' => '...'],
@@ -185,7 +186,7 @@ new class extends Component
                             return true;
                         });
 
-                        $isCsActive = request()->routeIs(['cs-dashboard', 'cs-kpi', 'cs-forecasting', 'chat-masuk', 'cs-followup', 'cs-tracking']);
+                        $isCsActive = request()->routeIs(['cs-dashboard', 'cs-sales', 'cs-kpi', 'cs-forecasting', 'chat-masuk', 'cs-followup', 'cs-tracking']);
                     @endphp
                     <div x-data="{ csOpen: {{ $isCsActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="csOpen = !csOpen"
