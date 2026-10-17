@@ -40,7 +40,10 @@
                     <h3 class="font-bold text-lg text-slate-800 dark:text-white">Peringkat CS</h3>
                     <p class="text-xs text-slate-500 dark:text-gray-400">Diurutkan dari omset tagihan terbesar. % chat jadi SPK per CS belum bisa dihitung karena data chat Sleekflow belum terpisah per CS.</p>
                 </div>
-                <x-ui.btn variant="secondary" icon="document" wire:click="exportCsv" target="exportCsv" class="shrink-0">Unduh CSV</x-ui.btn>
+                <div class="flex flex-wrap gap-2 shrink-0">
+                    <x-ui.btn variant="secondary" icon="document" wire:click="exportCsv" target="exportCsv">Unduh CSV</x-ui.btn>
+                    <x-ui.btn variant="secondary" icon="document" :href="route('cs-sales.export-pdf', ['dari' => $startDate, 'sampai' => $endDate])" x-data x-on:click.prevent="window.open($el.href, '_blank')">Unduh PDF</x-ui.btn>
+                </div>
             </div>
             @if($leaderboard === null)
                 <p class="px-6 py-10 text-sm text-center text-amber-600 dark:text-amber-400">Menunggu data per CS dari sistem pusat (field baru). Data per CS yang lama tidak dipakai karena definisinya berbeda dengan Kamus.</p>
@@ -62,7 +65,14 @@
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                             @forelse($leaderboard as $i => $row)
                                 <tr wire:key="cs-{{ $i }}-{{ $row['nama'] }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                                    <td class="px-6 py-3 font-black text-slate-400">{{ $i + 1 }}</td>
+                                    <td class="px-6 py-3 font-black text-slate-400">
+                                        {{-- Medali untuk 3 teratas (PRD) --}}
+                                        @if($i < 3)
+                                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] text-white {{ ['bg-yellow-500', 'bg-slate-400', 'bg-amber-700'][$i] }}" title="Peringkat {{ $i + 1 }}">{{ $i + 1 }}</span>
+                                        @else
+                                            {{ $i + 1 }}
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-3 font-bold text-slate-800 dark:text-white whitespace-nowrap">{{ $row['nama'] }}</td>
                                     <td class="px-6 py-3 text-right text-slate-600 dark:text-gray-300">{{ $num($row['leads']) }}</td>
                                     <td class="px-6 py-3 text-right font-bold text-slate-800 dark:text-gray-100">{{ $num($row['spk']) }}</td>

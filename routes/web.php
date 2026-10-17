@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
         Route::get('customer-service/penjualan', \App\Livewire\CsSales::class)->name('cs-sales');
+        Route::get('customer-service/penjualan/export-pdf', [\App\Http\Controllers\CsSalesExportController::class, 'printPdf'])->name('cs-sales.export-pdf');
         Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
         Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
         Route::get('customer-service/kpi', \App\Livewire\CsKpi::class)->name('cs-kpi');
