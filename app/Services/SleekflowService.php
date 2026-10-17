@@ -153,11 +153,16 @@ class SleekflowService
 
     /**
      * Sync contacts from Sleekflow API to local database.
+     *
+     * $startOffset & $maxPages dipakai untuk menarik bertahap (mis. halaman SleekFlow Activity), supaya satu request web
+     * tidak melewati batas waktu PHP. Hasil `next_offset` = offset untuk bagian berikutnya, null bila sudah selesai.
+     * Tanpa kedua parameter itu perilakunya sama seperti sebelumnya (tarik sampai selesai).
      */
-    public function syncContacts(?string $startDate = null, ?string $endDate = null): array
+    public function syncContacts(?string $startDate = null, ?string $endDate = null, int $startOffset = 0, ?int $maxPages = null): array
     {
         $limit = 100;
-        $offset = 0;
+        $offset = $startOffset;
+        $pages = 0;
         
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today()->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today()->endOfDay();
@@ -325,9 +330,14 @@ class SleekflowService
             
             // Safety break to prevent infinite loops (Sleekflow max contacts safety)
             if ($offset > 50000) break; 
+
+            // Batas bagian (tarik bertahap): berhenti di sini, lanjut dari $offset di request berikutnya
+            if ($maxPages !== null && ++$pages >= $maxPages && ! $stop) {
+                return ['synced' => $totalSynced, 'next_offset' => $offset];
+            }
         }
 
-        return ['synced' => $totalSynced];
+        return ['synced' => $totalSynced, 'next_offset' => null];
     }
 
     /**

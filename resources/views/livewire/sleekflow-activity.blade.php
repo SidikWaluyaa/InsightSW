@@ -10,7 +10,7 @@
 @endphp
 
 {{-- CS → SleekFlow Activity: layout PRD halaman 2 (beban kerja & SLA) --}}
-<div class="space-y-6">
+<div class="space-y-6" x-data x-on:tarik-kontak-lanjut.window="$wire.tarikBagian()">
     <div wire:ignore><x-ui.formula-modal /></div>
 
     <x-ui.page-header title="SleekFlow Activity" subtitle="Beban kerja & SLA tim CS: chat masuk, kecepatan balas, dan status percakapan.">
@@ -21,11 +21,19 @@
         <span>Dibanding {{ \Carbon\Carbon::parse($kpis['prevRange'][0])->translatedFormat('j M') }} – {{ \Carbon\Carbon::parse($kpis['prevRange'][1])->translatedFormat('j M Y') }}</span>
     </x-ui.range-info>
 
+    @if($menarik)
+        {{-- Tarik kontak bertahap sedang berjalan --}}
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-sm text-indigo-700 dark:text-indigo-300">
+            <span class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
+            Menarik kontak Sleekflow… {{ number_format($tarikJumlah, 0, ',', '.') }} kontak tersimpan (halaman API ke-{{ intdiv($tarikOffset, 100) + 1 }}). Jangan tutup halaman ini.
+        </div>
+    @endif
+
     @foreach($kpis['errors'] as $error)
         <div class="px-4 py-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-sm text-rose-700 dark:text-rose-400">{{ $error }}</div>
     @endforeach
 
-    <div wire:loading.class="opacity-30" wire:target="setDateRange, tarikKontak" class="space-y-6 transition-opacity">
+    <div wire:loading.class="opacity-30" wire:target="setDateRange, tarikKontak, tarikBagian" class="space-y-6 transition-opacity">
         {{-- Alur 1: KPI beban kerja & respon --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <x-ui.stat-card label="Total Chat Masuk" :value="$kpis['chat']['teks']" unit="chat" icon="chat"

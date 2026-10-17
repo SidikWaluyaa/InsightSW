@@ -42,22 +42,65 @@ class SleekflowActivity extends Component
         return now()->subDay()->startOfDay();
     }
 
-    /** Tarik kontak Sleekflow untuk rentang ini (lambat: API kontak dibaca halaman per halaman). */
-    public function tarikKontak(SleekflowService $service, ManagementMetricsService $metrics): void
+    /** Status tarik kontak bertahap (lihat tarikBagian). */
+    public bool $menarik = false;
+
+    public int $tarikOffset = 0;
+
+    public int $tarikJumlah = 0;
+
+    /** Halaman API kontak per request: 8 × (±1 dtk + jeda 0,5 dtk) jauh di bawah batas 30 dtk PHP. */
+    protected const HALAMAN_PER_BAGIAN = 8;
+
+    /**
+     * Tarik kontak Sleekflow untuk rentang ini. API kontak dibaca halaman per halaman (lambat), jadi ditarik
+     * bertahap: tiap request satu bagian, lalu browser memanggil bagian berikutnya sampai selesai.
+     */
+    public function tarikKontak(): void
     {
+        if ($this->menarik) {
+            return;
+        }
+
+        $this->menarik = true;
+        $this->tarikOffset = 0;
+        $this->tarikJumlah = 0;
+        $this->tarikBagian(app(SleekflowService::class), app(ManagementMetricsService::class));
+    }
+
+    public function tarikBagian(SleekflowService $service, ManagementMetricsService $metrics): void
+    {
+        if (! $this->menarik) {
+            return;
+        }
+
         try {
-            $result = $service->syncContacts($this->startDate, $this->endDate);
-            $metrics->forget($this->startDate, $this->endDate);
-            $this->dispatch('swal', [
-                'icon' => 'success',
-                'title' => 'Kontak Diperbarui',
-                'text' => 'Sinkron ' . ($result['synced'] ?? 0) . ' kontak Sleekflow untuk rentang ini.',
-                'timer' => 3000,
-            ]);
+            $result = $service->syncContacts($this->startDate, $this->endDate, $this->tarikOffset, self::HALAMAN_PER_BAGIAN);
         } catch (\Throwable $e) {
             Log::error('SleekflowActivity: tarik kontak gagal: ' . $e->getMessage());
+            $this->menarik = false;
             $this->dispatch('swal', ['icon' => 'error', 'title' => 'Gagal', 'text' => 'Tarik kontak Sleekflow gagal: ' . $e->getMessage()]);
+
+            return;
         }
+
+        $this->tarikJumlah += $result['synced'] ?? 0;
+
+        if (($result['next_offset'] ?? null) !== null) {
+            $this->tarikOffset = $result['next_offset'];
+            $this->dispatch('tarik-kontak-lanjut');
+
+            return;
+        }
+
+        $this->menarik = false;
+        $metrics->forget($this->startDate, $this->endDate);
+        $this->dispatch('swal', [
+            'icon' => 'success',
+            'title' => 'Kontak Diperbarui',
+            'text' => 'Sinkron ' . number_format($this->tarikJumlah, 0, ',', '.') . ' kontak Sleekflow untuk rentang ini.',
+            'timer' => 3000,
+        ]);
     }
 
     public function showFormula(int $no, ManagementMetricsService $metrics): void
