@@ -56,6 +56,9 @@
         {{-- Executive Overview (PRD): 4 kartu utama, corong chat, tren, SPK per jenis. 31 data Iklan & CS ada di halaman Data Manajemen SW. --}}
         <livewire:executive-overview :start="$startDate" :end="$endDate" />
 
+        {{-- Marketing & Meta Ads (PRD halaman 4): 4 KPI efisiensi iklan + tabel per tanggal & materi iklan --}}
+        <livewire:marketing-ads :start="$startDate" :end="$endDate" />
+
         {{-- Main Table Section --}}
         <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">

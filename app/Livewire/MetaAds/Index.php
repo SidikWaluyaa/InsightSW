@@ -3,9 +3,8 @@
 namespace App\Livewire\MetaAds;
 
 use App\Livewire\Concerns\WithDateRange;
-use App\Services\ManagementMetricsService;
+use App\Services\MetaAdsReportService;
 use Carbon\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\MetaAdsReport;
@@ -294,87 +293,10 @@ class Index extends Component
             ->toArray();
     }
 
-    /**
-     * 4 kartu efisiensi iklan (PRD halaman 4) dari tabel meta_ads_reports, mengikuti filter kampanye/adset/cari,
-     * dengan lampu dibanding periode yang sama bulan lalu (aturan MoM sama dengan Data Manajemen SW).
-     */
-    protected function kpis(ManagementMetricsService $service): array
+    /** Filter halaman yang ikut ke kartu dan tabel berjenjang. */
+    protected function filters(): array
     {
-        $totals = function (string $start, string $end) {
-            $row = $this->filteredQuery($start, $end)
-                ->selectRaw('SUM(spend) spend, SUM(results) results, SUM(link_click) link_click, SUM(impressions) impressions')
-                ->first();
-            $spend = (float) $row->spend;
-            $results = (float) $row->results;
-            $impressions = (float) $row->impressions;
-
-            return [
-                'spend' => $spend,
-                'results' => $results,
-                'cpr' => $results > 0 ? $spend / $results : null,
-                'ctr' => $impressions > 0 ? $row->link_click / $impressions * 100 : null,
-            ];
-        };
-
-        [$prevStart, $prevEnd] = $service->previousRange($this->startDate, $this->endDate);
-        $now = $totals($this->startDate, $this->endDate);
-        $prev = $totals($prevStart, $prevEnd);
-        $days = $service->days($this->startDate, $this->endDate);
-        $prevDays = $service->days($prevStart, $prevEnd);
-
-        // [arah, dibanding per hari]: arah null = tanpa lampu (biaya iklan bukan baik/buruk)
-        $rules = ['spend' => [null, true], 'results' => ['naik', true], 'cpr' => ['turun', false], 'ctr' => ['naik', false]];
-        $cards = [];
-        foreach ($rules as $key => [$arah, $perDay]) {
-            $cards[$key] = ['nilai' => $now[$key], 'lalu' => $prev[$key]]
-                + $service->compareValues($now[$key], $prev[$key] ?: null, $arah, $perDay, $days, $prevDays);
-        }
-
-        return ['cards' => $cards, 'days' => $days, 'prevRange' => [$prevStart, $prevEnd]];
-    }
-
-    /** Query meta_ads_reports dengan filter halaman (kampanye, adset, cari) untuk rentang tertentu. */
-    protected function filteredQuery(string $start, string $end)
-    {
-        return MetaAdsReport::query()
-            ->whereBetween('date', [$start, $end])
-            ->when($this->selectedCampaign, fn ($q) => $q->where('campaign_name', $this->selectedCampaign))
-            ->when($this->selectedAdset, fn ($q) => $q->where('adset_name', $this->selectedAdset))
-            ->when($this->search, function ($q) {
-                $q->where(function ($sub) {
-                    $sub->where('ad_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('campaign_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('adset_name', 'like', '%' . $this->search . '%');
-                });
-            });
-    }
-
-    /**
-     * Tabel berjenjang PRD: Tanggal → Materi iklan → Kampanye. Dipaginasi per tanggal (7 tanggal per halaman)
-     * supaya satu tanggal tidak terpotong; sel tanggal & materi iklan yang berulang dikosongkan di view.
-     */
-    protected function hierarchy(): LengthAwarePaginator
-    {
-        $perPage = 7;
-        $dates = $this->filteredQuery($this->startDate, $this->endDate)->distinct()->orderByDesc('date')->pluck('date');
-        $page = $this->getPage();
-        $pageDates = $dates->forPage($page, $perPage)->values();
-
-        $rows = $pageDates->isEmpty() ? collect() : $this->filteredQuery($this->startDate, $this->endDate)
-            ->whereIn('date', $pageDates)
-            ->selectRaw('date, ad_name, campaign_name, SUM(spend) spend, SUM(impressions) impressions, SUM(link_click) link_click, SUM(results) results')
-            ->groupBy('date', 'ad_name', 'campaign_name')
-            // Iklan yang tidak tayang dan tidak menghasilkan chat di hari itu tidak ditampilkan
-            ->havingRaw('SUM(spend) > 0 OR SUM(results) > 0')
-            ->get()
-            // Urutan: tanggal terbaru, lalu materi dengan biaya terbesar, lalu kampanye dengan biaya terbesar
-            ->groupBy(fn ($r) => Carbon::parse($r->date)->toDateString())
-            ->sortKeysDesc()
-            ->map(fn ($day) => $day->groupBy('ad_name')
-                ->sortByDesc(fn ($ads) => $ads->sum('spend'))
-                ->map(fn ($ads) => $ads->sortByDesc('spend')->values()));
-
-        return new LengthAwarePaginator($rows, $dates->count(), $perPage, $page, ['path' => request()->url(), 'pageName' => 'page']);
+        return ['campaign' => $this->selectedCampaign, 'adset' => $this->selectedAdset, 'search' => $this->search];
     }
 
     #[Layout('layouts.app')]
@@ -440,13 +362,13 @@ class Index extends Component
         }
 
         $campaigns = MetaAdsReport::distinct()->pluck('campaign_name');
-        $service = app(ManagementMetricsService::class);
-        $kpi = $this->kpis($service);
+        $report = app(MetaAdsReportService::class);
+        $kpi = $report->kpis($this->startDate, $this->endDate, $this->filters());
         $presets = $this->datePresets();
         $maxDate = $this->maxSelectableDate()->toDateString();
 
         if ($this->groupBy === 'materi') {
-            $hierarchy = $this->hierarchy();
+            $hierarchy = $report->hierarchy($this->startDate, $this->endDate, $this->getPage(), 7, $this->filters());
 
             return view('livewire.meta-ads.index', compact('hierarchy', 'campaigns', 'kpi', 'presets', 'maxDate') + ['reports' => null]);
         }

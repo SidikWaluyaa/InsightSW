@@ -32,31 +32,7 @@
             </template>
         </x-ui.range-info>
 
-        @php
-            $c = $kpi['cards'];
-            $tones = ['hijau' => 'emerald', 'kuning' => 'amber', 'merah' => 'rose'];
-            $momBadge = fn ($k) => $k['perubahan'] === null ? null : ($k['perubahan'] >= 0 ? '▲ ' : '▼ ') . number_format(abs($k['perubahan']), 1, ',', '.') . '% vs bulan lalu';
-            $momTone = fn ($k) => $tones[$k['status']] ?? 'slate';
-            $rp = fn ($v) => $v === null ? '–' : 'Rp ' . number_format($v, 0, ',', '.');
-        @endphp
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <x-ui.stat-card label="Biaya Iklan" :value="$rp($c['spend']['nilai'])" icon="cash" compact
-                :badge="$momBadge($c['spend'])" badge-tone="slate"
-                :note="'± ' . $rp($c['spend']['nilai'] / max($kpi['days'], 1)) . '/hari, tanpa pajak. Bulan lalu: ' . $rp($c['spend']['lalu']) . '.'" />
-            <x-ui.stat-card label="Chat dari Iklan" :value="number_format($c['results']['nilai'], 0, ',', '.')" unit="chat" icon="chat"
-                :badge="$momBadge($c['results'])" :badge-tone="$momTone($c['results'])"
-                :note="'Hasil iklan (percakapan WhatsApp dimulai). Bulan lalu: ' . number_format($c['results']['lalu'], 0, ',', '.') . '.'" />
-            <x-ui.stat-card label="Biaya per Chat" :value="$rp($c['cpr']['nilai'])" icon="cursor-click" compact
-                :badge="$momBadge($c['cpr'])" :badge-tone="$momTone($c['cpr'])"
-                :note="'Biaya iklan ÷ chat dari iklan. Turun = lebih baik. Bulan lalu: ' . $rp($c['cpr']['lalu']) . '.'" />
-            <x-ui.stat-card label="% Klik dari Tayangan (CTR)" :value="$c['ctr']['nilai'] === null ? '–' : number_format($c['ctr']['nilai'], 2, ',', '.') . '%'" icon="eye"
-                :badge="$momBadge($c['ctr'])" :badge-tone="$momTone($c['ctr'])"
-                :note="'Klik link ÷ tayangan. Bulan lalu: ' . ($c['ctr']['lalu'] === null ? '–' : number_format($c['ctr']['lalu'], 2, ',', '.') . '%') . '.'" />
-        </div>
-        <p class="text-[11px] text-slate-400 dark:text-gray-500">
-            Lampu membandingkan dengan {{ \Carbon\Carbon::parse($kpi['prevRange'][0])->translatedFormat('j M') }} – {{ \Carbon\Carbon::parse($kpi['prevRange'][1])->translatedFormat('j M Y') }}, mengikuti filter kampanye, adset, dan pencarian.
-            Biaya iklan tidak diberi lampu (bukan baik atau buruk); biaya dan chat dibandingkan per hari.
-        </p>
+        <x-meta-ads.kpi-cards :kpi="$kpi" scope="mengikuti filter kampanye, adset, dan pencarian" />
 
     {{-- Campaign Spend Breakdown --}}
     @if(count($campaignSpend) > 0)
@@ -218,54 +194,7 @@
         @endif
 
     @if($hierarchy)
-    {{-- Tabel berjenjang PRD: sel tanggal dan materi iklan yang sama dengan baris sebelumnya dikosongkan --}}
-    <div class="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-xs">
-                <thead>
-                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        <th class="px-5 py-3 whitespace-nowrap">Tanggal</th>
-                        <th class="px-5 py-3">Materi Iklan</th>
-                        <th class="px-5 py-3">Kampanye</th>
-                        <th class="px-5 py-3 text-right whitespace-nowrap">Biaya</th>
-                        <th class="px-5 py-3 text-right">Tayang</th>
-                        <th class="px-5 py-3 text-right whitespace-nowrap">Klik Link</th>
-                        <th class="px-5 py-3 text-right">Chat</th>
-                        <th class="px-5 py-3 text-right whitespace-nowrap">Biaya per Chat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($hierarchy->items() as $date => $ads)
-                        @foreach($ads as $adName => $campaignRows)
-                            @foreach($campaignRows as $i => $row)
-                                @php $firstOfDay = $loop->parent->first && $loop->first; @endphp
-                                <tr wire:key="h-{{ $date }}-{{ md5($adName . $row->campaign_name) }}"
-                                    class="{{ $firstOfDay ? 'border-t-2 border-gray-200 dark:border-gray-700' : ($loop->first ? 'border-t border-gray-100 dark:border-gray-800' : '') }} hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                                    <td class="px-5 py-2.5 align-top whitespace-nowrap font-bold text-slate-700 dark:text-gray-200">
-                                        {{ $firstOfDay ? \Carbon\Carbon::parse($date)->translatedFormat('d M Y') : '' }}
-                                    </td>
-                                    <td class="px-5 py-2.5 align-top whitespace-nowrap font-semibold text-slate-800 dark:text-white">{{ $loop->first ? $adName : '' }}</td>
-                                    <td class="px-5 py-2.5 whitespace-nowrap text-slate-500 dark:text-gray-400">{{ $row->campaign_name }}</td>
-                                    <td class="px-5 py-2.5 text-right whitespace-nowrap font-bold text-slate-800 dark:text-gray-100">Rp {{ number_format($row->spend, 0, ',', '.') }}</td>
-                                    <td class="px-5 py-2.5 text-right text-slate-600 dark:text-gray-300">{{ number_format($row->impressions, 0, ',', '.') }}</td>
-                                    <td class="px-5 py-2.5 text-right text-slate-600 dark:text-gray-300">{{ number_format($row->link_click, 0, ',', '.') }}</td>
-                                    <td class="px-5 py-2.5 text-right font-bold text-blue-600 dark:text-blue-400">{{ number_format($row->results, 0, ',', '.') }}</td>
-                                    <td class="px-5 py-2.5 text-right whitespace-nowrap text-slate-600 dark:text-gray-300">{{ $row->results > 0 ? 'Rp ' . number_format($row->spend / $row->results, 0, ',', '.') : '–' }}</td>
-                                </tr>
-                            @endforeach
-                        @endforeach
-                    @empty
-                        <tr><td colspan="8" class="px-6 py-16 text-center text-sm italic text-slate-400">Belum ada data Meta Ads untuk rentang dan filter ini.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if($hierarchy->hasPages())
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
-                {{ $hierarchy->links() }}
-            </div>
-        @endif
-    </div>
+    <x-meta-ads.hierarchy-table :hierarchy="$hierarchy" />
     @else
     {{-- Main Table --}}
     <div class="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden scroll-smooth">
