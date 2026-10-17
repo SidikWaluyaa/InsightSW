@@ -120,7 +120,7 @@
                                 series,
                                 colors: data.revenue ? ['#3b82f6', '#f59e0b'] : ['#f59e0b'],
                                 xaxis: { categories: data.labels },
-                                yaxis: { labels: { formatter: v => 'Rp ' + Math.round(v / 1000).toLocaleString('id-ID') + ' rb' } },
+                                yaxis: { min: 0, labels: { formatter: v => v >= 1e6 ? 'Rp ' + (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt' : 'Rp ' + Math.round(v / 1000).toLocaleString('id-ID') + ' rb' } },
                                 tooltip: { y: { formatter: v => 'Rp ' + Math.round(v).toLocaleString('id-ID') } },
                                 dataLabels: { enabled: false },
                                 stroke: { curve: 'smooth', width: 2 },
