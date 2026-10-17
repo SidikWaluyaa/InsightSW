@@ -110,6 +110,23 @@ new class extends Component
                         </a>
                     </div>
 
+                    {{-- Dashboard Eksekutif (Main Menu) --}}
+                    @can('access-executive')
+                    <div class="space-y-1 mb-4">
+                        <a href="{{ route('executive-dashboard') }}"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 {{ request()->routeIs('executive-dashboard') ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-400 border border-emerald-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }} group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors {{ request()->routeIs('executive-dashboard') ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Dashboard Eksekutif</span>
+                            </div>
+                        </a>
+                    </div>
+                    @endcan
+
                     {{-- Sleekflow Analytics (Main Menu) --}}
                     <div class="space-y-1 mb-4">
                         <a href="{{ route('sleekflow.analytics') }}"

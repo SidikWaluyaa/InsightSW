@@ -34,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
             return $user->isAdmin();
         });
 
+        Gate::define('access-executive', function (\App\Models\User $user) {
+            return in_array($user->role, ['Admin', 'Editor', 'Viewer']);
+        });
+
         Gate::define('access-marketing', function (\App\Models\User $user) {
             return in_array($user->role, ['Admin', 'Editor', 'Viewer']);
         });

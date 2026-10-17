@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard Eksekutif (Admin, Editor, Viewer) — PRD halaman 1
+    Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
+        Route::get('eksekutif', \App\Livewire\ExecutiveDashboard::class)->name('executive-dashboard');
+    });
+
     // Marketing Group (Admin, Editor, Viewer)
     Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
