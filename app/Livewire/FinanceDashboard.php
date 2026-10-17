@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 
 use App\Models\FinanceSync;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 class FinanceDashboard extends Component
 {
     use \Livewire\WithPagination;
+    use WithDateRange;
 
     public ?int $lastSyncTimestamp = null;
     public bool $isSyncing = false;
@@ -39,6 +41,12 @@ class FinanceDashboard extends Component
         $this->endDate = now()->format('Y-m-d');
         $this->updateSyncState();
         $this->checkSync(); // Force initial check
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPage();
     }
 
     public function updateSyncState(): void
