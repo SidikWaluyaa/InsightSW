@@ -242,13 +242,16 @@ class ExecutiveOverview extends Component
             'nilai' => $this->n($sum) . ' pasang',
             'definisi' => 'Sepatu yang benar-benar tiba di gudang pada periode ini (Kamus No. 32 Intake Fisik), menurut tanggal tiba, dibagi menurut nomor SPK: '
                 . 'klaim garansi -GR, riset R&D (RD-), sisanya berbayar. Berbeda dari SPK terbit, yang memakai tanggal SPK dibuat.',
-            'rumus_db' => "Tanggal tiba sepatu di gudang di dalam periode\nGaransi : spk_number LIKE '%-GR' OR '%-GR-%'\nR&D     : spk_number LIKE 'RD-%'\nBerbayar: sisanya",
+            'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim didaftarkan);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : spk_number LIKE 'RD-%'",
             'langkah' => [
                 ['op' => '+', 'teks' => 'Berbayar + garansi + R&D', 'rumus' => $this->n($in['fisik_berbayar']) . ' + ' . $this->n($in['fisik_garansi']) . ' + ' . $this->n($in['fisik_rd']), 'hasil' => $this->n($sum)],
             ],
+            // Sepatu garansi tidak lewat QC awal gudang (tanggal tiba = klaim garansi didaftarkan), jadi yang harus sama
+            // dengan total_qc_processed hanya berbayar + R&D
             'cek' => isset($in['fisik_total']) ? [[
-                'ok' => $sum == $in['fisik_total'],
-                'teks' => 'Total per jenis vs total sepatu tiba (total_qc_processed ' . $this->n($in['fisik_total']) . '). Beda bisa terjadi kalau sepatu garansi dicatat tiba tanpa QC gudang.',
+                'ok' => $in['fisik_berbayar'] + $in['fisik_rd'] == $in['fisik_total'],
+                'teks' => 'Berbayar + R&D = ' . $this->n($in['fisik_berbayar'] + $in['fisik_rd']) . ' ; total_qc_processed = ' . $this->n($in['fisik_total'])
+                    . '. Garansi (' . $this->n($in['fisik_garansi']) . ') dihitung dari tanggal klaim garansi, karena tidak lewat QC awal gudang.',
             ]] : [],
         ];
     }

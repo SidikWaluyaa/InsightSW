@@ -131,8 +131,9 @@
                     'field' => 'data.summary.' . $field,
                     'nilai' => $nilai === null ? 'belum dikirim API' : (string) $nilai,
                     'definisi' => $definisi,
-                    'rumus_db' => "Sepatu yang tiba di gudang (QC awal gudang) dengan tanggal tiba di dalam periode.\nGaransi : nomor SPK berakhiran -GR\nR&D     : nomor SPK diawali RD-\nBerbayar: sisanya",
-                    'cek' => $hasFisik ? [['ok' => abs(array_sum($fisik) - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + garansi + R&D = ' . array_sum($fisik) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?')]] : [],
+                    'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim didaftarkan);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : nomor SPK diawali RD-",
+                    // Garansi tidak lewat QC awal gudang, jadi yang harus sama dengan total_qc_processed hanya berbayar + R&D
+                    'cek' => $hasFisik ? [['ok' => abs($fisik['berbayar'] + $fisik['rd'] - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + R&D = ' . ($fisik['berbayar'] + $fisik['rd']) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?') . ' (garansi dihitung dari tanggal klaim)']] : [],
                     'sumber_rumus' => 'Acuan: Kamus Metrik No. 32 Intake Fisik dan PRD halaman 5.',
                 ];
             @endphp
@@ -170,6 +171,10 @@
                             <div class="flex-1 min-w-[130px] rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 p-4">
                                 <p class="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">{{ $label }}</p>
                                 <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ number_format((float) ($wip[$key] ?? 0), 0, ',', '.') }}</p>
+                                @if($key === 'siap_kirim' && isset($summary['siap_kirim_aktif']))
+                                    {{-- Sebagian besar siap_kirim adalah backlog lama; yang aktif = selesai ≤ 30 hari terakhir --}}
+                                    <p class="text-[11px] text-slate-500 dark:text-gray-400 mt-1">{{ number_format((float) $summary['siap_kirim_aktif'], 0, ',', '.') }} selesai ≤ 30 hari terakhir</p>
+                                @endif
                             </div>
                             @if(! $loop->last)<span class="hidden md:block text-slate-300 dark:text-gray-600" aria-hidden="true">→</span>@endif
                         @endforeach
