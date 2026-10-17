@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use App\Models\SleekflowContact;
 use App\Services\SleekflowService;
@@ -11,6 +12,8 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class CsTracking extends Component
 {
+    use WithDateRange;
+
     public $startDate;
     public $endDate;
     public $stats = [];
@@ -59,6 +62,12 @@ class CsTracking extends Component
     }
 
     public function applyFilter()
+    {
+        $this->loadStats();
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
     {
         $this->loadStats();
     }
