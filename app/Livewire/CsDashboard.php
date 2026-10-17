@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use App\Services\DashboardApiService;
 use App\Services\SleekflowService;
@@ -13,6 +14,8 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class CsDashboard extends Component
 {
+    use WithDateRange;
+
     public ?string $startDate = null;
     public ?string $endDate = null;
     public ?string $dateRange = null;
@@ -208,8 +211,18 @@ class CsDashboard extends Component
         $this->loadData();
     }
 
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->dateRange = $this->startDate . ' to ' . $this->endDate;
+        $this->loadData();
+    }
+
     public function render()
     {
-        return view('livewire.cs-dashboard');
+        return view('livewire.cs-dashboard', [
+            'presets' => $this->datePresets(),
+            'maxDate' => $this->maxSelectableDate()->toDateString(),
+        ]);
     }
 }
