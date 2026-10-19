@@ -131,9 +131,9 @@
                     'field' => 'data.summary.' . $field,
                     'nilai' => $nilai === null ? 'belum dikirim API' : (string) $nilai,
                     'definisi' => $definisi,
-                    'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim didaftarkan);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : nomor SPK diawali RD-",
+                    'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim disetujui CX, BUKAN kedatangan fisik);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : nomor SPK diawali RD- ATAU priority = 'R&D' (bukan -GR)\nBerbayar      : bukan -GR dan bukan R&D",
                     // Garansi tidak lewat QC awal gudang, jadi yang harus sama dengan total_qc_processed hanya berbayar + R&D
-                    'cek' => $hasFisik ? [['ok' => abs($fisik['berbayar'] + $fisik['rd'] - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + R&D = ' . ($fisik['berbayar'] + $fisik['rd']) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?') . ' (garansi dihitung dari tanggal klaim)']] : [],
+                    'cek' => $hasFisik ? [['ok' => abs($fisik['berbayar'] + $fisik['rd'] - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + R&D = ' . ($fisik['berbayar'] + $fisik['rd']) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?') . ' (garansi = klaim disetujui CX, tidak lewat QC awal)']] : [],
                     'sumber_rumus' => 'Acuan: Kamus Metrik No. 32 Intake Fisik dan PRD halaman 5.',
                 ];
             @endphp
@@ -147,8 +147,8 @@
                     note="Masuk jalur berbayar." />
                 <x-ui.stat-card label="Klaim Garansi (-GR)" :value="$fisik['garansi'] === null ? 'Menyusul' : number_format($fisik['garansi'], 0, ',', '.')" :unit="$fisik['garansi'] === null ? null : 'pasang'" icon="check-circle"
                     :badge="$fisikPct($fisik['garansi'])" badge-tone="amber"
-                    :info="$fisikInfo('Klaim Garansi (-GR)', 'intake_fisik_garansi', $fisik['garansi'], 'Sepatu klaim garansi (nomor SPK berakhiran -GR) yang tiba di gudang pada periode.')"
-                    note="Perlu audit QC." />
+                    :info="$fisikInfo('Klaim Garansi (-GR)', 'intake_fisik_garansi', $fisik['garansi'], 'Klaim garansi yang disetujui CX pada periode. BUKAN sepatu yang sudah tiba: klaim online bisa disetujui sebelum sepatunya datang, dan ERP belum mencatat penerimaan sepatu garansi di gudang.')"
+                    note="Klaim disetujui CX, belum tentu sepatunya sudah tiba." />
                 <x-ui.stat-card label="Proyek Riset (R&D)" :value="$fisik['rd'] === null ? 'Menyusul' : number_format($fisik['rd'], 0, ',', '.')" :unit="$fisik['rd'] === null ? null : 'pasang'" icon="sparkles"
                     :badge="$fisikPct($fisik['rd'])" badge-tone="slate"
                     :info="$fisikInfo('Proyek Riset (R&D)', 'intake_fisik_rd', $fisik['rd'], 'Sepatu riset internal (nomor SPK diawali RD-) yang tiba di gudang pada periode.')"

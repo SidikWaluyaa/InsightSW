@@ -251,9 +251,10 @@ class ExecutiveOverview extends Component
             'endpoint' => $gudang,
             'field' => 'intake_fisik_berbayar, intake_fisik_garansi, intake_fisik_rd, total_qc_processed',
             'nilai' => $this->n($sum) . ' pasang',
-            'definisi' => 'Sepatu yang benar-benar tiba di gudang pada periode ini (Kamus No. 32 Intake Fisik), menurut tanggal tiba, dibagi menurut nomor SPK: '
-                . 'klaim garansi -GR, riset R&D (RD-), sisanya berbayar. Berbeda dari SPK terbit, yang memakai tanggal SPK dibuat.',
-            'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim didaftarkan);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : spk_number LIKE 'RD-%'",
+            'definisi' => 'Sepatu yang masuk gudang pada periode ini (Kamus No. 32 Intake Fisik): berbayar & R&D = sepatu yang tiba dan di-QC awal gudang. '
+                . 'Garansi = klaim yang disetujui CX (belum tentu sepatunya sudah tiba; ERP belum mencatat penerimaan sepatu garansi). '
+                . 'R&D = nomor RD- atau priority R&D. Berbeda dari SPK terbit, yang memakai tanggal SPK dibuat.',
+            'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim disetujui CX, BUKAN kedatangan fisik);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : nomor SPK diawali RD- ATAU priority = 'R&D' (bukan -GR)\nBerbayar      : bukan -GR dan bukan R&D",
             'langkah' => [
                 ['op' => '+', 'teks' => 'Berbayar + garansi + R&D', 'rumus' => $this->n($in['fisik_berbayar']) . ' + ' . $this->n($in['fisik_garansi']) . ' + ' . $this->n($in['fisik_rd']), 'hasil' => $this->n($sum)],
             ],
@@ -262,7 +263,7 @@ class ExecutiveOverview extends Component
             'cek' => isset($in['fisik_total']) ? [[
                 'ok' => $in['fisik_berbayar'] + $in['fisik_rd'] == $in['fisik_total'],
                 'teks' => 'Berbayar + R&D = ' . $this->n($in['fisik_berbayar'] + $in['fisik_rd']) . ' ; total_qc_processed = ' . $this->n($in['fisik_total'])
-                    . '. Garansi (' . $this->n($in['fisik_garansi']) . ') dihitung dari tanggal klaim garansi, karena tidak lewat QC awal gudang.',
+                    . '. Garansi (' . $this->n($in['fisik_garansi']) . ') = klaim disetujui CX, tidak lewat QC awal gudang.',
             ]] : [],
         ];
     }

@@ -145,7 +145,7 @@
                             @if($showFormula)<x-ui.info-button call="showFormula('intake')" label="Sepatu masuk per jenis" />@endif
                         </h3>
                         <p class="text-xs text-slate-500 dark:text-gray-400">
-                            {{ ($intake['mode'] ?? 'spk') === 'fisik' ? 'Sepatu yang fisiknya tiba di gudang pada rentang ini, menurut tanggal tiba.' : 'SPK yang dibuat pada rentang ini, dibaca dari nomor SPK. Rincian sepatu yang fisiknya tiba per jenis menyusul.' }}
+                            {{ ($intake['mode'] ?? 'spk') === 'fisik' ? 'Sepatu yang tiba di gudang pada rentang ini (garansi: klaim yang disetujui CX, belum tentu sepatunya sudah tiba).' : 'SPK yang dibuat pada rentang ini, dibaca dari nomor SPK. Rincian sepatu yang fisiknya tiba per jenis menyusul.' }}
                         </p>
                     </div>
                     @if(! $intake)
@@ -154,8 +154,8 @@
                         @php
                             $rows = [
                                 ['Berbayar (reguler)', $intake['berbayar'], 'bg-emerald-500'],
-                                ['Klaim garansi (-GR)', $intake['garansi'], 'bg-amber-500'],
-                                ['Riset (R&D, nomor RD-)', $intake['rd'], 'bg-violet-500'],
+                                [$intake['mode'] === 'fisik' ? 'Klaim garansi (-GR, disetujui CX)' : 'Klaim garansi (-GR)', $intake['garansi'], 'bg-amber-500'],
+                                ['Riset (R&D)', $intake['rd'], 'bg-violet-500'],
                             ];
                         @endphp
                         <div class="space-y-3">
