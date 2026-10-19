@@ -179,7 +179,9 @@ return [
                 . '(tanpa balasan staf sama sekali) tidak dihitung. Sleekflow hanya memberi satu rata-rata per hari untuk 24 jam, '
                 . 'jadi jam istirahat dan di luar jam kerja ikut terhitung.',
             'rumus' => 'AVG(response_time_first_messages) per hari, tanpa hari libur CS',
-            'peringatan' => 'Belum ada target: target Kamus (< 30 detik) untuk AI greeting, yang sudah dinonaktifkan.',
+            // AI greeting diaktifkan kembali oleh CS (Okt 2026): balasan pertama bisa dari AI, jadi tidak murni kecepatan staf
+            'peringatan' => 'AI greeting aktif kembali (strategi CS). Sejak itu balasan pertama bisa berasal dari AI, jadi angka tidak murni kecepatan staf '
+                . 'dan tidak sebanding dengan periode saat AI mati. Target Kamus < 30 detik berlaku untuk balasan AI.',
         ],
         18 => [
             'kelompok' => 'cs', 'tahap' => 'chat_masuk', 'nama' => 'Kecepatan balas rata-rata', 'format' => 'durasi', 'icon' => 'clock',

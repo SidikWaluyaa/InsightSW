@@ -77,7 +77,8 @@ SQL,
             . 'kartu ini merata-ratakan angka harian itu (setiap hari bobotnya sama, berapa pun jumlah chat-nya). '
             . 'Hari libur CS, yaitu hari tanpa balasan pertama dari staf sama sekali (mis. Minggu 4 & 11 Okt 2026), tidak ikut dirata-rata; chat yang masuk di hari itu tetap tampil di kartu jumlah. '
             . 'Minggu tidak otomatis dianggap libur karena Feb–Sep 2026 CS tetap masuk tiap Minggu. '
-            . 'Greeting AI sudah dinonaktifkan (alasan biaya operasional), jadi yang terukur murni balasan staf. '
+            . 'Greeting AI sempat dinonaktifkan (alasan biaya), lalu diaktifkan kembali oleh CS (Okt 2026): sejak itu balasan pertama bisa berasal dari AI, '
+            . 'jadi angkanya tidak murni balasan staf dan tidak sebanding dengan periode saat AI mati. '
             . 'Jam istirahat dan di luar jam kerja tidak bisa dikecualikan di sini; data harian Sleekflow sudah berupa satu angka rata-rata.',
         'rumus_db' => <<<'SQL'
 SELECT SEC_TO_TIME(AVG(TIME_TO_SEC(response_time_first_messages)))
