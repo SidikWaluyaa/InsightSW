@@ -39,7 +39,9 @@
             {{-- ================= FINANCE & DATA HEALTH (PRD halaman 6) ================= --}}
             @php
                 $rp = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
-                $alertCount = $redAlerts === null ? null : count($redAlerts);
+                // Jumlah sebenarnya dari ringkasan API (daftar dibatasi 200 item); cadangan: hitung dari daftar
+                $alertBy = $redAlertSummary ?? ($redAlerts === null ? null : collect($redAlerts)->countBy('tipe')->all());
+                $alertCount = $alertBy === null ? null : (int) (($alertBy['siap_kirim_belum_dp'] ?? 0) + ($alertBy['biodata_tanpa_spk'] ?? 0));
                 $alertTypes = [
                     'siap_kirim_belum_dp' => ['label' => 'Siap Kirim Belum DP', 'aksi' => 'Tahan kirim', 'tone' => 'text-rose-600 dark:text-rose-400'],
                     'biodata_tanpa_spk' => ['label' => 'Biodata Tanpa SPK', 'aksi' => 'Buat SPK', 'tone' => 'text-amber-600 dark:text-amber-400'],
@@ -67,7 +69,7 @@
                 <x-ui.stat-card label="Red Alerts (Anomali)" :value="$alertCount === null ? 'Menyusul' : number_format($alertCount, 0, ',', '.') . ' kasus'" icon="warning"
                     :tone="$alertCount ? 'rose' : 'slate'" compact
                     :badge="$alertCount ? 'Butuh tindakan segera' : null" badge-tone="rose"
-                    :note="$alertCount === null ? 'Menunggu data anomali dari sistem pusat.' : 'Siap kirim belum DP dan biodata tanpa SPK.'" />
+                    :note="$alertCount === null ? 'Menunggu data anomali dari sistem pusat.' : number_format($alertBy['siap_kirim_belum_dp'] ?? 0, 0, ',', '.') . ' SPK jalan tanpa pembayaran · ' . number_format($alertBy['biodata_tanpa_spk'] ?? 0, 0, ',', '.') . ' biodata tanpa SPK.'" />
                 <x-ui.stat-card label="Total Nilai Tagihan" :value="$rp($metrics['total_invoiced_value'] ?? 0)" icon="clipboard-list" tone="emerald" compact
                     :note="'Nilai tagihan periode ' . \Carbon\Carbon::parse($period['start'] ?? now())->translatedFormat('d M') . ' – ' . \Carbon\Carbon::parse($period['end'] ?? now())->translatedFormat('d M Y') . '.'" />
                 <x-ui.stat-card label="Rasio Penagihan (Collection)" :value="number_format((float) ($metrics['collection_rate'] ?? 0), 2, ',', '.') . '%'" icon="chart" tone="amber"
@@ -83,34 +85,68 @@
                 @if($redAlerts === null)
                     <p class="px-6 py-10 text-sm text-center text-amber-600 dark:text-amber-400">Menunggu data anomali dari sistem pusat (field baru).</p>
                 @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-gray-500">
-                                    <th class="px-4 py-3 whitespace-nowrap">Tipe Anomali</th>
-                                    <th class="px-4 py-3 whitespace-nowrap">No SPK / Invoice</th>
-                                    <th class="px-4 py-3">Customer</th>
-                                    <th class="px-4 py-3 whitespace-nowrap">CS Handler</th>
-                                    <th class="px-4 py-3">Masalah & Risiko</th>
-                                    <th class="px-4 py-3 whitespace-nowrap">Status Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                                @forelse($redAlerts as $i => $alert)
-                                    @php $type = $alertTypes[$alert['tipe'] ?? ''] ?? ['label' => $alert['tipe'] ?? '-', 'aksi' => '-', 'tone' => 'text-slate-600']; @endphp
-                                    <tr wire:key="alert-{{ $i }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                                        <td class="px-4 py-3 font-bold whitespace-nowrap {{ $type['tone'] }}">{{ $type['label'] }}</td>
-                                        <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-gray-200 whitespace-nowrap">{{ $alert['nomor'] ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-slate-700 dark:text-gray-200">{{ $alert['customer_name'] ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-slate-600 dark:text-gray-300 whitespace-nowrap">{{ $alert['cs_name'] ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-slate-600 dark:text-gray-300">{{ $alert['masalah'] ?? '-' }}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap"><span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">{{ $type['aksi'] }}</span></td>
+                    {{-- Tab per tipe + 10 baris pertama; sisanya lewat "Tampilkan semua" (bisa ratusan baris) --}}
+                    <div x-data="{ tipe: 'semua', semua: false }">
+                        <div class="px-6 pt-4 flex flex-wrap items-center gap-2">
+                            @foreach(['semua' => 'Semua (' . number_format($alertCount, 0, ',', '.') . ')', 'siap_kirim_belum_dp' => 'Siap Kirim Belum DP (' . number_format($alertBy['siap_kirim_belum_dp'] ?? 0, 0, ',', '.') . ')', 'biodata_tanpa_spk' => 'Biodata Tanpa SPK (' . number_format($alertBy['biodata_tanpa_spk'] ?? 0, 0, ',', '.') . ')'] as $key => $label)
+                                <button type="button" x-on:click="tipe = '{{ $key }}'; semua = false"
+                                    :class="tipe === '{{ $key }}' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-gray-900 text-slate-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'"
+                                    class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                        @if(($alertBy['siap_kirim_belum_dp'] ?? 0) > 0)
+                            <p class="px-6 pt-3 text-[11px] text-slate-500 dark:text-gray-400">
+                                Siap Kirim Belum DP = SPK yang sudah lewat gerbang bayar (siap ke workshop, sedang dikerjakan, atau selesai belum diambil) tanpa pembayaran terverifikasi sama sekali; posisi saat ini, tidak mengikuti tanggal.
+                                Banyak yang data lama (Jan–Mei 2026) — perlu dicek Finance: sudah lunas di luar ERP atau memang belum dibayar.
+                            </p>
+                        @endif
+                        <div class="overflow-x-auto mt-3">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-gray-500">
+                                        <th class="px-4 py-3 whitespace-nowrap">Tipe Anomali</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">No SPK / Lead</th>
+                                        <th class="px-4 py-3">Customer</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">CS Handler</th>
+                                        <th class="px-4 py-3 min-w-[260px]">Masalah & Risiko</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Status Aksi</th>
                                     </tr>
-                                @empty
-                                    <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-emerald-600 dark:text-emerald-400">Tidak ada anomali pada periode ini.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                    @php $urut = ['semua' => 0, 'siap_kirim_belum_dp' => 0, 'biodata_tanpa_spk' => 0]; @endphp
+                                    @forelse($redAlerts as $i => $alert)
+                                        @php
+                                            $tipeKey = $alert['tipe'] ?? '';
+                                            $type = $alertTypes[$tipeKey] ?? ['label' => $tipeKey ?: '-', 'aksi' => '-', 'tone' => 'text-slate-600'];
+                                            $nSemua = $urut['semua']++;
+                                            $nTipe = isset($urut[$tipeKey]) ? $urut[$tipeKey]++ : 0;
+                                        @endphp
+                                        <tr wire:key="alert-{{ $i }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                                            x-show="(tipe === 'semua' || tipe === '{{ $tipeKey }}') && (semua || (tipe === 'semua' ? {{ $nSemua }} : {{ $nTipe }}) < 10)" x-cloak>
+                                            <td class="px-4 py-3 font-bold {{ $type['tone'] }}">{{ $type['label'] }}</td>
+                                            <td class="px-4 py-3 text-slate-500 dark:text-gray-400 whitespace-nowrap">{{ !empty($alert['tanggal']) ? \Carbon\Carbon::parse($alert['tanggal'])->translatedFormat('d M Y') : '-' }}</td>
+                                            <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-gray-200 whitespace-nowrap">{{ $alert['nomor'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 text-slate-700 dark:text-gray-200 whitespace-nowrap">{{ $alert['customer_name'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 text-slate-600 dark:text-gray-300 whitespace-nowrap">{{ $alert['cs_name'] ?: '-' }}</td>
+                                            <td class="px-4 py-3 min-w-[260px] text-slate-600 dark:text-gray-300">{{ $alert['masalah'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap"><span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">{{ $type['aksi'] }}</span></td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="7" class="px-6 py-10 text-center text-sm text-emerald-600 dark:text-emerald-400">Tidak ada anomali pada periode ini.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        @if(count($redAlerts) > 10)
+                            <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2">
+                                <button type="button" x-on:click="semua = !semua" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                                    x-text="semua ? 'Tampilkan 10 teratas saja' : 'Tampilkan semua'"></button>
+                                @if(($alertBy['ditampilkan'] ?? count($redAlerts)) < $alertCount)
+                                    <span class="text-[11px] text-slate-400">Daftar dibatasi {{ number_format($alertBy['ditampilkan'] ?? count($redAlerts), 0, ',', '.') }} kasus terlama dari {{ number_format($alertCount, 0, ',', '.') }}.</span>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endif
             </section>

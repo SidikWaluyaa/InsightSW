@@ -272,6 +272,7 @@ class FinanceLiveDashboard extends Component
         $allInvoices = [];
         $allPayments = [];
         $redAlerts = null; // null = field red_alerts belum dikirim sistem pusat
+        $redAlertSummary = null; // jumlah sebenarnya per tipe (daftar red_alerts dibatasi 200 item)
 
         if ($this->isLoaded) {
             $apiData = $this->getDashboardData();
@@ -284,6 +285,7 @@ class FinanceLiveDashboard extends Component
                 $allInvoices = $apiData['all_invoices'] ?? [];
                 $allPayments = $apiData['all_payments'] ?? [];
                 $redAlerts = is_array($apiData['red_alerts'] ?? null) ? $apiData['red_alerts'] : null;
+                $redAlertSummary = is_array($apiData['red_alerts_ringkasan'] ?? null) ? $apiData['red_alerts_ringkasan'] : null;
             }
         }
 
@@ -348,6 +350,7 @@ class FinanceLiveDashboard extends Component
             'totalInvoicePages' => $totalInvoicePages,
             'totalPaymentPages' => $totalPaymentPages,
             'redAlerts' => $redAlerts,
+            'redAlertSummary' => $redAlertSummary,
             'auditSchedule' => $this->auditSchedule(),
         ]);
     }
