@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Livewire\Concerns\WithDateRange;
+use App\Models\CsDropoffSurvey;
 use App\Services\ManagementMetricsService;
 use App\Services\SleekflowActivityService;
 use App\Services\SleekflowService;
@@ -27,6 +28,20 @@ class SleekflowActivity extends Component
     #[Url(as: 'sampai', except: '')]
     public string $endDate = '';
 
+    /** Form input survei alasan drop-off (periode sampel default = rentang yang sedang dilihat). */
+    public string $dropMulai = '';
+
+    public string $dropSelesai = '';
+
+    public string $dropAlasan = '';
+
+    public string $dropJumlah = '';
+
+    public string $dropCatatan = '';
+
+    /** Peran yang boleh menginput / menghapus hasil survei. */
+    protected const INPUT_ROLES = ['Admin', 'Editor', 'Leader CS'];
+
     public function mount(): void
     {
         $max = $this->maxSelectableDate();
@@ -34,6 +49,61 @@ class SleekflowActivity extends Component
             $this->startDate ?: $max->copy()->startOfMonth()->toDateString(),
             $this->endDate ?: $max->toDateString()
         );
+        [$this->dropMulai, $this->dropSelesai] = [$this->startDate, $this->endDate];
+    }
+
+    protected function dateRangeChanged(): void
+    {
+        [$this->dropMulai, $this->dropSelesai] = [$this->startDate, $this->endDate];
+    }
+
+    protected function canInputDropoff(): bool
+    {
+        return auth()->user()?->hasRole(self::INPUT_ROLES) ?? false;
+    }
+
+    /** Simpan satu baris hasil survei: periode sampel, alasan, jumlah chat. */
+    public function simpanAlasan(): void
+    {
+        abort_unless($this->canInputDropoff(), 403);
+
+        $data = $this->validate([
+            'dropMulai' => ['required', 'date_format:Y-m-d'],
+            'dropSelesai' => ['required', 'date_format:Y-m-d', 'after_or_equal:dropMulai'],
+            'dropAlasan' => ['required', \Illuminate\Validation\Rule::in(CsDropoffSurvey::ALASAN)],
+            'dropJumlah' => ['required', 'integer', 'min:1', 'max:100000'],
+            'dropCatatan' => ['nullable', 'string', 'max:255'],
+        ], [
+            'required' => ':Attribute wajib diisi.',
+            'integer' => ':Attribute harus berupa angka.',
+            'min' => ':Attribute minimal :min.',
+            'max' => ':Attribute terlalu besar.',
+            'date_format' => ':Attribute tidak valid.',
+            'after_or_equal' => 'Akhir periode tidak boleh sebelum awal periode.',
+            'in' => ':Attribute tidak dikenal.',
+        ], [
+            'dropMulai' => 'awal periode', 'dropSelesai' => 'akhir periode', 'dropAlasan' => 'alasan',
+            'dropJumlah' => 'jumlah chat', 'dropCatatan' => 'catatan',
+        ]);
+
+        CsDropoffSurvey::create([
+            'periode_mulai' => $data['dropMulai'],
+            'periode_selesai' => $data['dropSelesai'],
+            'alasan' => $data['dropAlasan'],
+            'jumlah' => (int) $data['dropJumlah'],
+            'catatan' => $data['dropCatatan'] ?: null,
+            'created_by' => auth()->id(),
+        ]);
+
+        $this->reset('dropAlasan', 'dropJumlah', 'dropCatatan');
+        $this->dispatch('swal', ['icon' => 'success', 'title' => 'Tersimpan', 'text' => 'Hasil survei drop-off ditambahkan.', 'timer' => 2000, 'toast' => true, 'position' => 'top-end']);
+    }
+
+    public function hapusAlasan(int $id): void
+    {
+        abort_unless($this->canInputDropoff(), 403);
+
+        CsDropoffSurvey::whereKey($id)->delete();
     }
 
     /** Analitik harian Sleekflow baru lengkap besok, jadi paling akhir kemarin (H-1). */
@@ -112,6 +182,22 @@ class SleekflowActivity extends Component
         }
     }
 
+    /**
+     * Rekap survei drop-off yang periodenya beririsan dengan rentang terpilih: jumlah & persen per alasan,
+     * plus daftar baris input (untuk dihapus bila salah).
+     */
+    protected function dropoff(): array
+    {
+        $rows = CsDropoffSurvey::overlapping($this->startDate, $this->endDate)->with('creator:id,name')->orderByDesc('periode_mulai')->get();
+        $total = $rows->sum('jumlah');
+
+        $rekap = $rows->groupBy('alasan')
+            ->map(fn ($g, $alasan) => ['alasan' => $alasan, 'jumlah' => $g->sum('jumlah'), 'persen' => $total ? $g->sum('jumlah') / $total * 100 : 0])
+            ->sortByDesc('jumlah')->values()->all();
+
+        return ['rekap' => $rekap, 'total' => $total, 'baris' => $rows];
+    }
+
     public function render(SleekflowActivityService $activity)
     {
         $kpis = $activity->kpis($this->startDate, $this->endDate);
@@ -121,6 +207,9 @@ class SleekflowActivity extends Component
             'coverage' => $activity->coverage($this->startDate, $this->endDate, $kpis['chat']['nilai']),
             'agents' => $activity->agents($this->startDate, $this->endDate),
             'lifecycle' => $activity->lifecycle($this->startDate, $this->endDate),
+            'dropoff' => $this->dropoff(),
+            'canInputDropoff' => $this->canInputDropoff(),
+            'alasanList' => CsDropoffSurvey::ALASAN,
             'showFormula' => auth()->user()?->isAdmin() ?? false,
             'presets' => $this->datePresets(),
             'maxDate' => $this->maxSelectableDate()->toDateString(),

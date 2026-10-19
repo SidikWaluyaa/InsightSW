@@ -118,12 +118,85 @@
                 <p class="text-[11px] text-slate-400 dark:text-gray-500">Tagging Hot / Warm / Cold belum ada.</p>
             </section>
 
-            <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-3">
+            <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
                 <div>
                     <h3 class="font-bold text-lg text-slate-800 dark:text-white">Estimasi Kendala & Reason Drop-off</h3>
-                    <p class="text-xs text-slate-500 dark:text-gray-400">Diperoleh dari survei / sampling manual CS.</p>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">Diperoleh dari survei / sampling manual CS. Menampilkan survei yang periodenya beririsan dengan rentang ini.</p>
                 </div>
-                <p class="text-sm text-amber-600 dark:text-amber-400">Belum ada data. Hasil survei alasan drop-off (mis. harga, sepatu rusak parah, ongkir, tidak merespons) perlu diinput Tim Data.</p>
+
+                @if(empty($dropoff['rekap']))
+                    <p class="text-sm text-amber-600 dark:text-amber-400">Belum ada hasil survei untuk rentang ini.</p>
+                @else
+                    <ol class="space-y-2">
+                        @foreach($dropoff['rekap'] as $i => $r)
+                            <li wire:key="rekap-{{ md5($r['alasan']) }}">
+                                <div class="flex justify-between gap-3 text-sm">
+                                    <span class="text-slate-600 dark:text-gray-300">{{ $i + 1 }}. {{ $r['alasan'] }}</span>
+                                    <span class="font-bold text-slate-800 dark:text-white whitespace-nowrap">~{{ number_format($r['persen'], 0, ',', '.') }}% <span class="text-xs font-medium text-slate-400">({{ number_format($r['jumlah'], 0, ',', '.') }} chat)</span></span>
+                                </div>
+                                <div class="h-1.5 mt-1 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden"><div class="h-full bg-rose-400" style="width: {{ min($r['persen'], 100) }}%"></div></div>
+                            </li>
+                        @endforeach
+                    </ol>
+                    <p class="text-[11px] text-slate-400 dark:text-gray-500">Total sampel {{ number_format($dropoff['total'], 0, ',', '.') }} chat dari {{ $dropoff['baris']->count() }} baris survei.</p>
+                @endif
+
+                @if($canInputDropoff)
+                    {{-- Input hasil survei (Admin, Editor, Leader CS) --}}
+                    <details class="group rounded-2xl border border-gray-100 dark:border-gray-800" @if($errors->any()) open @endif>
+                        <summary class="cursor-pointer select-none px-4 py-3 text-sm font-bold text-emerald-600 dark:text-emerald-400">+ Input hasil survei</summary>
+                        <div class="px-4 pb-4 space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="text-xs text-slate-500 dark:text-gray-400">Awal periode sampel
+                                    <input type="date" wire:model="dropMulai" class="w-full h-10 px-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mt-1">
+                                </label>
+                                <label class="text-xs text-slate-500 dark:text-gray-400">Akhir periode sampel
+                                    <input type="date" wire:model="dropSelesai" class="w-full h-10 px-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mt-1">
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="col-span-2 text-xs text-slate-500 dark:text-gray-400">Alasan
+                                    <select wire:model="dropAlasan" class="w-full h-10 px-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mt-1">
+                                        <option value="">Pilih alasan…</option>
+                                        @foreach($alasanList as $a)
+                                            <option value="{{ $a }}">{{ $a }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="text-xs text-slate-500 dark:text-gray-400">Jumlah chat
+                                    <input type="number" min="1" wire:model="dropJumlah" class="w-full h-10 px-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mt-1">
+                                </label>
+                            </div>
+                            <label class="block text-xs text-slate-500 dark:text-gray-400">Catatan (opsional)
+                                <input type="text" maxlength="255" wire:model="dropCatatan" placeholder="mis. sampel 100 chat tidak lanjut" class="w-full h-10 px-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mt-1">
+                            </label>
+                            @if($errors->any())
+                                <ul class="text-xs text-rose-600 dark:text-rose-400 space-y-0.5">
+                                    @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+                                </ul>
+                            @endif
+                            <x-ui.btn wire:click="simpanAlasan" target="simpanAlasan" class="w-full">Simpan</x-ui.btn>
+                        </div>
+
+                        @if($dropoff['baris']->isNotEmpty())
+                            <div class="px-4 pb-4">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Baris survei di rentang ini</p>
+                                <ul class="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
+                                    @foreach($dropoff['baris'] as $b)
+                                        <li wire:key="drop-{{ $b->id }}" class="py-2 flex items-start justify-between gap-3">
+                                            <span class="text-slate-600 dark:text-gray-300">
+                                                {{ $b->periode_mulai->translatedFormat('j M') }} – {{ $b->periode_selesai->translatedFormat('j M Y') }} · {{ $b->alasan }} · <strong>{{ number_format($b->jumlah, 0, ',', '.') }}</strong> chat
+                                                @if($b->catatan)<span class="block text-slate-400">{{ $b->catatan }}</span>@endif
+                                                <span class="block text-slate-400">oleh {{ $b->creator?->name ?? '-' }}</span>
+                                            </span>
+                                            <button type="button" wire:click="hapusAlasan({{ $b->id }})" wire:confirm="Hapus baris survei ini?" class="shrink-0 text-rose-500 hover:underline">Hapus</button>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </details>
+                @endif
             </section>
         </div>
     </div>
