@@ -10,7 +10,7 @@ use App\Livewire\FinanceDashboard;
 use App\Livewire\FinanceSyncHistory;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/', fn () => redirect()->route(auth()->check() ? auth()->user()->homeRoute() : 'login'));
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard Eksekutif (Admin, Editor, Viewer) — PRD halaman 1

@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
+
+        // Menu yang dinonaktifkan sementara (config/menu.php) tidak bisa dibuka lewat URL
+        $middleware->web(append: [\App\Http\Middleware\DisabledMenu::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

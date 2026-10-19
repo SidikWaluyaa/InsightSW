@@ -87,7 +87,10 @@ class SleekflowActivityService
             ->selectRaw('contact_owner_name, COUNT(*) total, SUM(CASE WHEN status_chat IN (?, ?, ?) THEN 1 ELSE 0 END) konsul', self::KONSUL)
             ->whereNotNull('contact_owner_name')->where('contact_owner_name', '<>', '')
             ->groupBy('contact_owner_name')
-            ->get();
+            ->get()
+            // Akun non-CS (Finance, Ai Jahit) disembunyikan, sama dengan peringkat di Dashboard CS
+            ->reject(fn ($r) => CsSalesReportService::isHiddenAccount($r->contact_owner_name))
+            ->values();
 
         // SPK closing per CS dari sistem pusat (per_cs_kamus), dicocokkan dengan nama depan
         $spk = [];

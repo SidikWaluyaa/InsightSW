@@ -55,7 +55,7 @@
         <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
             <div class="p-6 border-b border-gray-100 dark:border-gray-800">
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white">Leaderboard Kinerja Penjualan CS</h3>
-                <p class="text-xs text-slate-500 dark:text-gray-400">Ranking omset riil (invoice valid, net diskon, tanpa ongkir). Chat-to-SPK per CS belum bisa dihitung karena data chat Sleekflow belum terpisah per agen.</p>
+                <p class="text-xs text-slate-500 dark:text-gray-400">Ranking omset riil (invoice valid, net diskon, tanpa ongkir). Chat-to-SPK per CS belum bisa dihitung karena data chat Sleekflow belum terpisah per agen. Akun non-CS (Finance, Ai Jahit) tidak ditampilkan.</p>
             </div>
             @if($leaderboard === null)
                 <p class="px-6 py-10 text-sm text-center text-amber-600 dark:text-amber-400">Menunggu data per CS dari sistem pusat.</p>

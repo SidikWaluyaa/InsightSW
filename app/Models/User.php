@@ -104,7 +104,8 @@ class User extends Authenticatable
             $this->isCx() => 'cx-upsell',
             $this->isFinance() => 'finance-sync',
             $this->isGudang() => 'warehouse-dashboard',
-            default => 'dashboard',
+            // Admin, Editor, Viewer: Dashboard Eksekutif
+            default => 'executive-dashboard',
         };
     }
 

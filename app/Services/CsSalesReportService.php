@@ -11,6 +11,17 @@ use Throwable;
  */
 class CsSalesReportService
 {
+    /**
+     * Akun non-CS yang tidak ditampilkan di peringkat (keputusan tim): angkanya tetap ikut total di kartu,
+     * hanya barisnya disembunyikan. Dicocokkan tanpa membedakan huruf besar/kecil, sebagian nama.
+     */
+    public const HIDDEN_ACCOUNTS = ['finance', 'ai jahit'];
+
+    public static function isHiddenAccount(?string $name): bool
+    {
+        return \Illuminate\Support\Str::contains(\Illuminate\Support\Str::lower((string) $name), self::HIDDEN_ACCOUNTS);
+    }
+
     /** Nomor data di config/management_metrics.php untuk 4 kartu. */
     public const CARDS = [20, 27, 29, 26];
 
@@ -78,7 +89,7 @@ class CsSalesReportService
                 'per_tagihan' => ($r['jumlah_tagihan'] ?? 0) > 0 ? round(($r['jumlah_spk_tagihan'] ?? 0) / $r['jumlah_tagihan'], 2) : null,
                 'nilai_tagihan' => ($r['jumlah_tagihan'] ?? 0) > 0 ? round(($r['omset_tagihan'] ?? 0) / $r['jumlah_tagihan']) : null,
             ])
-            ->filter(fn ($r) => $r['leads'] + $r['spk'] + $r['tagihan'] > 0)
+            ->filter(fn ($r) => $r['leads'] + $r['spk'] + $r['tagihan'] > 0 && ! self::isHiddenAccount($r['nama']))
             ->sortByDesc('omset')
             ->values()
             ->all();

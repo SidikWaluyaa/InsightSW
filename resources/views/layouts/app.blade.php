@@ -88,7 +88,8 @@ new class extends Component
 
                         // Filter subItems based on user roles
                         $subItems = array_filter($subItems, function($item) {
-                            return auth()->user()->hasRole($item['roles']);
+                            return auth()->user()->hasRole($item['roles'])
+                                && ! in_array($item['route'], config('menu.nonaktif', []), true); // menu nonaktif sementara
                         });
                         
                         $isMarketingActive = request()->routeIs(['dashboard', 'data-manajemen', 'daily-report', 'weekly-report', 'budget-transfer', 'meta-ads', 'monthly-settings']);
@@ -197,6 +198,9 @@ new class extends Component
 
                         // Filter Followup for Leader CS/Admin/Editor only
                         $csSubItems = array_filter($csSubItems, function($item) {
+                            if (in_array($item['route'], config('menu.nonaktif', []), true)) {
+                                return false; // menu nonaktif sementara (config/menu.php)
+                            }
                             if ($item['route'] === 'cs-followup') {
                                 return auth()->user()->can('access-cs-followup');
                             }
