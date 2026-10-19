@@ -41,10 +41,21 @@ class MarketingAds extends Component
         $this->resetPage(self::PAGE);
     }
 
+    /** Tombol "i" (Admin): rincian rumus KPI iklan. */
+    public function showFormula(string $key, MetaAdsReportService $report): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if ($info = $report->explain($key, $this->start, $this->end)) {
+            $this->dispatch('show-formula', ...$info);
+        }
+    }
+
     public function render(MetaAdsReportService $report)
     {
         return view('livewire.marketing-ads', [
             'kpi' => $report->kpis($this->start, $this->end),
+            'showFormula' => auth()->user()?->isAdmin() ?? false,
             'hierarchy' => $report->hierarchy($this->start, $this->end, $this->getPage(self::PAGE), 7, [], self::PAGE),
         ]);
     }

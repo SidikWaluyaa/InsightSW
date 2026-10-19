@@ -293,6 +293,16 @@ class Index extends Component
             ->toArray();
     }
 
+    /** Tombol "i" (Admin): rincian rumus KPI iklan, mengikuti filter halaman. */
+    public function showFormula(string $key, MetaAdsReportService $report): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if ($info = $report->explain($key, $this->startDate, $this->endDate, $this->filters())) {
+            $this->dispatch('show-formula', ...$info);
+        }
+    }
+
     /** Filter halaman yang ikut ke kartu dan tabel berjenjang. */
     protected function filters(): array
     {

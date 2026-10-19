@@ -32,7 +32,9 @@
             </template>
         </x-ui.range-info>
 
-        <x-meta-ads.kpi-cards :kpi="$kpi" scope="mengikuti filter kampanye, adset, dan pencarian" />
+        {{-- Modal rumus (tombol "i", hanya Admin) --}}
+        <div wire:ignore><x-ui.formula-modal /></div>
+        <x-meta-ads.kpi-cards :kpi="$kpi" :info="auth()->user()?->isAdmin() ?? false" scope="mengikuti filter kampanye, adset, dan pencarian" />
 
     {{-- Campaign Spend Breakdown --}}
     @if(count($campaignSpend) > 0)
