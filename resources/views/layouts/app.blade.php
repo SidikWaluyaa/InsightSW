@@ -22,7 +22,7 @@ new class extends Component
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Shoe Workshop - Marketing Analytics') }}</title>
+        <title>{{ isset($title) ? $title . ' · ' : '' }}{{ config('app.name', 'Shoe Workshop - Marketing Analytics') }}</title>
 
         <!-- Favicon -->
         <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
@@ -78,6 +78,7 @@ new class extends Component
                     @php
                         $subItems = [
                             ['route' => 'dashboard', 'label' => 'Beranda', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />', 'roles' => ['Admin', 'Editor', 'Viewer']],
+                            ['route' => 'data-manajemen', 'label' => 'Data Manajemen SW', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />', 'roles' => ['Admin', 'Editor', 'Viewer']],
                             ['route' => 'daily-report', 'label' => 'Laporan Harian', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />', 'roles' => ['Admin', 'Editor']],
                             ['route' => 'weekly-report', 'label' => 'Laporan Mingguan', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />', 'roles' => ['Admin', 'Editor']],
                             ['route' => 'budget-transfer', 'label' => 'Transfer Saldo', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />', 'roles' => ['Admin', 'Editor']],
@@ -87,10 +88,11 @@ new class extends Component
 
                         // Filter subItems based on user roles
                         $subItems = array_filter($subItems, function($item) {
-                            return auth()->user()->hasRole($item['roles']);
+                            return auth()->user()->hasRole($item['roles'])
+                                && ! in_array($item['route'], config('menu.nonaktif', []), true); // menu nonaktif sementara
                         });
                         
-                        $isMarketingActive = request()->routeIs(['dashboard', 'daily-report', 'weekly-report', 'budget-transfer', 'meta-ads', 'monthly-settings']);
+                        $isMarketingActive = request()->routeIs(['dashboard', 'data-manajemen', 'daily-report', 'weekly-report', 'budget-transfer', 'meta-ads', 'monthly-settings']);
                     @endphp
 
                     {{-- Dashboard Analysis (External Link) --}}
@@ -109,6 +111,23 @@ new class extends Component
                         </a>
                     </div>
 
+                    {{-- Dashboard Eksekutif (Main Menu) --}}
+                    @can('access-executive')
+                    <div class="space-y-1 mb-4">
+                        <a href="{{ route('executive-dashboard') }}"
+                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 {{ request()->routeIs('executive-dashboard') ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-400 border border-emerald-400/20' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent' }} group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors {{ request()->routeIs('executive-dashboard') ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                </div>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Dashboard Eksekutif</span>
+                            </div>
+                        </a>
+                    </div>
+                    @endcan
+
                     {{-- Sleekflow Analytics (Main Menu) --}}
                     <div class="space-y-1 mb-4">
                         <a href="{{ route('sleekflow.analytics') }}"
@@ -119,7 +138,7 @@ new class extends Component
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                     </svg>
                                 </div>
-                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Sleekflow Analytics</span>
+                                <span x-show="open" x-transition class="uppercase tracking-widest text-[11px] font-black">Analitik Sleekflow</span>
                             </div>
                         </a>
                     </div>
@@ -169,6 +188,7 @@ new class extends Component
                     @php
                         $csSubItems = [
                             ['route' => 'cs-dashboard', 'label' => 'Dashboard', 'icon' => '...'],
+                            ['route' => 'cs-sleekflow-activity', 'label' => 'SleekFlow Activity', 'icon' => '...'],
                             ['route' => 'cs-kpi', 'label' => 'KPI CS', 'icon' => '...'],
                             ['route' => 'cs-forecasting', 'label' => 'Forecasting CS', 'icon' => '...'],
                             ['route' => 'chat-masuk', 'label' => 'Chat Masuk', 'icon' => '...'],
@@ -178,13 +198,16 @@ new class extends Component
 
                         // Filter Followup for Leader CS/Admin/Editor only
                         $csSubItems = array_filter($csSubItems, function($item) {
+                            if (in_array($item['route'], config('menu.nonaktif', []), true)) {
+                                return false; // menu nonaktif sementara (config/menu.php)
+                            }
                             if ($item['route'] === 'cs-followup') {
                                 return auth()->user()->can('access-cs-followup');
                             }
                             return true;
                         });
 
-                        $isCsActive = request()->routeIs(['cs-dashboard', 'cs-kpi', 'cs-forecasting', 'chat-masuk', 'cs-followup', 'cs-tracking']);
+                        $isCsActive = request()->routeIs(['cs-dashboard', 'cs-sleekflow-activity', 'cs-kpi', 'cs-forecasting', 'chat-masuk', 'cs-followup', 'cs-tracking']);
                     @endphp
                     <div x-data="{ csOpen: {{ $isCsActive ? 'true' : 'false' }} }" class="space-y-1">
                         <button @click="csOpen = !csOpen"

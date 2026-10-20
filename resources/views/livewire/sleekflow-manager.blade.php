@@ -15,91 +15,38 @@
             }, 1000);
         }
      }">
-    <x-slot name="header">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <h2 class="font-black text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                    Chat Masuk (Sleekflow)
-                </h2>
-                <div class="flex items-center gap-3 mt-1">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-500 leading-none">Customer Service • Real-time Sync</p>
-                    
-                    <div class="flex items-center gap-2 border-l border-gray-100 dark:border-gray-800 ml-2 pl-3">
-                        <template x-if="isSyncing">
-                            <div class="flex items-center gap-2">
-                                <svg class="animate-spin h-3 w-3 text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
-                            </div>
-                        </template>
-                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Auto-refresh: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
-                        </template>
-                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-1 shadow-sm transition-colors duration-300">
-                    <select onchange="Livewire.dispatch('set-gap-filter', { gap: this.value })" 
-                        class="bg-transparent border-none text-[10px] font-black text-slate-600 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8 uppercase tracking-widest appearance-none">
-                        <option value="" class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">Response Gap: Semua</option>
-                        <option value="1" {{ $gapFilter == '1' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 1 Hari</option>
-                        <option value="3" {{ $gapFilter == '3' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 3 Hari</option>
-                        <option value="7" {{ $gapFilter == '7' ? 'selected' : '' }} class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">> 7 Hari</option>
-                    </select>
-                </div>
+    <div class="space-y-4 mb-6">
+        <x-ui.page-header title="Chat Masuk" subtitle="Kontak Sleekflow per tanggal masuk, dengan status chat dan jeda balasan." badge="Live">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="sync" refresh-label="Tarik Data" />
+        </x-ui.page-header>
 
-                <div class="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-1 shadow-sm transition-colors duration-300">
-                    <select onchange="Livewire.dispatch('set-status-filter', { status: this.value })" 
-                        class="bg-transparent border-none text-[10px] font-black text-slate-600 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8 uppercase tracking-widest appearance-none">
-                        <option value="" class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">Status: Semua</option>
-                        @foreach($uniqueStatuses as $status)
-                            <option value="{{ $status }}" {{ $statusFilter == $status ? 'selected' : '' }} 
-                                class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white uppercase font-bold">
-                                {{ $status }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <x-ui.range-info :start="$startDate" :end="$endDate">
+                <template x-if="isSyncing"><span class="font-semibold text-indigo-500 animate-pulse">Sinkronisasi…</span></template>
+                <template x-if="!isSyncing && seconds > 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
+                    <span>Pembaruan otomatis dalam <span x-text="seconds" class="font-mono text-indigo-500"></span> detik</span>
+                </template>
+            </x-ui.range-info>
 
-                <div class="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-1 shadow-sm transition-colors duration-300">
-                    <input type="date" id="start_date" value="{{ $startDate }}" 
-                        onchange="Livewire.dispatch('set-date-filters', { start: this.value, end: document.getElementById('end_date').value })" 
-                        class="bg-transparent border-none text-[10px] font-bold text-slate-600 dark:text-gray-300 focus:ring-0">
-                    <span class="text-slate-300 dark:text-gray-700 px-1">—</span>
-                    <input type="date" id="end_date" value="{{ $endDate }}" 
-                        onchange="Livewire.dispatch('set-date-filters', { start: document.getElementById('start_date').value, end: this.value })" 
-                        class="bg-transparent border-none text-[10px] font-bold text-slate-600 dark:text-gray-300 focus:ring-0">
-                </div>
-                
-                <button onclick="
-                    Swal.fire({
-                        title: 'Tarik Data Sleekflow',
-                        text: 'Sedang menyisir seluruh data kontak dari API... Mohon tunggu.',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    Livewire.dispatch('sync-sleekflow');
-                " wire:loading.attr="disabled" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-2xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 text-sm active:scale-95 group">
-                    <div wire:loading.remove wire:target="sync" class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:rotate-180 transition-transform duration-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    </div>
-                    <div wire:loading wire:target="sync" class="w-6 h-6 flex items-center justify-center">
-                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </div>
-                    <span>{{ $isSyncing ? 'Sinkronisasi...' : 'Tarik Data' }}</span>
-                </button>
+            {{-- Filter tambahan halaman ini --}}
+            <div class="flex flex-wrap items-center gap-2">
+                <select wire:change="setGapFilter($event.target.value)" aria-label="Jeda balasan" class="h-11 px-4 pr-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm">
+                    <option value="">Jeda balasan: semua</option>
+                    <option value="1" @selected($gapFilter == '1')>&gt; 1 hari</option>
+                    <option value="3" @selected($gapFilter == '3')>&gt; 3 hari</option>
+                    <option value="7" @selected($gapFilter == '7')>&gt; 7 hari</option>
+                </select>
+                <select wire:change="setStatusFilter($event.target.value)" aria-label="Status chat" class="h-11 px-4 pr-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm">
+                    <option value="">Status: semua</option>
+                    @foreach($uniqueStatuses as $status)
+                        <option value="{{ $status }}" @selected($statusFilter == $status)>{{ $status }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
-    </x-slot>
+    </div>
 
-    <div class="px-6 py-8 space-y-6">
+    <div class="space-y-6">
 
         {{-- Search and Meta Stats --}}
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">

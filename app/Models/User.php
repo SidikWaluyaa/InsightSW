@@ -93,6 +93,22 @@ class User extends Authenticatable
         return $this->role === 'Gudang';
     }
 
+    /**
+     * Nama route halaman awal sesuai peran (sama dengan pemetaan di RoleMiddleware),
+     * supaya setelah login pengguna tidak mendarat di halaman yang tidak boleh ia akses.
+     */
+    public function homeRoute(): string
+    {
+        return match (true) {
+            $this->isCs(), $this->isLeaderCs() => 'cs-dashboard',
+            $this->isCx() => 'cx-upsell',
+            $this->isFinance() => 'finance-sync',
+            $this->isGudang() => 'warehouse-dashboard',
+            // Admin, Editor, Viewer: Dashboard Eksekutif
+            default => 'executive-dashboard',
+        };
+    }
+
     public function hasRole(string|array $roles): bool
     {
         if (is_array($roles)) {

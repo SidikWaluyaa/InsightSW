@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 
 use App\Services\WorkshopSyncService;
@@ -14,6 +15,8 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class WorkshopDashboard extends Component
 {
+    use WithDateRange;
+
     public $startDate;
     public $endDate;
     public $activeFilter = 'bulan_ini';
@@ -78,6 +81,13 @@ class WorkshopDashboard extends Component
     /**
      * When user manually changes start/end date, switch to 'kustom' mode.
      */
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>: sama seperti mengganti tanggal manual. */
+    protected function dateRangeChanged(): void
+    {
+        $this->activeFilter = 'kustom';
+        $this->sync();
+    }
+
     public function updatedStartDate()
     {
         $this->activeFilter = 'kustom';

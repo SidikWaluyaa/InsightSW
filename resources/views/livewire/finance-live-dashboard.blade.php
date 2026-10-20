@@ -1,51 +1,12 @@
 <div>
-    <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Dashboard Finance <span class="text-xs px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-400/20 ml-2 uppercase font-black tracking-widest animate-pulse">Live API</span>
-            </h2>
-            <div class="flex items-center gap-3">
-                @if($metadata && isset($metadata['last_updated']))
-                    <div class="hidden md:flex flex-col items-end">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
-                        <span class="text-xs font-semibold text-slate-600 dark:text-gray-300 font-mono">
-                            {{ \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() }}
-                        </span>
-                    </div>
-                @endif
-                <div class="flex items-center gap-3 bg-slate-100 dark:bg-gray-800/50 p-2 rounded-2xl border border-gray-200/50 dark:border-gray-800"
-                    x-data="{
-                        picker: null,
-                        init() {
-                            this.picker = flatpickr($refs.picker, {
-                                mode: 'range',
-                                dateFormat: 'Y-m-d',
-                                defaultDate: ['{{ $startDate }}', '{{ $endDate }}'],
-                                onClose: (selectedDates) => {
-                                    if (selectedDates.length === 2) {
-                                        const start = this.picker.formatDate(selectedDates[0], 'Y-m-d');
-                                        const end = this.picker.formatDate(selectedDates[1], 'Y-m-d');
-                                        @this.set('startDate', start);
-                                        @this.set('endDate', end);
-                                    }
-                                }
-                            });
-                        }
-                    }">
-                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <input type="text" readonly
-                            class="bg-transparent border-none text-[11px] font-black text-indigo-600 dark:text-indigo-400 focus:ring-0 p-0 w-[180px] cursor-pointer text-center outline-none"
-                            placeholder="RENTANG TANGGAL"
-                            value="{{ $startDate && $endDate ? \Carbon\Carbon::parse($startDate)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->format('d M Y') : 'RENTANG TANGGAL' }}">
-                    </div>
-                </div>
+    <div class="space-y-4 mb-8">
+        <x-ui.page-header title="Dashboard Finance" subtitle="Tagihan, pembayaran, dan kas masuk langsung dari sistem pusat." badge="Live API">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="refreshData" />
+        </x-ui.page-header>
 
-            </div>
-        </div>
-    </x-slot>
+        <x-ui.range-info :start="$startDate" :end="$endDate"
+            :updated="$metadata && isset($metadata['last_updated']) ? \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() : null" />
+    </div>
 
     <div class="space-y-8" wire:init="loadData">
         @if (!$isLoaded)
@@ -75,80 +36,158 @@
                 </div>
             </div>
         @else
-            {{-- Metrik Utama --}}
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <!-- Card 1: TOTAL NILAI TAGIHAN -->
-                <div class="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-all hover:scale-[1.02] duration-300 group">
-                    <div class="absolute right-0 top-0 -mr-6 -mt-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <span class="text-[9px] font-black tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Nilai Tagihan</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Nilai Tagihan</p>
-                    <h3 class="text-2xl font-black text-slate-800 dark:text-white mt-1 tracking-tight">
-                        Rp {{ number_format($metrics['total_invoiced_value'] ?? 0, 0, ',', '.') }}
-                    </h3>
-                    <p class="text-[9px] text-slate-400 mt-2 font-medium">Periode Aktif ({{ \Carbon\Carbon::parse($period['start'] ?? now())->translatedFormat('d M') }} - {{ \Carbon\Carbon::parse($period['end'] ?? now())->translatedFormat('d M Y') }})</p>
+            {{-- ================= FINANCE & DATA HEALTH (PRD halaman 6) ================= --}}
+            @php
+                $rp = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
+                // Jumlah sebenarnya dari ringkasan API (daftar dibatasi 200 item); cadangan: hitung dari daftar
+                $alertBy = $redAlertSummary ?? ($redAlerts === null ? null : collect($redAlerts)->countBy('tipe')->all());
+                $alertCount = $alertBy === null ? null : (int) (($alertBy['siap_kirim_belum_dp'] ?? 0) + ($alertBy['biodata_tanpa_spk'] ?? 0));
+                $alertTypes = [
+                    'siap_kirim_belum_dp' => ['label' => 'Siap Kirim Belum DP', 'aksi' => 'Tahan kirim', 'tone' => 'text-rose-600 dark:text-rose-400'],
+                    'biodata_tanpa_spk' => ['label' => 'Biodata Tanpa SPK', 'aksi' => 'Buat SPK', 'tone' => 'text-amber-600 dark:text-amber-400'],
+                ];
+            @endphp
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">Finance & Data Reconciliation</h3>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">Status kesehatan kas, peringatan dini kebocoran kas, dan audit verifikasi data.</p>
                 </div>
-
-                <!-- Card 2: KAS MASUK -->
-                <div class="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-all hover:scale-[1.02] duration-300 group">
-                    <div class="absolute right-0 top-0 -mr-6 -mt-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-blue-500/10 text-blue-500 rounded-2xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                        </div>
-                        <span class="text-[9px] font-black tracking-widest text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/10 px-2 py-0.5 rounded uppercase">Kas Masuk</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kas Masuk (Tervalidasi)</p>
-                    <h3 class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 tracking-tight">
-                        Rp {{ number_format($metrics['total_cash_received'] ?? 0, 0, ',', '.') }}
-                    </h3>
-                    <p class="text-[9px] text-slate-400 mt-2 font-medium">Realisasi Penerimaan Pembayaran</p>
-                </div>
-
-                <!-- Card 3: SISA PIUTANG -->
-                <div class="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-all hover:scale-[1.02] duration-300 group">
-                    <div class="absolute right-0 top-0 -mr-6 -mt-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-rose-500/10 text-rose-500 rounded-2xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <span class="text-[9px] font-black tracking-widest text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/10 px-2 py-0.5 rounded uppercase">Piutang Berjalan</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sisa Piutang Aktif</p>
-                    <h3 class="text-2xl font-black text-rose-600 dark:text-rose-500 mt-1 tracking-tight">
-                        Rp {{ number_format($metrics['total_outstanding_receivables'] ?? 0, 0, ',', '.') }}
-                    </h3>
-                    <p class="text-[9px] text-slate-400 mt-2 font-medium">Nilai Belum Tertagih</p>
-                </div>
-
-                <!-- Card 4: RASIO PENAGIHAN -->
-                <div class="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-all hover:scale-[1.02] duration-300 group">
-                    <div class="absolute right-0 top-0 -mr-6 -mt-6 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-amber-500/10 text-amber-500 rounded-2xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <span class="text-[9px] font-black tracking-widest text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded uppercase">Rasio Penagihan</span>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Rasio Penagihan (Collection)</p>
-                    <h3 class="text-2xl font-black text-amber-600 dark:text-amber-500 mt-1 tracking-tight">
-                        {{ $metrics['collection_rate'] ?? 0 }}%
-                    </h3>
-                    <p class="text-[9px] text-slate-400 mt-2 font-medium">Efektivitas Cash Flow Operasional</p>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 dark:text-gray-400">Jadwal audit: tanggal 10, 20, dan akhir bulan</span>
+                    <x-ui.btn variant="secondary" icon="refresh" disabled title="Menyusul: sumber mutasi bank & proses audit belum tersedia">Audit Sekarang</x-ui.btn>
                 </div>
             </div>
+
+            {{-- Alur 1: status kesehatan kas & akurasi --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-ui.stat-card label="Total Kas Masuk" :value="$rp($metrics['total_cash_received'] ?? 0)" icon="cash" tone="blue" compact
+                    note="Pembayaran tervalidasi Finance (transfer bank manual BCA/Mandiri/kasir) pada periode." />
+                <x-ui.stat-card label="Total Piutang / Unpaid" :value="$rp($metrics['total_outstanding_receivables'] ?? 0)" icon="clock" tone="rose" compact
+                    note="Sisa tagihan yang menunggu pelunasan." />
+                <x-ui.stat-card label="Matching Rate Data" value="Belum dihitung" icon="check-circle" compact badge="Toleransi ≥ 98%" badge-tone="slate"
+                    note="Mutasi bank vs SPK: (1 − Selisih ÷ Total Transaksi) × 100%. Datanya belum tersedia (Tim Data)." />
+                <x-ui.stat-card label="Red Alerts (Anomali)" :value="$alertCount === null ? 'Menyusul' : number_format($alertCount, 0, ',', '.') . ' kasus'" icon="warning"
+                    :tone="$alertCount ? 'rose' : 'slate'" compact
+                    :badge="$alertCount ? 'Butuh tindakan segera' : null" badge-tone="rose"
+                    :note="$alertCount === null ? 'Menunggu data anomali dari sistem pusat.' : number_format($alertBy['siap_kirim_belum_dp'] ?? 0, 0, ',', '.') . ' SPK jalan tanpa pembayaran · ' . number_format($alertBy['biodata_tanpa_spk'] ?? 0, 0, ',', '.') . ' biodata tanpa SPK.'" />
+                <x-ui.stat-card label="Total Nilai Tagihan" :value="$rp($metrics['total_invoiced_value'] ?? 0)" icon="clipboard-list" tone="emerald" compact
+                    :note="'Nilai tagihan periode ' . \Carbon\Carbon::parse($period['start'] ?? now())->translatedFormat('d M') . ' – ' . \Carbon\Carbon::parse($period['end'] ?? now())->translatedFormat('d M Y') . '.'" />
+                <x-ui.stat-card label="Rasio Penagihan (Collection)" :value="number_format((float) ($metrics['collection_rate'] ?? 0), 2, ',', '.') . '%'" icon="chart" tone="amber"
+                    note="Kas masuk ÷ nilai tagihan periode. Bisa di atas 100% karena pelunasan tagihan periode sebelumnya ikut masuk." />
+            </div>
+
+            {{-- Alur 2: panel peringatan dini kebocoran kas (red alerts) --}}
+            <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">Panel Peringatan Dini Kebocoran Kas</h3>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">SPK siap kirim yang tagihannya belum dibayar, dan biodata customer yang belum dibuatkan SPK.</p>
+                </div>
+                @if($redAlerts === null)
+                    <p class="px-6 py-10 text-sm text-center text-amber-600 dark:text-amber-400">Menunggu data anomali dari sistem pusat (field baru).</p>
+                @else
+                    {{-- Tab per tipe + 10 baris pertama; sisanya lewat "Tampilkan semua" (bisa ratusan baris) --}}
+                    <div x-data="{ tipe: 'semua', semua: false }">
+                        <div class="px-6 pt-4 flex flex-wrap items-center gap-2">
+                            @foreach(['semua' => 'Semua (' . number_format($alertCount, 0, ',', '.') . ')', 'siap_kirim_belum_dp' => 'Siap Kirim Belum DP (' . number_format($alertBy['siap_kirim_belum_dp'] ?? 0, 0, ',', '.') . ')', 'biodata_tanpa_spk' => 'Biodata Tanpa SPK (' . number_format($alertBy['biodata_tanpa_spk'] ?? 0, 0, ',', '.') . ')'] as $key => $label)
+                                <button type="button" x-on:click="tipe = '{{ $key }}'; semua = false"
+                                    :class="tipe === '{{ $key }}' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-gray-900 text-slate-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'"
+                                    class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                        @if(($alertBy['siap_kirim_belum_dp'] ?? 0) > 0)
+                            <p class="px-6 pt-3 text-[11px] text-slate-500 dark:text-gray-400">
+                                Siap Kirim Belum DP = SPK yang sudah lewat gerbang bayar (siap ke workshop, sedang dikerjakan, atau selesai belum diambil) tanpa pembayaran terverifikasi sama sekali; posisi saat ini, tidak mengikuti tanggal.
+                                Banyak yang data lama (Jan–Mei 2026) — perlu dicek Finance: sudah lunas di luar ERP atau memang belum dibayar.
+                            </p>
+                        @endif
+                        <div class="overflow-x-auto mt-3">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-gray-500">
+                                        <th class="px-4 py-3 whitespace-nowrap">Tipe Anomali</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">No SPK / Lead</th>
+                                        <th class="px-4 py-3">Customer</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">CS Handler</th>
+                                        <th class="px-4 py-3 min-w-[260px]">Masalah & Risiko</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Status Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                    @php $urut = ['semua' => 0, 'siap_kirim_belum_dp' => 0, 'biodata_tanpa_spk' => 0]; @endphp
+                                    @forelse($redAlerts as $i => $alert)
+                                        @php
+                                            $tipeKey = $alert['tipe'] ?? '';
+                                            $type = $alertTypes[$tipeKey] ?? ['label' => $tipeKey ?: '-', 'aksi' => '-', 'tone' => 'text-slate-600'];
+                                            $nSemua = $urut['semua']++;
+                                            $nTipe = isset($urut[$tipeKey]) ? $urut[$tipeKey]++ : 0;
+                                        @endphp
+                                        <tr wire:key="alert-{{ $i }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                                            x-show="(tipe === 'semua' || tipe === '{{ $tipeKey }}') && (semua || (tipe === 'semua' ? {{ $nSemua }} : {{ $nTipe }}) < 10)" x-cloak>
+                                            <td class="px-4 py-3 font-bold {{ $type['tone'] }}">{{ $type['label'] }}</td>
+                                            <td class="px-4 py-3 text-slate-500 dark:text-gray-400 whitespace-nowrap">{{ !empty($alert['tanggal']) ? \Carbon\Carbon::parse($alert['tanggal'])->translatedFormat('d M Y') : '-' }}</td>
+                                            <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-gray-200 whitespace-nowrap">{{ $alert['nomor'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 text-slate-700 dark:text-gray-200 whitespace-nowrap">{{ $alert['customer_name'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 text-slate-600 dark:text-gray-300 whitespace-nowrap">{{ $alert['cs_name'] ?: '-' }}</td>
+                                            <td class="px-4 py-3 min-w-[260px] text-slate-600 dark:text-gray-300">{{ $alert['masalah'] ?? '-' }}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap"><span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">{{ $type['aksi'] }}</span></td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="7" class="px-6 py-10 text-center text-sm text-emerald-600 dark:text-emerald-400">Tidak ada anomali pada periode ini.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        @if(count($redAlerts) > 10)
+                            <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2">
+                                <button type="button" x-on:click="semua = !semua" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                                    x-text="semua ? 'Tampilkan 10 teratas saja' : 'Tampilkan semua'"></button>
+                                @if(($alertBy['ditampilkan'] ?? count($redAlerts)) < $alertCount)
+                                    <span class="text-[11px] text-slate-400">Daftar dibatasi {{ number_format($alertBy['ditampilkan'] ?? count($redAlerts), 0, ',', '.') }} kasus terlama dari {{ number_format($alertCount, 0, ',', '.') }}.</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
+            </section>
+
+            {{-- Alur 3: log audit verifikasi 3 kali sebulan --}}
+            <section class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">Log Audit Verifikasi 3 Kali Sebulan</h3>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">Pencocokan transaksi sistem dengan mutasi bank tiap tanggal 10, 20, dan akhir bulan ({{ \Carbon\Carbon::parse($auditSchedule[0]['tanggal'])->translatedFormat('F Y') }}). Hasil audit belum bisa dihitung: sumber mutasi bank & proses audit belum tersedia.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-gray-800/50 text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-gray-500">
+                                <th class="px-4 py-3 whitespace-nowrap">Periode Audit</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Tanggal Eksekusi</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Total Transaksi</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Data Cocok</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Selisih / Typo</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Akurasi (%)</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Disetujui Oleh</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                            @foreach($auditSchedule as $audit)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                                    <td class="px-4 py-3 font-bold text-slate-800 dark:text-white whitespace-nowrap">{{ $audit['label'] }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap {{ $audit['lewat'] ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-gray-400' }}">
+                                        {{ $audit['lewat'] ? $audit['tanggal']->translatedFormat('d M Y') . ' · belum diaudit' : 'Standby (' . $audit['tanggal']->translatedFormat('d M') . ')' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-slate-400">–</td>
+                                    <td class="px-4 py-3 text-right text-slate-400">–</td>
+                                    <td class="px-4 py-3 text-right text-slate-400">–</td>
+                                    <td class="px-4 py-3 text-right text-slate-400">–</td>
+                                    <td class="px-4 py-3 text-slate-400">–</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
             {{-- Distribusi Status Tagihan --}}
             <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
@@ -568,75 +607,4 @@
         @endif
     </div>
 
-    {{-- Flatpickr Stylesheets and Scripts --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>
-        /* Flatpickr Custom Solid Dark Theme with Indigo Accent */
-        .flatpickr-calendar {
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
-            border-radius: 1rem !important;
-            color: #f8fafc !important;
-            width: 320px !important;
-        }
-        
-        .flatpickr-months .flatpickr-month {
-            background: #1e293b !important;
-            color: #f8fafc !important;
-            fill: #f8fafc !important;
-            height: 50px !important;
-        }
-
-        .flatpickr-current-month {
-            font-size: 1.1rem !important;
-            font-weight: 800 !important;
-            padding-top: 10px !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-monthDropdown-months {
-            background: #1e293b !important;
-            color: #fff !important;
-            padding: 2px 8px !important;
-            border-radius: 4px !important;
-            border: 1px solid #334155 !important;
-            outline: none !important;
-        }
-
-        .flatpickr-monthDropdown-month {
-            background: #1e293b !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-weekday {
-            color: #94a3b8 !important;
-            font-weight: 700 !important;
-        }
-
-        .flatpickr-day {
-            color: #cbd5e1 !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-        }
-
-        .flatpickr-day:hover {
-            background: #334155 !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
-            background: #6366f1 !important;
-            border-color: #6366f1 !important;
-            color: #fff !important;
-        }
-
-        .flatpickr-day.inRange {
-            background: rgba(99, 102, 241, 0.15) !important;
-            box-shadow: none !important;
-            color: #818cf8 !important;
-        }
-    </style>
 </div>

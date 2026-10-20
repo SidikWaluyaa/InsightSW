@@ -8,6 +8,7 @@ use App\Services\SyncService;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -15,6 +16,7 @@ use Livewire\WithPagination;
 class SleekflowManager extends Component
 {
     use WithPagination;
+    use WithDateRange;
 
     public $search = '';
     public $startDate;
@@ -53,6 +55,12 @@ class SleekflowManager extends Component
 
         $this->updateSyncState();
         $this->isSyncing = false;
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPage();
     }
 
     #[On('set-date-filters')]

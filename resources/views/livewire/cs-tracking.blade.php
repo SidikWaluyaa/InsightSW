@@ -1,4 +1,4 @@
-<div class="px-6 py-6 pb-20"
+<div class="pb-20"
      wire:poll.10s="checkSync"
      x-data="{ 
         seconds: 0,
@@ -16,65 +16,17 @@
             }, 1000);
         }
      }">
-    {{-- Header & Filter Bar --}}
-    <div class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
-        <div class="flex items-center gap-5">
-            <div class="w-16 h-16 rounded-3xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/40 group">
-                <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-            </div>
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Konsol Produktivitas</h1>
-                    <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
-                </div>
-                <div class="flex items-center gap-4 mt-2">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 leading-none">
-                        Mode Atribusi: Tanggal Kejadian (`_at`)
-                    </p>
-                    
-                    <div class="h-3 w-px bg-slate-200 dark:bg-slate-800"></div>
-                    
-                    <div class="flex items-center gap-2">
-                        <template x-if="isSyncing">
-                            <div class="flex items-center gap-2">
-                                <svg class="animate-spin h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest">Update Data...</span>
-                            </div>
-                        </template>
-                        <template x-if="!isSyncing && seconds > 0 && startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Refresh: <span x-text="seconds" class="text-amber-500 font-mono"></span>s</span>
-                        </template>
-                        <template x-if="!isSyncing && seconds <= 0 && startDate === '{{ now()->format('Y-m-d') }}'">
-                            <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse leading-none">Menunggu Polling...</span>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="space-y-4 mb-10">
+        <x-ui.page-header title="Konsol Produktivitas" subtitle="Closing CS per tanggal kejadian (kolom _at) dari kontak Sleekflow." badge="Live">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="applyFilter" />
+        </x-ui.page-header>
 
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-[32px] border border-gray-100 dark:border-gray-800 shadow-inner">
-                <div class="flex items-center px-4 gap-3">
-                    <input type="date" 
-                        wire:model="startDate"
-                        class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-32 cursor-pointer">
-                    <span class="text-slate-300 dark:text-slate-700 font-black">—</span>
-                    <input type="date" 
-                        wire:model="endDate"
-                        class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-32 cursor-pointer">
-                </div>
-                
-                <button type="button"
-                    wire:click="applyFilter" 
-                    wire:loading.attr="disabled"
-                    class="px-8 py-3 rounded-2xl bg-slate-800 dark:bg-amber-500 text-white text-[11px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] shadow-lg shadow-slate-500/20">
-                    <span wire:loading.remove wire:target="applyFilter">TERAPKAN</span>
-                    <span wire:loading wire:target="applyFilter" class="flex items-center gap-2">
-                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </span>
-                </button>
-            </div>
-        </div>
+        <x-ui.range-info :start="$startDate" :end="$endDate">
+            <template x-if="isSyncing"><span class="font-semibold text-amber-500 animate-pulse">Memperbarui data…</span></template>
+            <template x-if="!isSyncing && seconds > 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">
+                <span>Pembaruan otomatis dalam <span x-text="seconds" class="font-mono text-amber-500"></span> detik</span>
+            </template>
+        </x-ui.range-info>
     </div>
 
     {{-- Impact Summaries --}}

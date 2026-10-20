@@ -2,6 +2,9 @@
 
 namespace App\Livewire\MetaAds;
 
+use App\Livewire\Concerns\WithDateRange;
+use App\Services\MetaAdsReportService;
+use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\MetaAdsReport;
@@ -13,6 +16,7 @@ use Livewire\Attributes\Layout;
 class Index extends Component
 {
     use WithPagination;
+    use WithDateRange;
 
     #[Url(except: '')]
     public string $search = '';
@@ -64,8 +68,10 @@ class Index extends Component
 
     public function mount()
     {
-        $this->startDate = now()->format('Y-m-d');
-        $this->endDate = now()->format('Y-m-d');
+        [$this->startDate, $this->endDate] = $this->normalizeDateRange(
+            $this->startDate ?: now()->startOfMonth()->toDateString(),
+            $this->endDate ?: now()->toDateString()
+        );
         $this->updateSyncState();
         $this->checkSync(); // Force initial check
     }
@@ -85,8 +91,8 @@ class Index extends Component
             $this->updateSyncState();
         }
 
-        // 2. Auto sync only for today in the background
-        if ($this->startDate !== now()->format('Y-m-d')) {
+        // 2. Auto sync hari ini di background, hanya kalau rentang mencakup hari ini
+        if ($this->endDate !== now()->format('Y-m-d')) {
             return;
         }
 
@@ -106,6 +112,11 @@ class Index extends Component
         if (in_array($property, ['search', 'selectedCampaign', 'selectedAdset', 'startDate', 'endDate', 'groupBy'])) {
             $this->resetPage();
         }
+    }
+
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPage();
     }
 
     public function selectCampaign($campaignName)
@@ -142,7 +153,7 @@ class Index extends Component
 
     public function resetFilters()
     {
-        $this->reset(['search', 'selectedCampaign', 'selectedAdset', 'startDate', 'endDate']);
+        $this->reset(['search', 'selectedCampaign', 'selectedAdset']);
         $this->groupBy = 'campaign';
         $this->resetPage();
     }
@@ -156,16 +167,17 @@ class Index extends Component
         $this->isSyncing = true;
         
         try {
-            // Determine sync parameter context
-            if ($this->startDate && $this->endDate && $this->startDate !== $this->endDate) {
-                $syncParam = ['since' => $this->startDate, 'until' => $this->endDate];
-                $syncLabel = $this->startDate . ' s/d ' . $this->endDate;
-            } else {
-                $syncParam = $this->startDate ?: 'today';
-                $syncLabel = $this->startDate ?: 'hari ini';
-            }
+            // Meta menolak rentang panjang di level iklan ("Service temporarily unavailable"), jadi ditarik per 7 hari
+            $syncLabel = $this->startDate . ' s/d ' . $this->endDate;
+            $result = true;
+            $cursor = Carbon::parse($this->startDate);
+            $last = Carbon::parse($this->endDate);
 
-            $result = $service->fetchAndSync($adAccountId, $syncParam);
+            while ($result && $cursor->lte($last)) {
+                $chunkEnd = $cursor->copy()->addDays(6)->min($last);
+                $result = $service->fetchAndSync($adAccountId, ['since' => $cursor->toDateString(), 'until' => $chunkEnd->toDateString()]);
+                $cursor = $chunkEnd->addDay();
+            }
 
             if ($result) {
                 // Update timestamp manually since we forced it
@@ -281,6 +293,22 @@ class Index extends Component
             ->toArray();
     }
 
+    /** Tombol "i" (Admin): rincian rumus KPI iklan, mengikuti filter halaman. */
+    public function showFormula(string $key, MetaAdsReportService $report): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if ($info = $report->explain($key, $this->startDate, $this->endDate, $this->filters())) {
+            $this->dispatch('show-formula', ...$info);
+        }
+    }
+
+    /** Filter halaman yang ikut ke kartu dan tabel berjenjang. */
+    protected function filters(): array
+    {
+        return ['campaign' => $this->selectedCampaign, 'adset' => $this->selectedAdset, 'search' => $this->search];
+    }
+
     #[Layout('layouts.app')]
     public function render()
     {
@@ -301,7 +329,7 @@ class Index extends Component
         $query->when($this->startDate, fn($q) => $q->where('date', '>=', $this->startDate));
         $query->when($this->endDate, fn($q) => $q->where('date', '<=', $this->endDate));
 
-        if ($this->groupBy !== 'none') {
+        if (! in_array($this->groupBy, ['none', 'materi'], true)) {
             $groupByColumn = 'campaign_name';
             if ($this->groupBy === 'date') $groupByColumn = 'date';
             if ($this->groupBy === 'adset') $groupByColumn = 'adset_name';
@@ -343,9 +371,20 @@ class Index extends Component
             $query->selectRaw(implode(', ', $selectFields))->groupBy($groupByColumn);
         }
 
-        $reports = $query->orderBy($this->groupBy === 'campaign' ? 'spend' : 'date', 'desc')->paginate(15);
         $campaigns = MetaAdsReport::distinct()->pluck('campaign_name');
-        
-        return view('livewire.meta-ads.index', compact('reports', 'campaigns'));
+        $report = app(MetaAdsReportService::class);
+        $kpi = $report->kpis($this->startDate, $this->endDate, $this->filters());
+        $presets = $this->datePresets();
+        $maxDate = $this->maxSelectableDate()->toDateString();
+
+        if ($this->groupBy === 'materi') {
+            $hierarchy = $report->hierarchy($this->startDate, $this->endDate, $this->getPage(), 7, $this->filters());
+
+            return view('livewire.meta-ads.index', compact('hierarchy', 'campaigns', 'kpi', 'presets', 'maxDate') + ['reports' => null]);
+        }
+
+        $reports = $query->orderBy($this->groupBy === 'campaign' ? 'spend' : 'date', 'desc')->paginate(15);
+
+        return view('livewire.meta-ads.index', compact('reports', 'campaigns', 'kpi', 'presets', 'maxDate') + ['hierarchy' => null]);
     }
 }

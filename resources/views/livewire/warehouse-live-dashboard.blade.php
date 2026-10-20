@@ -1,61 +1,12 @@
 <div>
-    <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Dashboard Gudang <span class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 ml-2 uppercase font-black tracking-widest animate-pulse">Live API</span>
-            </h2>
-            
-            <div class="flex items-center gap-3">
-                @if($metadata && isset($metadata['last_updated']))
-                    <div class="hidden md:flex flex-col items-end">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
-                        <span class="text-xs font-semibold text-slate-600 dark:text-gray-300 font-mono">
-                            {{ \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() }}
-                        </span>
-                    </div>
-                @endif
-                
-                {{-- Date Range Picker --}}
-                <div class="flex items-center gap-3 bg-slate-100 dark:bg-gray-800/50 p-2 rounded-2xl border border-gray-200/50 dark:border-gray-800"
-                    x-data="{
-                        picker: null,
-                        init() {
-                            this.picker = flatpickr($refs.picker, {
-                                mode: 'range',
-                                dateFormat: 'Y-m-d',
-                                defaultDate: ['{{ $startDate }}', '{{ $endDate }}'],
-                                onClose: (selectedDates) => {
-                                    if (selectedDates.length === 2) {
-                                        const start = this.picker.formatDate(selectedDates[0], 'Y-m-d');
-                                        const end = this.picker.formatDate(selectedDates[1], 'Y-m-d');
-                                        @this.set('startDate', start);
-                                        @this.set('endDate', end);
-                                    }
-                                }
-                            });
-                        }
-                    }">
-                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
-                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <input type="text" readonly
-                            class="bg-transparent border-none text-[11px] font-black text-emerald-600 dark:text-emerald-400 focus:ring-0 p-0 w-[180px] cursor-pointer text-center outline-none"
-                            placeholder="RENTANG TANGGAL"
-                            value="{{ $startDate && $endDate ? \Carbon\Carbon::parse($startDate)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->format('d M Y') : 'RENTANG TANGGAL' }}">
-                    </div>
-                </div>
+    <div class="space-y-6" wire:init="loadData">
+        <x-ui.page-header title="Dashboard Gudang" subtitle="Ringkasan alur sepatu masuk, proses, dan keluar gudang." badge="Live API">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :presets="$this->datePresets()" refresh="refreshData" />
+        </x-ui.page-header>
 
-                <button wire:click="refreshData" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800/50 dark:hover:bg-gray-800 text-slate-600 dark:text-gray-300 rounded-xl border border-gray-200/50 dark:border-gray-800 transition-all active:scale-95">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </x-slot>
+        {{-- Di luar blok @if agar tidak ikut di-morph saat data selesai dimuat (state Alpine-nya harus tetap) --}}
+        <div wire:ignore><x-ui.formula-modal /></div>
 
-    <div class="space-y-8 py-6" wire:init="loadData">
         @if (!$isLoaded)
             {{-- Skeleton Loaders --}}
             <div class="h-32 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl animate-pulse"></div>
@@ -82,197 +33,255 @@
                 </div>
             </div>
         @else
-            {{-- FIRST ROW: Primary Warehouse Metrics Card --}}
-            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
-                <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 dark:divide-gray-800 text-center">
-                    {{-- SPK PENDING --}}
-                    <div class="p-4 flex flex-col justify-center">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                            <span class="inline-block mr-1">📥</span> SPK Pending
-                        </p>
-                        <h3 class="text-3xl font-black text-slate-800 dark:text-white font-sans tracking-tight">
-                            {{ number_format($summary['pending_reception'] ?? 0) }}
-                        </h3>
-                    </div>
+            <x-ui.range-info :start="$startDate" :end="$endDate"
+                :updated="!empty($metadata['last_updated']) ? \Carbon\Carbon::parse($metadata['last_updated'])->translatedFormat('j M Y H:i') : null" />
 
-                    {{-- DI FINISH (NOT RACKED) --}}
-                    <div class="p-4 flex flex-col justify-center">
-                        <p class="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">
-                            <span class="inline-block mr-1">✨</span> Di Finish (Not Racked)
-                        </p>
-                        <h3 class="text-3xl font-black text-amber-500 font-sans tracking-tight">
-                            {{ number_format($summary['finished_not_stored'] ?? 0) }}
-                        </h3>
-                    </div>
+            @php
+                // Definisi tiap angka mengikuti kode API pusat (WarehouseDashboardApiService::getHeroMetrics).
+                // Satuan: SPK (1 SPK = 1 unit), kecuali isi rak yang berasal dari penghitung rak.
+                $n = fn ($key) => number_format((float) ($summary[$key] ?? 0), 0, ',', '.');
 
-                    {{-- DI RAK (STORED) --}}
-                    <div class="p-4 flex flex-col justify-center">
-                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">
-                            <span class="inline-block mr-1">📦</span> Di Rak (Stored)
-                        </p>
-                        <h3 class="text-3xl font-black text-blue-500 font-sans tracking-tight">
-                            {{ number_format($summary['stored_items'] ?? 0) }}
-                        </h3>
-                    </div>
+                // Kelancaran: API mengembalikan 100 bila pembaginya 0, yang menyesatkan. Tampilkan "–" saja.
+                $rate = function (string $rateKey, string $baseKey) use ($summary) {
+                    if ((float) ($summary[$baseKey] ?? 0) == 0.0) {
+                        return ['value' => '–', 'state' => null];
+                    }
+                    $v = (float) ($summary[$rateKey] ?? 0);
 
-                    {{-- SIAP DIAMBIL (READY) --}}
-                    <div class="p-4 flex flex-col justify-center">
-                        <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">
-                            <span class="inline-block mr-1">🚀</span> Siap Diambil (Ready)
-                        </p>
-                        <h3 class="text-3xl font-black text-emerald-500 font-sans tracking-tight">
-                            {{ number_format($summary['ready_for_pickup'] ?? 0) }}
-                        </h3>
-                    </div>
-                </div>
+                    return [
+                        'value' => ($v > 0 ? '+' : '') . str_replace('.', ',', (string) $v) . '%',
+                        'state' => $v < 0 ? 'Menumpuk' : 'Lancar',
+                    ];
+                };
+                // Keterisian rak: slot terpakai dibanding kapasitas (rak penerimaan + rak selesai, tanpa rak aksesoris)
+                $rackCapacity = (float) ($storage['status']['total_capacity'] ?? 0);
+                $rackUsed = (float) ($summary['stored_items'] ?? 0);
+                $rackPercent = $rackCapacity > 0 ? round($rackUsed / $rackCapacity * 100) : null;
+
+                $rateIn = $rate('clearance_rate_before', 'incoming_day');
+                $rateOut = $rate('clearance_rate_after', 'after_masuk');
+
+                // ---- Info rumus per kartu (tombol "i", hanya Admin) + cek silang dengan data yang sedang tampil ----
+                $raw = fn ($key) => (float) ($summary[$key] ?? 0);
+                $heat = collect($storage['heatmap'] ?? []);
+                $heatBefore = (float) $heat->where('category', 'before')->sum('count');
+                $heatShoes = (float) $heat->where('category', 'shoes')->sum('count');
+                $heatManual = (float) $heat->filter(fn ($r) => str_starts_with((string) ($r['category'] ?? ''), 'manual'))->sum('count');
+                $calcRate = fn ($a, $b) => $raw($b) == 0.0 ? null : round(($raw($a) - $raw($b)) / $raw($b) * 100, 1);
+                $same = fn ($x, $y) => abs((float) $x - (float) $y) < 0.05;
+
+                $checks = [
+                    'inbound_inventory' => [
+                        ['ok' => $same($heatBefore, $raw('inbound_inventory')), 'teks' => "heatmap before = {$heatBefore} ; inbound_inventory = {$raw('inbound_inventory')}"],
+                    ],
+                    'finish_inventory' => [
+                        ['ok' => $same($heatShoes + $heatManual, $raw('finish_inventory')), 'teks' => "heatmap shoes {$heatShoes} + manual {$heatManual} = " . ($heatShoes + $heatManual) . " ; finish_inventory = {$raw('finish_inventory')}"],
+                    ],
+                    'stored_items' => [
+                        ['ok' => $same($raw('inbound_inventory') + $raw('finish_inventory'), $raw('stored_items')), 'teks' => "inbound {$raw('inbound_inventory')} + finish {$raw('finish_inventory')} = " . ($raw('inbound_inventory') + $raw('finish_inventory')) . " ; stored_items = {$raw('stored_items')}"],
+                        ['ok' => $same($storage['status']['current_usage'] ?? -1, $raw('stored_items')), 'teks' => 'storage.status.current_usage = ' . ($storage['status']['current_usage'] ?? '?') . " ; total_inventory = {$raw('total_inventory')}"],
+                    ],
+                    'qc_reject' => [
+                        ['ok' => $same($qcAnalytics['trends']['total_reject'] ?? -1, $raw('qc_reject')), 'teks' => 'qc_analytics.trends.total_reject = ' . ($qcAnalytics['trends']['total_reject'] ?? '?') . " ; qc_reject = {$raw('qc_reject')}"],
+                    ],
+                    'shoes_in_rack_count' => [
+                        ['ok' => $same($heatShoes, $raw('shoes_in_rack_count')), 'teks' => "penghitung rak sepatu (heatmap shoes) = {$heatShoes} ; shoes_in_rack_count = {$raw('shoes_in_rack_count')}"],
+                    ],
+                    'pending_reception_period' => [
+                        ['ok' => $raw('pending_reception_period') <= $raw('total_incoming'), 'teks' => "pending_reception_period {$raw('pending_reception_period')} ≤ total_incoming (SPK Dibuat) {$raw('total_incoming')}"],
+                        ['ok' => $raw('pending_reception_period') <= $raw('pending_reception'), 'teks' => "pending_reception_period {$raw('pending_reception_period')} ≤ pending_reception (semua SPK pending) {$raw('pending_reception')}"],
+                    ],
+                    'finished_day' => [
+                        ['ok' => $same($raw('total_finished'), $raw('finished_day')), 'teks' => "total_finished = {$raw('total_finished')} ; finished_day = {$raw('finished_day')}"],
+                    ],
+                    'total_qc_processed' => [
+                        ['ok' => $same(($qcAnalytics['trends']['total_lolos'] ?? 0) + ($qcAnalytics['trends']['total_reject'] ?? 0), $raw('total_qc_processed')), 'teks' => 'total_lolos ' . ($qcAnalytics['trends']['total_lolos'] ?? '?') . ' + total_reject ' . ($qcAnalytics['trends']['total_reject'] ?? '?') . " ; total_qc_processed = {$raw('total_qc_processed')}"],
+                    ],
+                    'clearance_rate_before' => is_null($calcRate('spk_print', 'incoming_day')) ? [] : [
+                        ['ok' => $same($calcRate('spk_print', 'incoming_day'), $raw('clearance_rate_before')), 'teks' => "({$raw('spk_print')} − {$raw('incoming_day')}) ÷ {$raw('incoming_day')} × 100 = {$calcRate('spk_print', 'incoming_day')} ; API = {$raw('clearance_rate_before')}"],
+                    ],
+                    'clearance_rate_after' => is_null($calcRate('sepatu_keluar', 'after_masuk')) ? [] : [
+                        ['ok' => $same($calcRate('sepatu_keluar', 'after_masuk'), $raw('clearance_rate_after')), 'teks' => "({$raw('sepatu_keluar')} − {$raw('after_masuk')}) ÷ {$raw('after_masuk')} × 100 = {$calcRate('sepatu_keluar', 'after_masuk')} ; API = {$raw('clearance_rate_after')}"],
+                    ],
+                ];
+
+                $showFormula = auth()->user()?->isAdmin() ?? false;
+                $info = fn (string $key, string $judul) => ! $showFormula ? null : array_merge(config("warehouse_formulas.{$key}", []), [
+                    'judul' => $judul,
+                    'endpoint' => 'GET /warehouse-summary?start_date=' . $startDate . '&end_date=' . $endDate,
+                    'field' => 'data.summary.' . $key,
+                    'nilai' => (string) ($summary[$key] ?? 'null'),
+                    'cek' => $checks[$key] ?? [],
+                ]);
+            @endphp
+
+            {{-- ================= INTAKE FISIK & ALUR WORKSHOP (PRD halaman 5, Kamus No. 32) ================= --}}
+            @php
+                // Rincian per jenis & tahap WIP = field baru API pusat (opsional). Sebelum ada, hanya total yang tampil.
+                $fisik = ['berbayar' => $summary['intake_fisik_berbayar'] ?? null, 'garansi' => $summary['intake_fisik_garansi'] ?? null, 'rd' => $summary['intake_fisik_rd'] ?? null];
+                $hasFisik = ! in_array(null, $fisik, true);
+                $fisikTotal = $hasFisik ? array_sum($fisik) : (float) ($summary['total_qc_processed'] ?? 0);
+                $fisikPct = fn ($v) => $v === null || $fisikTotal <= 0 ? null : number_format($v / $fisikTotal * 100, 1, ',', '.') . '%';
+                $wip = is_array($summary['wip_tahap'] ?? null) ? $summary['wip_tahap'] : null;
+                $wipSteps = ['fisik_tiba' => 'Fisik tiba', 'sortir' => 'Sortir', 'produksi' => 'Produksi / Sol', 'qc_finishing' => 'QC / Finishing', 'siap_kirim' => 'Siap kirim'];
+                $fisikInfo = fn (string $judul, string $field, $nilai, string $definisi) => ! $showFormula ? null : [
+                    'judul' => $judul,
+                    'sifat' => 'periode',
+                    'endpoint' => 'GET /warehouse-summary?start_date=' . $startDate . '&end_date=' . $endDate,
+                    'field' => 'data.summary.' . $field,
+                    'nilai' => $nilai === null ? 'belum dikirim API' : (string) $nilai,
+                    'definisi' => $definisi,
+                    'rumus_db' => "Berbayar & R&D: warehouse_qc_at (QC awal gudang) di dalam periode\nGaransi       : work_order_warranties.created_at (klaim disetujui CX, BUKAN kedatangan fisik);\n                SPK -GR lama tanpa klaim memakai entry_date\nR&D           : nomor SPK diawali RD- ATAU priority = 'R&D' (bukan -GR)\nBerbayar      : bukan -GR dan bukan R&D",
+                    // Garansi tidak lewat QC awal gudang, jadi yang harus sama dengan total_qc_processed hanya berbayar + R&D
+                    'cek' => $hasFisik ? [['ok' => abs($fisik['berbayar'] + $fisik['rd'] - (float) ($summary['total_qc_processed'] ?? 0)) < 0.5, 'teks' => 'berbayar + R&D = ' . ($fisik['berbayar'] + $fisik['rd']) . ' ; total_qc_processed = ' . ($summary['total_qc_processed'] ?? '?') . ' (garansi = klaim disetujui CX, tidak lewat QC awal)']] : [],
+                    'sumber_rumus' => 'Acuan: Kamus Metrik No. 32 Intake Fisik dan PRD halaman 5.',
+                ];
+            @endphp
+            <x-ui.section-note title="Sepatu Masuk Fisik" tag="Mengikuti filter tanggal">
+                Sepatu yang benar-benar tiba di gudang pada periode ini (Kamus No. 32), menurut tanggal tiba, bukan tanggal SPK dibuat.
+            </x-ui.section-note>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <x-ui.stat-card label="Sepatu Berbayar" :value="$fisik['berbayar'] === null ? 'Menyusul' : number_format($fisik['berbayar'], 0, ',', '.')" :unit="$fisik['berbayar'] === null ? null : 'pasang'" icon="cash"
+                    :badge="$fisikPct($fisik['berbayar'])" badge-tone="emerald"
+                    :info="$fisikInfo('Sepatu Berbayar', 'intake_fisik_berbayar', $fisik['berbayar'], 'Sepatu reguler (bukan garansi, bukan R&D) yang tiba di gudang pada periode.')"
+                    note="Masuk jalur berbayar." />
+                <x-ui.stat-card label="Klaim Garansi (-GR)" :value="$fisik['garansi'] === null ? 'Menyusul' : number_format($fisik['garansi'], 0, ',', '.')" :unit="$fisik['garansi'] === null ? null : 'pasang'" icon="check-circle"
+                    :badge="$fisikPct($fisik['garansi'])" badge-tone="amber"
+                    :info="$fisikInfo('Klaim Garansi (-GR)', 'intake_fisik_garansi', $fisik['garansi'], 'Klaim garansi yang disetujui CX pada periode. BUKAN sepatu yang sudah tiba: klaim online bisa disetujui sebelum sepatunya datang, dan ERP belum mencatat penerimaan sepatu garansi di gudang.')"
+                    note="Klaim disetujui CX, belum tentu sepatunya sudah tiba." />
+                <x-ui.stat-card label="Proyek Riset (R&D)" :value="$fisik['rd'] === null ? 'Menyusul' : number_format($fisik['rd'], 0, ',', '.')" :unit="$fisik['rd'] === null ? null : 'pasang'" icon="sparkles"
+                    :badge="$fisikPct($fisik['rd'])" badge-tone="slate"
+                    :info="$fisikInfo('Proyek Riset (R&D)', 'intake_fisik_rd', $fisik['rd'], 'Sepatu riset internal (nomor SPK diawali RD-) yang tiba di gudang pada periode.')"
+                    note="Riset internal." />
+                <x-ui.stat-card label="Total Fisik Pintu Gudang" :value="number_format($fisikTotal, 0, ',', '.')" unit="pasang" icon="inbox-in" tone="emerald"
+                    :info="$fisikInfo('Total Fisik Pintu Gudang', $hasFisik ? 'intake_fisik_* (dijumlah)' : 'total_qc_processed', $fisikTotal, 'Semua sepatu yang benar-benar tiba di gudang pada periode. Sebelum rincian per jenis tersedia, memakai total_qc_processed (SPK yang di-QC gudang pada periode).')"
+                    note="Kedatangan fisik riil." />
             </div>
 
-            {{-- SECOND ROW: 9 Grid Cards --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Card 1: SEPATU MASUK (BEFORE) -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">1. Sepatu Masuk (Before)</p>
-                            <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                {{ number_format($summary['incoming_day'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Diterima Fisik di Gudang</p>
-                        </div>
-                        <span class="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-2xl text-slate-500">📥</span>
-                    </div>
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-3">
+                <div>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Alur Workshop (Sedang Dikerjakan)</h3>
+                    <p class="text-xs text-slate-500 dark:text-gray-400">Jumlah sepatu di tiap tahap saat ini (tidak mengikuti filter tanggal).</p>
                 </div>
-
-                <!-- Card 2: SPK PRINT (OTW WS) -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">2. SPK Print (Otw WS)</p>
-                            <h3 class="text-3xl font-black text-blue-500 tracking-tight">
-                                {{ number_format($summary['spk_print'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Dikirim ke Reparasi / Manifest</p>
-                        </div>
-                        <span class="p-2.5 bg-blue-500/5 rounded-2xl text-blue-500">🚚</span>
-                    </div>
-                </div>
-
-                <!-- Card 3: SPK TERTAHAN (QC REJECT) -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">3. SPK Tertahan (QC Reject)</p>
-                            <h3 class="text-3xl font-black {{ ($summary['qc_reject'] ?? 0) > 0 ? 'text-rose-500' : 'text-slate-800 dark:text-white' }} tracking-tight">
-                                {{ number_format($summary['qc_reject'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Gagal Penerimaan Awal</p>
-                        </div>
-                        <span class="p-2.5 bg-rose-500/5 rounded-2xl text-rose-500">⚠️</span>
-                    </div>
-                </div>
-
-                <!-- Card 4: AFTER MASUK -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">4. After Masuk</p>
-                            <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                {{ number_format($summary['after_masuk'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Selesai Reparasi Masuk Rak</p>
-                        </div>
-                        <span class="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-2xl text-slate-500">✨</span>
-                    </div>
-                </div>
-
-                <!-- Card 5: SEPATU KELUAR -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">5. Sepatu Keluar</p>
-                            <h3 class="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
-                                {{ number_format($summary['sepatu_keluar'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Pengambilan & Kirim Lunas</p>
-                        </div>
-                        <span class="p-2.5 bg-blue-500/5 rounded-2xl text-blue-500">📤</span>
-                    </div>
-                </div>
-
-                <!-- Card 6: RAK INBOUND (TRANSIT) -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">6. Rak Inbound (Transit)</p>
-                            <h3 class="text-3xl font-black text-amber-600 dark:text-amber-500 tracking-tight">
-                                {{ number_format($summary['inbound_inventory'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Fisik di Rak Penerimaan/Sebelum</p>
-                        </div>
-                        <span class="p-2.5 bg-amber-500/5 rounded-2xl text-amber-500">📥</span>
-                    </div>
-                </div>
-
-                <!-- Card 7: RAK FINISH (SELESAI) -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">7. Rak Finish (Selesai)</p>
-                            <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                {{ number_format($summary['finish_inventory'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Pasang</span>
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">Fisik di Rak Selesai/Siap Ambil</p>
-                        </div>
-                        <span class="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-2xl text-slate-400">📦</span>
-                    </div>
-                </div>
-
-                <!-- Card 8: CLEARANCE RATE INBOUND -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">8. Clearance Rate Inbound</p>
-                            <h3 class="text-3xl font-black {{ ($summary['clearance_rate_before'] ?? 0) < 0 ? 'text-amber-500' : 'text-emerald-500' }} tracking-tight">
-                                {{ ($summary['clearance_rate_before'] ?? 0) > 0 ? '+' : '' }}{{ $summary['clearance_rate_before'] ?? 0 }}%
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">
-                                @if(($summary['clearance_rate_before'] ?? 0) < 0)
-                                    <span class="text-[9px] font-black tracking-widest px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 uppercase">Antrean Clog</span>
-                                @else
-                                    <span class="text-[9px] font-black tracking-widest px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 uppercase">Lancar</span>
+                @if($wip === null)
+                    <p class="text-sm text-amber-600 dark:text-amber-400">Menunggu data tahap pengerjaan dari sistem pusat (field baru).</p>
+                @else
+                    <div class="flex flex-wrap items-center gap-2">
+                        @foreach($wipSteps as $key => $label)
+                            <div class="flex-1 min-w-[130px] rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 p-4">
+                                <p class="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">{{ $label }}</p>
+                                <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ number_format((float) ($wip[$key] ?? 0), 0, ',', '.') }}</p>
+                                @if($key === 'siap_kirim' && isset($summary['siap_kirim_aktif']))
+                                    {{-- Sebagian besar siap_kirim adalah backlog lama; yang aktif = selesai ≤ 30 hari terakhir --}}
+                                    <p class="text-[11px] text-slate-500 dark:text-gray-400 mt-1">{{ number_format((float) $summary['siap_kirim_aktif'], 0, ',', '.') }} selesai ≤ 30 hari terakhir</p>
                                 @endif
-                                <span class="ml-1 text-slate-400 font-medium">Inbound Flow Balance</span>
-                            </p>
-                        </div>
-                        <span class="p-2.5 bg-amber-500/5 rounded-2xl text-amber-500">⚖️</span>
+                            </div>
+                            @if(! $loop->last)<span class="hidden md:block text-slate-300 dark:text-gray-600" aria-hidden="true">→</span>@endif
+                        @endforeach
                     </div>
-                </div>
-
-                <!-- Card 9: CLEARANCE RATE OUTBOUND -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden hover:scale-[1.01] transition-all">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-3">9. Clearance Rate Outbound</p>
-                            <h3 class="text-3xl font-black {{ ($summary['clearance_rate_after'] ?? 0) < 0 ? 'text-amber-500' : 'text-emerald-500' }} tracking-tight">
-                                {{ ($summary['clearance_rate_after'] ?? 0) > 0 ? '+' : '' }}{{ $summary['clearance_rate_after'] ?? 0 }}%
-                            </h3>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2">
-                                <span class="text-[9px] font-black tracking-widest px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 uppercase">Ops Optimal</span>
-                                <span class="ml-1 text-slate-400 font-medium">Outbound Flow Balance</span>
-                            </p>
-                        </div>
-                        <span class="p-2.5 bg-emerald-500/5 rounded-2xl text-emerald-500">🔄</span>
-                    </div>
-                </div>
+                @endif
             </div>
 
+            {{-- ================= KONDISI SAAT INI (tidak mengikuti filter tanggal) ================= --}}
+            <x-ui.section-note title="Kondisi Gudang Saat Ini" tag="Tidak mengikuti filter tanggal">
+                Posisi terkini saat data diambil, bukan jumlah selama periode yang dipilih. Mengganti rentang tanggal tidak mengubah angka di kelompok ini.
+            </x-ui.section-note>
+
+            {{-- Hitungan per SPK --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <x-ui.stat-card label="SPK Pending" :info="$info('pending_reception', 'SPK Pending')" :value="$n('pending_reception')" unit="SPK" icon="inbox-in"
+                    note="SPK yang sudah dibuat CS tetapi belum dikonfirmasi diterima gudang." />
+                <x-ui.stat-card label="Selesai, Belum di Rak" :info="$info('finished_not_stored', 'Selesai, Belum di Rak')" :value="$n('finished_not_stored')" unit="SPK" icon="sparkles" tone="amber"
+                    note="SPK berstatus selesai, belum diambil/dikirim, dan tidak tercatat di rak mana pun. Termasuk SPK lama yang tidak pernah ditandai diambil." />
+                <x-ui.stat-card label="Siap Diambil" :info="$info('ready_for_pickup', 'Siap Diambil')" :value="$n('ready_for_pickup')" unit="SPK" icon="check-circle" tone="emerald"
+                    note="SPK berstatus selesai, belum diambil/dikirim, dan masih tercatat di rak." />
+            </div>
+
+            {{-- Hitungan isi rak (penghitung rak) --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <x-ui.stat-card label="Isi Rak Penerimaan" :info="$info('inbound_inventory', 'Isi Rak Penerimaan')" :value="$n('inbound_inventory')" unit="Isi Rak" icon="inbox-in" tone="amber"
+                    note="Sepatu sebelum reparasi: jumlah isi rak penerimaan, menurut penghitung rak." />
+                <x-ui.stat-card label="Isi Rak Selesai" :info="$info('finish_inventory', 'Isi Rak Selesai')" :value="$n('finish_inventory')" unit="Isi Rak" icon="cube"
+                    note="Sepatu sesudah reparasi: jumlah isi rak sepatu ditambah semua rak manual, menurut penghitung rak." />
+                {{-- Bukan tahap pengerjaan: ini ukuran seberapa penuh gudang (gabungan sebelum + sesudah reparasi) --}}
+                <x-ui.stat-card label="Keterisian Rak" :info="$info('stored_items', 'Keterisian Rak')" :value="$n('stored_items')" icon="archive" tone="blue"
+                    :unit="$rackCapacity > 0 ? 'dari ' . number_format($rackCapacity, 0, ',', '.') . ' slot' : 'slot terpakai'"
+                    :badge="is_null($rackPercent) ? null : $rackPercent . '% terisi'" badge-tone="slate"
+                    note="Seberapa penuh gudang, bukan tahap pengerjaan: {{ $n('inbound_inventory') }} sebelum reparasi + {{ $n('finish_inventory') }} sesudah reparasi. Rak aksesoris tidak dihitung." />
+            </div>
+
+            {{-- Angka pendukung (posisi saat ini) --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <x-ui.stat-card label="Antrean Kirim" :info="$info('shipping_pending', 'Antrean Kirim')" :value="$n('shipping_pending')" unit="Pengiriman" icon="truck" tone="blue"
+                    note="Pengiriman yang belum diverifikasi." />
+                <x-ui.stat-card label="Sepatu di Rak Sepatu" :info="$info('shoes_in_rack_count', 'Sepatu di Rak Sepatu')" :value="$n('shoes_in_rack_count')" unit="Penempatan" icon="location"
+                    note="Penempatan aktif di rak kategori sepatu, dihitung dari datanya langsung (bukan penghitung rak). Sama dengan total di halaman Sepatu di Rak." />
+                <x-ui.stat-card label="Calon Donasi (≥ 3 Bulan)" :info="$info('donation_candidates_count', 'Calon Donasi (≥ 3 Bulan)')" :value="$n('donation_candidates_count')" unit="Penempatan" icon="gift"
+                    :tone="($summary['donation_candidates_count'] ?? 0) > 0 ? 'rose' : 'slate'"
+                    note="Sepatu di rak sepatu yang sudah tersimpan 3 bulan atau lebih." />
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs text-slate-600 dark:text-gray-400 leading-relaxed space-y-1.5">
+                <p><span class="font-bold text-slate-800 dark:text-gray-200">Kenapa Isi Rak Selesai ({{ $n('finish_inventory') }}) tidak sama dengan Siap Diambil ({{ $n('ready_for_pickup') }})?</span>
+                    Keduanya dihitung dengan cara berbeda, dan Siap Diambil bukan bagian dari Isi Rak Selesai.</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><span class="font-bold">Isi Rak Selesai</span> menjumlah penghitung isi rak, termasuk barang di rak manual yang dicatat tanpa SPK, dan sepatu di rak yang SPK-nya belum berstatus selesai.</li>
+                    <li><span class="font-bold">Siap Diambil</span> menghitung SPK: hanya yang berstatus selesai, belum diambil/dikirim, dan masih tercatat di rak.</li>
+                    <li>Penghitung rak dinaik-turunkan setiap ada barang masuk/keluar, bukan dihitung ulang dari isi sebenarnya, jadi angkanya bisa sedikit bergeser dari kondisi fisik.</li>
+                </ul>
+            </div>
+
+            {{-- ================= AKTIVITAS PADA PERIODE (mengikuti filter tanggal) ================= --}}
+            <x-ui.section-note class="pt-2" title="Aktivitas pada Periode" tone="emerald"
+                tag="{{ \Carbon\Carbon::parse($startDate)->translatedFormat('j M Y') }} – {{ \Carbon\Carbon::parse($endDate)->translatedFormat('j M Y') }}">
+                Jumlah kejadian selama rentang tanggal yang dipilih; berubah saat filter diganti. Tiap kartu memakai tanggal kejadiannya sendiri, jadi satu SPK bisa terhitung di lebih dari satu kartu.
+            </x-ui.section-note>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <x-ui.stat-card label="1. Sepatu Masuk (Before)" :info="$info('incoming_day', '1. Sepatu Masuk (Before)')" :value="$n('incoming_day')" unit="SPK" icon="inbox-in"
+                    note="SPK dengan tanggal masuk pada periode ini yang sudah dikonfirmasi diterima gudang." />
+                <x-ui.stat-card label="2. Dikirim ke Workshop" :info="$info('spk_print', '2. Dikirim ke Workshop')" :value="$n('spk_print')" unit="SPK" icon="truck" tone="blue"
+                    note="SPK yang berpindah status menjadi dikirim ke workshop (lewat manifest) pada periode ini." />
+                <x-ui.stat-card label="3. Ditolak QC Penerimaan" :info="$info('qc_reject', '3. Ditolak QC Penerimaan')" :value="$n('qc_reject')" unit="Kejadian" icon="warning"
+                    :tone="($summary['qc_reject'] ?? 0) > 0 ? 'rose' : 'slate'"
+                    note="Jumlah kejadian penolakan saat QC penerimaan gudang. SPK yang ditolak lalu diloloskan tetap terhitung." />
+                <x-ui.stat-card label="4. Selesai Dikerjakan (After Masuk)" :info="$info('after_masuk', '4. Selesai Dikerjakan (After Masuk)')" :value="$n('after_masuk')" unit="SPK" icon="sparkles"
+                    note="SPK yang tanggal selesainya jatuh pada periode ini." />
+                <x-ui.stat-card label="5. Sepatu Keluar" :info="$info('sepatu_keluar', '5. Sepatu Keluar')" :value="$n('sepatu_keluar')" unit="SPK" icon="outbox" tone="blue"
+                    note="SPK yang diambil pelanggan atau diserahkan untuk dikirim pada periode ini." />
+
+                {{-- (Dikirim ke Workshop - Sepatu Masuk) / Sepatu Masuk x 100 --}}
+                <x-ui.stat-card label="6. Kelancaran Arus Masuk" :info="$info('clearance_rate_before', '6. Kelancaran Arus Masuk')" :value="$rateIn['value']" icon="scale"
+                    :tone="$rateIn['state'] === 'Menumpuk' ? 'amber' : ($rateIn['state'] ? 'emerald' : 'slate')"
+                    :badge="$rateIn['state']" :badge-tone="$rateIn['state'] === 'Menumpuk' ? 'amber' : 'emerald'"
+                    :note="$rateIn['state']
+                        ? '(Dikirim ke Workshop − Sepatu Masuk) ÷ Sepatu Masuk. Positif: yang dikirim lebih banyak dari yang masuk. Negatif: sepatu masuk lebih cepat dari yang dikirim.'
+                        : 'Tidak ada sepatu masuk pada periode ini, jadi tidak bisa dihitung.'" />
+
+                {{-- (Sepatu Keluar - Selesai Dikerjakan) / Selesai Dikerjakan x 100 --}}
+                <x-ui.stat-card label="7. Kelancaran Arus Keluar" :info="$info('clearance_rate_after', '7. Kelancaran Arus Keluar')" :value="$rateOut['value']" icon="refresh"
+                    :tone="$rateOut['state'] === 'Menumpuk' ? 'amber' : ($rateOut['state'] ? 'emerald' : 'slate')"
+                    :badge="$rateOut['state']" :badge-tone="$rateOut['state'] === 'Menumpuk' ? 'amber' : 'emerald'"
+                    :note="$rateOut['state']
+                        ? '(Sepatu Keluar − Selesai Dikerjakan) ÷ Selesai Dikerjakan. Positif: yang keluar lebih banyak dari yang selesai. Negatif: sepatu selesai menumpuk karena belum diambil.'
+                        : 'Tidak ada sepatu selesai pada periode ini, jadi tidak bisa dihitung.'" />
+            </div>
+
+            {{-- Angka pendukung (mengikuti periode): tanggal acuannya berbeda dari kartu bernomor di atas --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <x-ui.stat-card label="SPK Dibuat" :info="$info('total_incoming', 'SPK Dibuat')" :value="$n('total_incoming')" unit="SPK" icon="clipboard-list"
+                    note="SPK yang dibuat pada periode ini, semua status. Berbeda dari Sepatu Masuk, yang memakai tanggal masuk dan hanya menghitung yang sudah diterima gudang." />
+                {{-- Bagian dari SPK Dibuat yang sepatunya belum datang; persen = pending periode ÷ SPK Dibuat --}}
+                <x-ui.stat-card label="SPK Pending (Periode)" :info="$info('pending_reception_period', 'SPK Pending (Periode)')" :value="$n('pending_reception_period')" unit="SPK" icon="inbox-in"
+                    :tone="($summary['pending_reception_period'] ?? 0) > 0 ? 'amber' : 'slate'"
+                    :badge="$raw('total_incoming') > 0 ? number_format($raw('pending_reception_period') / $raw('total_incoming') * 100, 1, ',', '.') . '% dari SPK Dibuat' : null" badge-tone="amber"
+                    note="SPK yang dibuat pada periode ini dan sepatunya sampai sekarang belum diterima gudang. Untuk periode lama angkanya terus turun saat sepatu akhirnya datang." />
+                <x-ui.stat-card label="Berstatus Selesai (Terakhir Diubah)" :info="$info('finished_day', 'Berstatus Selesai (Terakhir Diubah)')" :value="$n('finished_day')" unit="SPK" icon="check-circle"
+                    note="SPK berstatus selesai yang terakhir diubah pada periode ini. Berbeda dari Selesai Dikerjakan, yang memakai tanggal selesai." />
+                <x-ui.stat-card label="Diproses QC Gudang" :info="$info('total_qc_processed', 'Diproses QC Gudang')" :value="$n('total_qc_processed')" unit="SPK" icon="tag"
+                    note="SPK yang sudah punya hasil QC gudang dengan waktu QC pada periode ini." />
+            </div>
 
         @endif
     </div>
-
-
-
-    {{-- Chart.js & Flatpickr Assets --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </div>

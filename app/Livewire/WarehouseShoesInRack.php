@@ -38,7 +38,8 @@ class WarehouseShoesInRack extends Component
     {
         $this->searchTerm = request()->query('searchTerm') ?? '';
         $this->selectedStatus = request()->query('selectedStatus') ?? '';
-        $this->showDonationOnly = request()->query('showDonationOnly') == '1';
+        // Livewire menulis boolean ke URL sebagai "true", link lama memakai "1"
+        $this->showDonationOnly = filter_var(request()->query('showDonationOnly'), FILTER_VALIDATE_BOOLEAN);
     }
 
     public function loadData()
@@ -88,7 +89,7 @@ class WarehouseShoesInRack extends Component
 
     public function setPage(int $page)
     {
-        $this->page = $page;
+        $this->page = max(1, $page);
     }
 
     /**
@@ -96,6 +97,9 @@ class WarehouseShoesInRack extends Component
      */
     protected function getShoerackData(): array
     {
+        // Reset agar error lama tidak menempel setelah percobaan ulang berhasil
+        $this->errorMessage = null;
+
         try {
             $cacheKey = "warehouse_shoerack_data";
 
@@ -120,7 +124,12 @@ class WarehouseShoesInRack extends Component
         // Clean phone number (must start with country code, without +, spaces or special chars)
         $phone = preg_replace('/[^0-9]/', '', $phone);
         if (empty($phone)) {
-            return '#';
+            return '';
+        }
+
+        // Nomor lokal (08xx) harus diubah ke format internasional agar bisa dibuka WhatsApp
+        if (str_starts_with($phone, '0')) {
+            $phone = '62' . substr($phone, 1);
         }
 
         $customerName = $item['customer']['name'] ?? 'Pelanggan';
@@ -205,7 +214,10 @@ class WarehouseShoesInRack extends Component
 
         // Pagination
         $totalResults = $filteredCollection->count();
-        $totalPages = max(1, ceil($totalResults / $this->perPage));
+        $totalPages = max(1, (int) ceil($totalResults / $this->perPage));
+
+        // Data bisa berkurang setelah refresh/filter: jangan biarkan halaman aktif melewati halaman terakhir
+        $this->page = min(max(1, $this->page), $totalPages);
         $paginatedItems = $filteredCollection->slice(($this->page - 1) * $this->perPage, $this->perPage)->values()->all();
 
         return view('livewire.warehouse-shoes-in-rack', [

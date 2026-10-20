@@ -1,4 +1,4 @@
-<div class="px-6 py-6 pb-20" 
+<div class="pb-20"
      wire:poll.10s="checkSync"
      x-data="{ 
         chatSeconds: 0,
@@ -17,102 +17,27 @@
             }, 1000);
         }
      }">
-    {{-- Header & Universal Filter Bar --}}
-    <div class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
-        <div class="flex items-center gap-5">
-            <div class="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 group">
-                <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            </div>
-            <div wire:poll.300s="autoSync">
-                <div class="flex items-center gap-3">
-                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase leading-none">Pantauan Chat & Operasional</h1>
-                    <span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black tracking-[0.2em] animate-pulse">LIVE</span>
-                    
-                    <div class="flex items-center gap-4 border-l border-slate-100 dark:border-slate-800 ml-4 pl-4">
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sleekflow Chat</span>
-                            <template x-if="isSyncing && chatSeconds <= 0">
-                                <span class="text-[9px] font-bold text-indigo-500 animate-pulse">Syncing...</span>
-                            </template>
-                            <template x-if="!isSyncing || chatSeconds > 0">
-                                <span class="text-[9px] font-bold text-slate-500"><span x-text="chatSeconds" class="text-indigo-500 font-mono"></span>s</span>
-                            </template>
-                        </div>
-                        <div class="flex flex-col gap-0.5 border-l border-slate-100 dark:border-slate-800 pl-4">
-                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Master API</span>
-                            <template x-if="isSyncing && apiSeconds <= 0">
-                                <span class="text-[9px] font-bold text-emerald-500 animate-pulse">Syncing...</span>
-                            </template>
-                            <template x-if="!isSyncing || apiSeconds > 0">
-                                <span class="text-[9px] font-bold text-slate-500"><span x-text="apiSeconds" class="text-emerald-500 font-mono"></span>s</span>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    Real-time Operational & Communication Insights
-                </p>
-            </div>
-        </div>
+    {{-- Sinkron Sleekflow otomatis tiap 5 menit di latar belakang --}}
+    <div wire:poll.300s="autoSync" class="hidden"></div>
 
-        <div class="flex flex-wrap items-center gap-4">
-            {{-- Robust Filter Control (Flatpickr Range) --}}
-            <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-[32px] border border-gray-100 dark:border-gray-800">
-                <div class="flex items-center px-4" x-data="{
-                    init() {
-                        flatpickr(this.$refs.picker, {
-                            mode: 'range',
-                            dateFormat: 'Y-m-d',
-                            defaultDate: [@js($startDate), @js($endDate)],
-                            onClose: (selectedDates, dateStr) => {
-                                if(selectedDates.length > 0) {
-                                    $wire.set('dateRange', dateStr);
-                                }
-                            }
-                        });
-                    }
-                }">
-                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <input type="text" 
-                            readonly
-                            placeholder="Pilih Rentang Tanggal"
-                            class="bg-transparent border-none text-xs font-black text-slate-800 dark:text-white focus:ring-0 p-0 w-[160px] cursor-pointer text-center"
-                            value="{{ $startDate }} to {{ $endDate }}">
-                    </div>
-                </div>
-                
-                <button type="button"
-                    wire:click.prevent="applyFilter" 
-                    wire:loading.attr="disabled"
-                    class="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3 shadow-lg shadow-indigo-500/25">
-                    <span wire:loading.remove wire:target="applyFilter">TERAPKAN</span>
-                    <span wire:loading wire:target="applyFilter" class="flex items-center gap-2">
-                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        MEMUAT...
-                    </span>
-                </button>
-            </div>
+    <div class="space-y-4 mb-10">
+        <x-ui.page-header title="Pantauan Chat & Operasional" subtitle="Chat Sleekflow dan data operasional CS dari sistem pusat." badge="Live">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="$maxDate" :presets="$presets" refresh="refreshManually" refresh-label="Tarik Data Sleekflow" />
+        </x-ui.page-header>
 
-            {{-- Force Sync Button --}}
-            <button type="button"
-                x-on:click="
-                    Swal.fire({
-                        title: 'Sinkronisasi Berjalan',
-                        text: 'Sistem sedang menarik data terbaru dari Sleekflow. Mohon tunggu sejenak...',
-                        allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
-                    });
-                    $wire.refreshManually();
-                "
-                class="w-14 h-14 rounded-[24px] bg-white dark:bg-slate-800 border border-gray-100 dark:border-gray-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm flex items-center justify-center group">
-                <svg class="w-6 h-6 group-hover:rotate-180 transition-transform duration-700 {{ $isLoading ? 'animate-spin' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
-        </div>
+        <x-ui.range-info :start="$startDate" :end="$endDate">
+            {{-- Hitung mundur sinkron otomatis (hanya saat rentang mencakup hari ini) --}}
+            <span class="inline-flex items-center gap-3">
+                <span>Chat Sleekflow:
+                    <template x-if="isSyncing && chatSeconds <= 0"><span class="font-semibold text-indigo-500 animate-pulse">menyinkron…</span></template>
+                    <template x-if="!isSyncing || chatSeconds > 0"><span class="font-mono text-indigo-500" x-text="chatSeconds + ' dtk'"></span></template>
+                </span>
+                <span>Sistem pusat:
+                    <template x-if="isSyncing && apiSeconds <= 0"><span class="font-semibold text-emerald-500 animate-pulse">menyinkron…</span></template>
+                    <template x-if="!isSyncing || apiSeconds > 0"><span class="font-mono text-emerald-500" x-text="apiSeconds + ' dtk'"></span></template>
+                </span>
+            </span>
+        </x-ui.range-info>
     </div>
 
     @if($errorMessage)

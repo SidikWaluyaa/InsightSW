@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\SleekflowContact;
+use App\Models\SleekflowDailyAnalytics;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -151,11 +153,16 @@ class SleekflowService
 
     /**
      * Sync contacts from Sleekflow API to local database.
+     *
+     * $startOffset & $maxPages dipakai untuk menarik bertahap (mis. halaman SleekFlow Activity), supaya satu request web
+     * tidak melewati batas waktu PHP. Hasil `next_offset` = offset untuk bagian berikutnya, null bila sudah selesai.
+     * Tanpa kedua parameter itu perilakunya sama seperti sebelumnya (tarik sampai selesai).
      */
-    public function syncContacts(?string $startDate = null, ?string $endDate = null): array
+    public function syncContacts(?string $startDate = null, ?string $endDate = null, int $startOffset = 0, ?int $maxPages = null): array
     {
         $limit = 100;
-        $offset = 0;
+        $offset = $startOffset;
+        $pages = 0;
         
         $startDate = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today()->startOfDay();
         $endDate = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today()->endOfDay();
@@ -323,9 +330,205 @@ class SleekflowService
             
             // Safety break to prevent infinite loops (Sleekflow max contacts safety)
             if ($offset > 50000) break; 
+
+            // Batas bagian (tarik bertahap): berhenti di sini, lanjut dari $offset di request berikutnya
+            if ($maxPages !== null && ++$pages >= $maxPages && ! $stop) {
+                return ['synced' => $totalSynced, 'next_offset' => $offset];
+            }
         }
 
-        return ['synced' => $totalSynced];
+        return ['synced' => $totalSynced, 'next_offset' => null];
+    }
+
+    /**
+     * Mapping field API Sleekflow Daily Analytics (camelCase) -> kolom tabel sleekflow_daily_analytics (snake_case).
+     * Format: 'apiField' => ['db_column', 'tipe']
+     */
+    protected const DAILY_ANALYTICS_MAP = [
+        'responseTimeForFirstMessages'            => ['response_time_first_messages', 'time'],
+        'responseTimeForAllMessages'              => ['response_time_all_messages', 'time'],
+        'numberOfContacts'                        => ['number_of_contacts', 'int'],
+        'numberOfContactsAverage'                 => ['number_of_contacts_average', 'decimal'],
+        'numberOfAllConversations'                => ['number_of_all_conversations', 'int'],
+        'numberOfAllConversationsAverage'         => ['number_of_all_conversations_average', 'decimal'],
+        'numberOfActiveConversations'             => ['number_of_active_conversations', 'int'],
+        'numberOfActiveConversationsAverage'      => ['number_of_active_conversations_average', 'decimal'],
+        'numberOfUniqueConversations'             => ['number_of_unique_conversations', 'int'],
+        'numberOfUniqueConversationAverage'       => ['number_of_unique_conversation_average', 'decimal'],
+        'numberOfUniqueActiveConversations'       => ['number_of_unique_active_conversations', 'int'],
+        'numberOfUniqueActiveConversationAverage' => ['number_of_unique_active_conversation_average', 'decimal'],
+        'numberOfNewEnquires'                     => ['number_of_new_enquires', 'int'],
+        'numberOfNewEnquiresAverage'              => ['number_of_new_enquires_average', 'decimal'],
+        'numberOfMessagesSent'                    => ['number_of_messages_sent', 'int'],
+        'numberOfMessagesSentAverage'             => ['number_of_messages_sent_average', 'decimal'],
+        'numberOfMessageReceived'                 => ['number_of_message_received', 'int'],
+        'numberOfMessageReceivedAverage'          => ['number_of_message_received_average', 'decimal'],
+        'numberOfAutomatedMessages'               => ['number_of_automated_messages', 'int'],
+        'numberOfBroadcastSent'                   => ['number_of_broadcast_sent', 'int'],
+        'numberOfBroadcastBounced'                => ['number_of_broadcast_bounced', 'int'],
+        'numberOfBroadcastDelivered'              => ['number_of_broadcast_delivered', 'int'],
+        'numberOfBroadcastRead'                   => ['number_of_broadcast_read', 'int'],
+        'numberOfBroadcastReplied'                => ['number_of_broadcast_replied', 'int'],
+        'activeAgents'                            => ['active_agents', 'int'],
+    ];
+
+    /**
+     * Tarik Daily Analytics dari Sleekflow API lalu simpan ke tabel sleekflow_daily_analytics.
+     * Idempotent: baris di-update berdasarkan date_time, jadi aman dijalankan berulang kali.
+     *
+     * @param string $startDate  Y-m-d (inklusif)
+     * @param string $endDate    Y-m-d (inklusif)
+     */
+    public function syncDailyAnalytics(string $startDate, string $endDate): array
+    {
+        $url = (string) config('services.sleekflow.analytics_url', '');
+
+        if ($url === '') {
+            return $this->analyticsResult(false, 0, 0, 'SLEEKFLOW_ANALYTICS_URL belum diisi di .env. Sync dibatalkan.');
+        }
+        if ($this->apiKey === '') {
+            return $this->analyticsResult(false, 0, 0, 'SLEEKFLOW_API_KEY belum diisi di .env. Sync dibatalkan.');
+        }
+
+        try {
+            $start = Carbon::createFromFormat('Y-m-d', $startDate, 'UTC')->startOfDay();
+            $end = Carbon::createFromFormat('Y-m-d', $endDate, 'UTC')->startOfDay();
+        } catch (\Throwable $e) {
+            return $this->analyticsResult(false, 0, 0, 'Format tanggal tidak valid (harus Y-m-d).');
+        }
+
+        if ($start->gt($end)) {
+            return $this->analyticsResult(false, 0, 0, "Tanggal awal ({$startDate}) lebih besar dari tanggal akhir ({$endDate}).");
+        }
+
+        // Sleekflow menolak (HTTP 400) tanggal hari berjalan: data harian baru tersedia sampai H-1.
+        $latest = Carbon::yesterday('UTC');
+        if ($end->gt($latest)) {
+            $end = $latest;
+        }
+        if ($start->gt($end)) {
+            return $this->analyticsResult(true, 0, 0, 'Sleekflow baru menyediakan data harian sampai kemarin (H-1); belum ada data baru untuk ditarik.');
+        }
+
+        // Endpoint GET /api/analytic memakai startDate & endDate (Y-m-d), keduanya inklusif.
+        $params = [
+            'startDate' => $start->toDateString(),
+            'endDate'   => $end->toDateString(),
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                    (string) config('services.sleekflow.analytics_auth_header', 'X-Sleekflow-Api-Key') => $this->apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->timeout(60)
+                ->retry(3, 3000, throw: false)
+                ->get($url, $params);
+        } catch (\Throwable $e) {
+            Log::error('Sleekflow Daily Analytics Exception: ' . $e->getMessage());
+            return $this->analyticsResult(false, 0, 0, 'Gagal menghubungi Sleekflow API: ' . $e->getMessage());
+        }
+
+        if (!$response->successful()) {
+            $msg = "Sleekflow Daily Analytics API Error [HTTP {$response->status()}]: " . mb_substr($response->body(), 0, 500);
+            Log::error($msg);
+            return $this->analyticsResult(false, 0, 0, $msg);
+        }
+
+        $payload = $response->json();
+        // Dukung payload langsung { dailyAnalytics: [...] } maupun dibungkus { data: { dailyAnalytics: [...] } }
+        $rows = $payload['dailyAnalytics'] ?? $payload['data']['dailyAnalytics'] ?? null;
+
+        if (!is_array($rows)) {
+            $msg = 'Payload Sleekflow tidak valid: field "dailyAnalytics" tidak ditemukan.';
+            Log::error($msg, ['body' => mb_substr($response->body(), 0, 500)]);
+            return $this->analyticsResult(false, 0, 0, $msg);
+        }
+
+        $synced = 0;
+        $skipped = 0;
+        $rangeStart = $start->toDateString();
+        $rangeEnd = $end->toDateString();
+
+        DB::transaction(function () use ($rows, $rangeStart, $rangeEnd, &$synced, &$skipped) {
+            foreach ($rows as $row) {
+                $mapped = is_array($row) ? $this->mapDailyAnalyticsRow($row) : null;
+
+                if ($mapped === null) {
+                    $skipped++;
+                    Log::warning('Sleekflow Daily Analytics: baris dilewati (dateTime tidak valid).', ['row' => $row]);
+                    continue;
+                }
+
+                $date = $mapped['date_time'];
+                if ($date < $rangeStart || $date > $rangeEnd) {
+                    continue; // di luar rentang yang diminta
+                }
+
+                $record = SleekflowDailyAnalytics::firstOrNew(['date_time' => $date]);
+                $record->fill($mapped);
+                $record->save();
+                $synced++;
+            }
+        });
+
+        $msg = "Sleekflow Daily Analytics {$rangeStart} s/d {$rangeEnd}: {$synced} hari tersimpan" . ($skipped ? ", {$skipped} baris dilewati" : '') . '.';
+        Log::info($msg);
+
+        return $this->analyticsResult(true, $synced, $skipped, $msg);
+    }
+
+    /**
+     * Ubah satu baris payload API menjadi atribut tabel. Return null jika dateTime tidak valid.
+     */
+    protected function mapDailyAnalyticsRow(array $row): ?array
+    {
+        $rawDate = $row['dateTime'] ?? null;
+        if (!is_string($rawDate) || !preg_match('/^\d{4}-\d{2}-\d{2}/', $rawDate)) {
+            return null;
+        }
+
+        // dateTime adalah bucket tanggal (00:00:00Z) — ambil bagian tanggalnya saja,
+        // TIDAK dikonversi +7 agar tanggal tidak bergeser.
+        $attributes = ['date_time' => substr($rawDate, 0, 10)];
+
+        foreach (self::DAILY_ANALYTICS_MAP as $apiField => [$column, $type]) {
+            $value = $row[$apiField] ?? null;
+
+            $attributes[$column] = match ($type) {
+                'time'    => $this->normalizeDuration($value),
+                'int'     => is_numeric($value) ? (int) round((float) $value) : 0,
+                'decimal' => is_numeric($value) ? round((float) $value, 2) : 0,
+            };
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Normalisasi durasi ke format MySQL TIME (HH:MM:SS).
+     * Menangani format .NET TimeSpan seperti "1.02:03:04" (lebih dari 24 jam) dan milidetik "00:16:21.123".
+     */
+    protected function normalizeDuration(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        if (!preg_match('/^(?:(\d+)\.)?(\d{1,3}):(\d{2}):(\d{2})(?:\.\d+)?$/', trim($value), $m)) {
+            Log::warning("Sleekflow Daily Analytics: format durasi tidak dikenali '{$value}'.");
+            return null;
+        }
+
+        $hours = ((int) ($m[1] ?? 0)) * 24 + (int) $m[2];
+        $hours = min($hours, 838); // batas maksimum tipe TIME MySQL (838:59:59)
+
+        return sprintf('%02d:%s:%s', $hours, $m[3], $m[4]);
+    }
+
+    protected function analyticsResult(bool $success, int $synced, int $skipped, string $message): array
+    {
+        return compact('success', 'synced', 'skipped', 'message');
     }
 
     /**

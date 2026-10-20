@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use App\Livewire\Concerns\WithDateRange;
 use App\Services\WarehouseApiService;
 use App\Services\WarehouseSyncService;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,8 @@ use Livewire\Attributes\Title;
 #[Title('Warehouse Command Center')]
 class WarehouseCommandCenter extends Component
 {
+    use WithDateRange;
+
     public array $summary = [];
     public array $rackMap = [];
     public array $qcAnalytics = [];
@@ -43,8 +46,10 @@ class WarehouseCommandCenter extends Component
         $this->transactionCount = \App\Models\WarehouseTransaction::count();
     }
 
-    public function updatedStartDate() { $this->loadData(); }
-    public function updatedEndDate() { $this->loadData(); }
+    protected function dateRangeChanged(): void
+    {
+        $this->loadData();
+    }
 
     public function loadData($forceRefresh = false)
     {
@@ -61,7 +66,19 @@ class WarehouseCommandCenter extends Component
             $this->summary = $data['summary'] ?? []; // Menggunakan 'summary' karena di Resource (Server) di-rename dari metrics
             $this->rackMap = $data['storage']['heatmap'] ?? [];
             $this->qcAnalytics = $data['qc_analytics'] ?? [];
+
+            // API mengirim label tren sebagai teks Inggris ("01 Oct"), satu per hari sejak tanggal awal.
+            // Bangun ulang dari tanggal awal agar tampil dalam bahasa Indonesia.
+            $labels = $this->qcAnalytics['trends']['labels'] ?? [];
+            if (count($labels) === (int) \Carbon\Carbon::parse($start)->diffInDays(\Carbon\Carbon::parse($end)) + 1) {
+                $this->qcAnalytics['trends']['labels'] = collect($labels)->keys()
+                    ->map(fn ($i) => \Carbon\Carbon::parse($start)->addDays($i)->translatedFormat('d M'))
+                    ->all();
+            }
             $this->lastSync = now()->format('H:i:s');
+
+            // Grafik digambar oleh Chart.js di browser, jadi data barunya harus dikirim lewat event
+            $this->dispatch('warehouse-charts-update', qc: $this->qcAnalytics);
         } catch (\Exception $e) {
             Log::error("Command Center Load Error: " . $e->getMessage());
             $this->dispatch('swal', [
@@ -108,32 +125,15 @@ class WarehouseCommandCenter extends Component
         $this->isLoading = false;
     }
 
-    public function setRange(string $range)
-    {
-        switch ($range) {
-            case 'today':
-                $this->startDate = now()->toDateString();
-                $this->endDate = now()->toDateString();
-                break;
-            case '7days':
-                $this->startDate = now()->subDays(7)->toDateString();
-                $this->endDate = now()->toDateString();
-                break;
-            case '30days':
-                $this->startDate = now()->subDays(30)->toDateString();
-                $this->endDate = now()->toDateString();
-                break;
-        }
-        $this->loadData(true);
-    }
-
     #[Computed]
     public function warehouseStats()
     {
         // Pemetaan Key yang benar dari WarehouseDashboardApiService
         return [
             'total_sepatu_dirak' => $this->summary['stored_items'] ?? 0,
-            'total_sepatu_finish_periode' => $this->summary['finished_day'] ?? 0,
+            // after_masuk = SPK yang tanggal selesainya di periode ini. Bukan finished_day: field itu memakai
+            // updated_at + status saat ini di API pusat, jadi ikut naik saat SPK diubah/diambil.
+            'total_sepatu_finish_periode' => $this->summary['after_masuk'] ?? 0,
             'total_sepatu_diterima_periode' => $this->summary['incoming_day'] ?? 0,
             'total_spk_print' => $this->summary['spk_print'] ?? 0,
         ];

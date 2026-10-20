@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use App\Services\CalculationService;
 use App\Services\DashboardService;
 use Carbon\Carbon;
@@ -14,7 +15,14 @@ use Livewire\Attributes\Url;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
-    public string $selectedMonth = '';
+    use WithDateRange;
+
+    #[Url(as: 'dari', except: '')]
+    public string $startDate = '';
+
+    #[Url(as: 'sampai', except: '')]
+    public string $endDate = '';
+
     public bool $isSyncing = false;
     public ?string $lastSyncTime = null;
     public int $lastGlobalSyncTrigger = 0;
@@ -26,9 +34,11 @@ class Dashboard extends Component
 
     public function mount(): void
     {
-        if (empty($this->selectedMonth)) {
-            $this->selectedMonth = Carbon::now()->format('Y-m');
-        }
+        $today = $this->maxSelectableDate();
+        [$this->startDate, $this->endDate] = $this->normalizeDateRange(
+            $this->startDate ?: $today->copy()->startOfMonth()->toDateString(),
+            $this->endDate ?: $today->toDateString()
+        );
         $this->updateSyncTime();
     }
 
@@ -53,10 +63,9 @@ class Dashboard extends Component
         $this->currentStepIndex = 0;
         $this->syncSteps = [];
 
-        // 1. Calculate Chunks (3-day blocks)
-        $monthDate = Carbon::parse($this->selectedMonth . '-01');
-        $start = $monthDate->copy()->startOfMonth();
-        $endOfMonth = $monthDate->copy()->isCurrentMonth() ? Carbon::now() : $monthDate->copy()->endOfMonth();
+        // 1. Bagi rentang terpilih jadi blok 3 hari
+        $start = Carbon::parse($this->startDate);
+        $endOfMonth = Carbon::parse($this->endDate)->min(Carbon::now());
         
         $current = $start->copy();
         while ($current->lte($endOfMonth)) {
@@ -123,7 +132,7 @@ class Dashboard extends Component
         $this->dispatch('sync-finished');
         $this->dispatch('swal', [
             'title' => 'Sinkronisasi Berhasil',
-            'text' => 'Seluruh performa iklan, omset, dan chat untuk bulan ini telah diperbarui.',
+            'text' => 'Seluruh performa iklan, omset, dan chat untuk rentang ini telah diperbarui.',
             'icon' => 'success',
             'timer' => 3000,
         ]);
@@ -172,18 +181,26 @@ class Dashboard extends Component
         $this->lastSyncTime = $timestamp ? Carbon::createFromTimestamp($timestamp)->diffForHumans() : null;
     }
 
-    #[Computed]
-    public function kpis(): array
-    {
-        $dashboardService = app(DashboardService::class);
-        return $dashboardService->getKpis($this->selectedMonth . '-01');
-    }
-
+    /**
+     * Laporan harian pada rentang terpilih. DashboardService masih bekerja per bulan (omset per hari
+     * dipetakan lewat nomor tanggal), jadi diambil per bulan lalu dipotong ke rentang.
+     */
     #[Computed]
     public function dailyReports()
     {
         $dashboardService = app(DashboardService::class);
-        return $dashboardService->getDailyReports($this->selectedMonth . '-01');
+        $start = Carbon::parse($this->startDate);
+        $end = Carbon::parse($this->endDate);
+
+        $reports = collect();
+        for ($month = $start->copy()->startOfMonth(); $month->lte($end); $month->addMonthNoOverflow()) {
+            $reports = $reports->concat($dashboardService->getDailyReports($month->toDateString()));
+        }
+
+        return $reports
+            ->filter(fn ($report) => $report->date->between($start, $end->copy()->endOfDay()))
+            ->sortByDesc('date')
+            ->values();
     }
 
     public function formatCurrency(int|float $amount): string
@@ -196,18 +213,11 @@ class Dashboard extends Component
         return app(CalculationService::class)->formatPercentage((float) $amount);
     }
 
-    public function getRoasIndicator(int|float $current, int|float $target): string
-    {
-        return app(CalculationService::class)->getRoasIndicator((float) $current, (float) $target);
-    }
-
-    public function getFormula(string $metric): string
-    {
-        return app(CalculationService::class)->getFormula($metric);
-    }
-
     public function render()
     {
-        return view('livewire.dashboard');
+        return view('livewire.dashboard', [
+            'presets' => $this->datePresets(),
+            'maxDate' => $this->maxSelectableDate()->toDateString(),
+        ]);
     }
 }

@@ -1,4 +1,4 @@
-<div class="p-4 sm:p-6 md:p-8 space-y-8 bg-slate-50 dark:bg-slate-950 min-h-screen transition-all duration-500 ease-in-out" 
+<div class="space-y-8" 
      wire:poll.10s="checkSync"
      x-data="{ 
         seconds: 0,
@@ -17,79 +17,22 @@
         }
      }">
     {{-- Header Section --}}
-    <div class="space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="flex items-center gap-5">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 ring-4 ring-white dark:ring-slate-900 overflow-hidden relative group">
-                    <svg class="w-7 h-7 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <div class="absolute inset-0 bg-white/20 group-hover:translate-y-full transition-transform duration-500"></div>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none">Finance Center</h1>
-                    <div class="flex items-center gap-3 mt-3">
-                        <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-500 uppercase tracking-widest leading-none">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            Live
-                        </span>
-                        
-                        <div class="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 ml-2 pl-4">
-                            <template x-if="isSyncing">
-                                <div class="flex items-center gap-2">
-                                    <svg class="animate-spin h-3 w-3 text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Sinkronisasi...</span>
-                                </div>
-                            </template>
-                            <template x-if="!isSyncing && seconds > 0">
-                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Auto-update: <span x-text="seconds" class="text-indigo-500 font-mono"></span>s</span>
-                            </template>
-                            <template x-if="!isSyncing && seconds <= 0">
-                                <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Menunggu Antrian...</span>
-                            </template>
-                        </div>
-                    </div>
-                </div>
+    <div class="space-y-4">
+        <x-ui.page-header title="Financial Dashboard" subtitle="Tagihan, pembayaran, dan piutang SPK dari sinkron sistem pusat (60 hari bergulir)." badge="Live">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="syncPusat" refresh-label="Sync Pusat" />
+        </x-ui.page-header>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <x-ui.range-info :start="$startDate" :end="$endDate">
+                <template x-if="isSyncing"><span class="font-semibold text-indigo-500 animate-pulse">Sinkronisasi…</span></template>
+                <template x-if="!isSyncing && seconds > 0"><span>Pembaruan otomatis dalam <span x-text="seconds" class="font-mono text-indigo-500"></span> detik</span></template>
+            </x-ui.range-info>
+
+            {{-- Ekspor mengikuti filter yang sedang aktif --}}
+            <div class="flex items-center gap-2">
+                <x-ui.btn variant="secondary" icon="document" wire:click="exportExcel" target="exportExcel">Excel</x-ui.btn>
+                <x-ui.btn variant="secondary" icon="document" :href="route('finance.export-pdf', ['startDate' => $startDate, 'endDate' => $endDate, 'search' => $search, 'statusFilter' => $statusFilter])" x-data x-on:click.prevent="window.open($el.href, '_blank')">PDF</x-ui.btn>
             </div>
-
-            {{-- Primary Action --}}
-            <div class="flex items-center gap-3">
-                <button wire:click="exportExcel" wire:loading.attr="disabled"
-                    class="group relative flex items-center px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-600/20 transition-all duration-300 active:scale-95 disabled:opacity-50 overflow-hidden">
-                    <div class="flex items-center gap-2.5 relative z-10">
-                        <svg wire:loading.remove wire:target="exportExcel" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        <svg wire:loading wire:target="exportExcel" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        <span class="text-sm font-black uppercase tracking-tight">Excel</span>
-                    </div>
-                </button>
-
-                <a href="{{ route('finance.export-pdf', ['startDate' => $startDate, 'endDate' => $endDate, 'search' => $search, 'statusFilter' => $statusFilter]) }}" 
-                    target="_blank"
-                    class="group relative flex items-center px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-600/20 transition-all duration-300 active:scale-95 overflow-hidden">
-                    <div class="flex items-center gap-2.5 relative z-10">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                        <span class="text-sm font-black uppercase tracking-tight">PDF</span>
-                    </div>
-                </a>
-
-
-                <div class="h-10 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
-
-                <button wire:click="syncPusat" wire:loading.attr="disabled"
-                    class="group relative flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-600/20 transition-all duration-300 active:scale-95 disabled:opacity-50 overflow-hidden">
-                    <div class="flex items-center gap-2.5 relative z-10">
-                        <svg wire:loading.remove wire:target="syncPusat" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                        <svg wire:loading wire:target="syncPusat" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        <div class="flex flex-col items-start leading-none">
-                            <span class="text-sm font-black uppercase tracking-tight">Sync Pusat</span>
-                            <span class="text-[9px] font-bold text-indigo-200/60 uppercase tracking-widest mt-0.5">60 Days Rolling</span>
-                        </div>
-                    </div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                </button>
-            </div>
-
         </div>
 
         {{-- Unified Control Toolbar --}}
@@ -116,18 +59,6 @@
                 </select>
             </div>
 
-            <div class="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
-
-            {{-- Date Range --}}
-            <div class="flex items-center bg-white dark:bg-slate-950 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-1.5 gap-1">
-                <input type="date" wire:model.live.debounce.400ms="startDate" class="bg-transparent border-none text-xs focus:ring-0 dark:text-white font-black uppercase">
-                <span class="text-slate-300 dark:text-slate-700 font-bold">/</span>
-                <input type="date" wire:model.live.debounce.400ms="endDate" class="bg-transparent border-none text-xs focus:ring-0 dark:text-white font-black uppercase">
-            </div>
-
-            <div class="ml-auto hidden lg:flex items-center gap-2 px-3">
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Toolbar Controls</span>
-            </div>
         </div>
     </div>
 

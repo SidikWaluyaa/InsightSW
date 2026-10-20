@@ -1,61 +1,9 @@
 <div>
-    <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 class="font-bold text-xl md:text-2xl text-slate-800 dark:text-white tracking-tight">
-                Antrian Manifest <span class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 ml-2 uppercase font-black tracking-widest animate-pulse">Live API</span>
-            </h2>
-            
-            <div class="flex items-center gap-3">
-                @if($metadata && isset($metadata['last_updated']))
-                    <div class="hidden md:flex flex-col items-end">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Update Terakhir</span>
-                        <span class="text-xs font-semibold text-slate-600 dark:text-gray-300 font-mono">
-                            {{ \Carbon\Carbon::parse($metadata['last_updated'])->diffForHumans() }}
-                        </span>
-                    </div>
-                @endif
-                
-                {{-- Date Range Picker --}}
-                <div class="flex items-center gap-3 bg-slate-100 dark:bg-gray-800/50 p-2 rounded-2xl border border-gray-200/50 dark:border-gray-800"
-                    x-data="{
-                        picker: null,
-                        init() {
-                            this.picker = flatpickr($refs.picker, {
-                                mode: 'range',
-                                dateFormat: 'Y-m-d',
-                                defaultDate: ['{{ $startDate }}', '{{ $endDate }}'],
-                                onClose: (selectedDates) => {
-                                    if (selectedDates.length === 2) {
-                                        const start = this.picker.formatDate(selectedDates[0], 'Y-m-d');
-                                        const end = this.picker.formatDate(selectedDates[1], 'Y-m-d');
-                                        @this.set('startDate', start);
-                                        @this.set('endDate', end);
-                                    }
-                                }
-                            });
-                        }
-                    }">
-                    <div class="flex items-center gap-2 cursor-pointer" x-ref="picker">
-                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <input type="text" readonly
-                            class="bg-transparent border-none text-[11px] font-black text-emerald-600 dark:text-emerald-400 focus:ring-0 p-0 w-[180px] cursor-pointer text-center outline-none"
-                            placeholder="RENTANG TANGGAL"
-                            value="{{ $startDate && $endDate ? \Carbon\Carbon::parse($startDate)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->format('d M Y') : 'RENTANG TANGGAL' }}">
-                    </div>
-                </div>
+    <div class="space-y-6" wire:init="loadData">
+        <x-ui.page-header title="Antrian Manifest" subtitle="Riwayat pengiriman manifest antara gudang dan workshop." badge="Live API">
+            <x-ui.range-toolbar :start="$startDate" :end="$endDate" :presets="$this->datePresets()" refresh="refreshData" />
+        </x-ui.page-header>
 
-                <button wire:click="refreshData" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800/50 dark:hover:bg-gray-800 text-slate-600 dark:text-gray-300 rounded-xl border border-gray-200/50 dark:border-gray-800 transition-all active:scale-95">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </x-slot>
-
-    <div class="space-y-8 py-6" wire:init="loadData">
         @if (!$isLoaded)
             {{-- Skeleton Loaders --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -82,6 +30,9 @@
                 </div>
             </div>
         @else
+            <x-ui.range-info :start="$startDate" :end="$endDate"
+                :updated="!empty($metadata['last_updated']) ? \Carbon\Carbon::parse($metadata['last_updated'])->translatedFormat('j M Y H:i') : null" />
+
             {{-- FIRST ROW: 3 KPI Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Card 1: TOTAL MANIFEST TERKIRIM -->
@@ -90,13 +41,13 @@
                         <div>
                             <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-3">TOTAL MANIFEST TERKIRIM</p>
                             <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                {{ number_format($summary['total_manifests_sent'] ?? 0) }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Manifest</span>
+                                {{ number_format($summary['total_manifests_sent'] ?? 0, 0, ',', '.') }} <span class="text-xs text-slate-400 font-bold uppercase ml-1">Manifest</span>
                             </h3>
                             <p class="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2">
-                                DITERIMA: {{ number_format($summary['total_manifests_received'] ?? 0) }}
+                                DITERIMA: {{ number_format($summary['total_manifests_received'] ?? 0, 0, ',', '.') }}
                             </p>
                         </div>
-                        <span class="p-3 bg-slate-50 dark:bg-gray-800 rounded-2xl text-slate-500 group-hover:scale-110 transition-transform">📦</span>
+                        <span class="p-3 bg-slate-50 dark:bg-gray-800 rounded-2xl text-slate-500 group-hover:scale-110 transition-transform inline-flex"><x-ui.icon name="cube" /></span>
                     </div>
                 </div>
 
@@ -104,19 +55,19 @@
                 <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:scale-[1.01] transition-all">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-3">TOTAL SPK / SEPATU TERKIRIM</p>
+                            <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-3">TOTAL SPK DI MANIFEST</p>
                             <h3 class="text-3xl font-black text-emerald-500 tracking-tight">
-                                {{ number_format($summary['total_shoes_sent'] ?? 0) }} <span class="text-xs text-emerald-500 font-bold uppercase ml-1">Pasang</span>
+                                {{ number_format($summary['total_shoes_sent'] ?? 0, 0, ',', '.') }} <span class="text-xs text-emerald-500 font-bold uppercase ml-1">SPK</span>
                             </h3>
                             @php
                                 $manifestCount = $summary['total_manifests_sent'] ?? 0;
                                 $avgShoes = $manifestCount > 0 ? round(($summary['total_shoes_sent'] ?? 0) / $manifestCount, 1) : 0;
                             @endphp
                             <p class="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2">
-                                RERATA: {{ $avgShoes }} PASANG / MANIFEST
+                                RERATA: {{ number_format($avgShoes, 1, ',', '.') }} SPK / MANIFEST
                             </p>
                         </div>
-                        <span class="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">👟</span>
+                        <span class="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform inline-flex"><x-ui.icon name="tag" /></span>
                     </div>
                 </div>
 
@@ -126,18 +77,25 @@
                         <div>
                             <p class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-3">TOTAL JASA LOGISTIK</p>
                             <h3 class="text-3xl font-black text-amber-500 tracking-tight">
-                                {{ number_format($summary['total_services_count'] ?? 0) }} <span class="text-xs text-amber-500 font-bold uppercase ml-1">Jasa</span>
+                                {{ number_format($summary['total_services_count'] ?? 0, 0, ',', '.') }} <span class="text-xs text-amber-500 font-bold uppercase ml-1">Jasa</span>
                             </h3>
                             <p class="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2">
-                                RERATA JASA: {{ number_format($summary['average_services_per_shoe'] ?? 0, 1) }} JASA / SEPATU
+                                RERATA JASA: {{ number_format($summary['average_services_per_shoe'] ?? 0, 1, ',', '.') }} JASA / SPK
                             </p>
                         </div>
-                        <span class="p-3 bg-amber-500/10 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">💰</span>
+                        <span class="p-3 bg-amber-500/10 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform inline-flex"><x-ui.icon name="clipboard-list" /></span>
                     </div>
                 </div>
             </div>
 
 
+
+            <div class="p-4 bg-slate-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
+                <span class="font-bold text-slate-800 dark:text-gray-200">Catatan:</span>
+                Daftar ini memuat dua jenis manifest: <span class="font-mono font-bold">MFST-</span> (gudang ke workshop) dan <span class="font-mono font-bold">MNF-OUT-</span> (workshop ke gudang).
+                Satu SPK hanya tertaut ke satu manifest pada satu waktu, jadi manifest lama bisa menampilkan <span class="font-bold">0 SPK</span> setelah SPK-nya masuk ke manifest berikutnya.
+                Angka total di atas menghitung SPK yang saat ini tertaut ke manifest pada periode ini.
+            </div>
 
             {{-- THIRD ROW: Manifest Log History Table --}}
             <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
@@ -150,7 +108,7 @@
                     </div>
 
                     <span class="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-wider">
-                        TOTAL: {{ count($recentManifests) }} RECORDS
+                        TOTAL: {{ count($recentManifests) }} MANIFEST
                     </span>
                 </div>
 
@@ -160,9 +118,10 @@
                         <thead>
                             <tr class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800 uppercase text-[9px] font-black text-slate-400 dark:text-gray-500 tracking-wider">
                                 <th class="px-5 py-4">NO. MANIFEST</th>
+                                <th class="px-5 py-4">ARAH</th>
                                 <th class="px-5 py-4">PENGIRIM / TANGGAL</th>
                                 <th class="px-5 py-4">PENERIMA</th>
-                                <th class="px-5 py-4 text-center">BATCH SIZE</th>
+                                <th class="px-5 py-4 text-center">JUMLAH SPK</th>
                                 <th class="px-5 py-4 text-center">JUMLAH JASA</th>
                                 <th class="px-5 py-4 text-center">STATUS</th>
                             </tr>
@@ -173,22 +132,31 @@
                                     <td class="px-5 py-4 font-mono font-black text-emerald-600 dark:text-emerald-400">
                                         {{ $manifest['manifest_number'] ?? '-' }}
                                     </td>
+                                    <td class="px-5 py-4 whitespace-nowrap text-slate-600 dark:text-gray-400">
+                                        {{-- Prefix nomor menentukan arah: MFST- gudang ke workshop, MNF-OUT- workshop ke gudang --}}
+                                        {{ str_starts_with($manifest['manifest_number'] ?? '', 'MNF-OUT') ? 'Workshop → Gudang' : 'Gudang → Workshop' }}
+                                    </td>
                                     <td class="px-5 py-4">
                                         <div class="flex flex-col">
-                                            <span class="text-slate-800 dark:text-white font-black">{{ $manifest['dispatcher_name'] ?? '-' }}</span>
+                                            <span class="text-slate-800 dark:text-white font-black">{{ ($manifest['dispatcher_name'] ?? 'N/A') === 'N/A' ? 'Tidak tercatat' : $manifest['dispatcher_name'] }}</span>
                                             <span class="text-[9px] text-slate-400 font-normal font-mono mt-0.5">
-                                                {{ !empty($manifest['dispatched_at']) ? \Carbon\Carbon::parse($manifest['dispatched_at'])->format('d M Y H:i') : '-' }}
+                                                {{ !empty($manifest['dispatched_at']) ? \Carbon\Carbon::parse($manifest['dispatched_at'])->translatedFormat('d M Y H:i') : '-' }}
                                             </span>
                                         </div>
                                     </td>
                                     <td class="px-5 py-4 text-slate-600 dark:text-gray-400">
-                                        {{ $manifest['receiver_name'] ?: 'N/A' }}
+                                        @php $receiver = $manifest['receiver_name'] ?? ''; @endphp
+                                        @if($receiver !== '' && $receiver !== 'N/A')
+                                            {{ $receiver }}
+                                        @else
+                                            <span class="text-slate-400">{{ strtoupper($manifest['status'] ?? '') === 'RECEIVED' ? 'Tidak tercatat' : 'Belum diterima' }}</span>
+                                        @endif
                                     </td>
                                     <td class="px-5 py-4 text-center text-slate-800 dark:text-white font-black">
-                                        {{ number_format($manifest['work_orders_count'] ?? 0) }} Pasang
+                                        {{ number_format($manifest['work_orders_count'] ?? 0, 0, ',', '.') }} SPK
                                     </td>
                                     <td class="px-5 py-4 text-center text-slate-800 dark:text-white font-black">
-                                        {{ number_format($manifest['total_services_count'] ?? 0) }} Jasa
+                                        {{ number_format($manifest['total_services_count'] ?? 0, 0, ',', '.') }} Jasa
                                     </td>
                                     <td class="px-5 py-4 text-center">
                                         @php
@@ -208,7 +176,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-8 py-20 text-center">
+                                    <td colspan="7" class="px-8 py-20 text-center">
                                         <div class="flex flex-col items-center gap-3 opacity-30">
                                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -224,7 +192,4 @@
             </div>
         @endif
     </div>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </div>

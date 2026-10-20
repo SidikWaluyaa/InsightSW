@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\WithDateRange;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 #[Layout('layouts.app')]
 class FinanceLiveDashboard extends Component
 {
+    use WithDateRange;
+
     public string $search = '';
     public string $statusFilter = 'all';
     public string $paymentTypeFilter = 'all';
@@ -50,6 +53,12 @@ class FinanceLiveDashboard extends Component
         if (empty($this->endDate)) {
             $this->endDate = now()->format('Y-m-d');
         }
+    }
+
+    /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
+    protected function dateRangeChanged(): void
+    {
+        $this->resetPagination();
     }
 
     public function updatedStartDate()
@@ -237,6 +246,22 @@ class FinanceLiveDashboard extends Component
     /**
      * Render the Livewire component.
      */
+    /**
+     * Jadwal audit verifikasi 3 kali sebulan (PRD halaman 6) untuk bulan dari tanggal akhir filter:
+     * periode 1 (1–10) diaudit tgl 10, periode 2 (11–20) tgl 20, periode 3 (21–akhir bulan) di akhir bulan.
+     */
+    protected function auditSchedule(): array
+    {
+        $month = \Carbon\Carbon::parse($this->endDate ?: now())->startOfMonth();
+        $eom = $month->copy()->endOfMonth();
+
+        return collect([
+            ['label' => 'Periode 1 (1–10)', 'tanggal' => $month->copy()->day(10)],
+            ['label' => 'Periode 2 (11–20)', 'tanggal' => $month->copy()->day(20)],
+            ['label' => 'Periode 3 (21–' . $eom->day . ')', 'tanggal' => $eom],
+        ])->map(fn ($p) => $p + ['lewat' => $p['tanggal']->lte(now()->startOfDay())])->all();
+    }
+
     public function render()
     {
         $metrics = [];
@@ -246,6 +271,8 @@ class FinanceLiveDashboard extends Component
         $paymentTypeDistribution = [];
         $allInvoices = [];
         $allPayments = [];
+        $redAlerts = null; // null = field red_alerts belum dikirim sistem pusat
+        $redAlertSummary = null; // jumlah sebenarnya per tipe (daftar red_alerts dibatasi 200 item)
 
         if ($this->isLoaded) {
             $apiData = $this->getDashboardData();
@@ -257,6 +284,8 @@ class FinanceLiveDashboard extends Component
                 $paymentTypeDistribution = $apiData['payment_type_distribution'] ?? [];
                 $allInvoices = $apiData['all_invoices'] ?? [];
                 $allPayments = $apiData['all_payments'] ?? [];
+                $redAlerts = is_array($apiData['red_alerts'] ?? null) ? $apiData['red_alerts'] : null;
+                $redAlertSummary = is_array($apiData['red_alerts_ringkasan'] ?? null) ? $apiData['red_alerts_ringkasan'] : null;
             }
         }
 
@@ -320,6 +349,9 @@ class FinanceLiveDashboard extends Component
             'totalPayments' => $totalPaymentsCount,
             'totalInvoicePages' => $totalInvoicePages,
             'totalPaymentPages' => $totalPaymentPages,
+            'redAlerts' => $redAlerts,
+            'redAlertSummary' => $redAlertSummary,
+            'auditSchedule' => $this->auditSchedule(),
         ]);
     }
 }

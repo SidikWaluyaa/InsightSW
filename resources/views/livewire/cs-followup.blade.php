@@ -1,12 +1,7 @@
 @use('Carbon\Carbon')
 <div class="space-y-8 animate-in fade-in duration-700" x-data="{ showFilters: false }">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Followup Command Center</h1>
-            <p class="text-slate-500 dark:text-gray-400 mt-1 font-medium italic">Prioritaskan pelanggan yang membutuhkan respon segera untuk menjaga kepuasan.</p>
-        </div>
-        
-        <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto items-stretch">
+    <x-ui.page-header title="Followup" subtitle="Prioritaskan pelanggan yang membutuhkan respon segera untuk menjaga kepuasan.">
+        <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-stretch">
             {{-- Advanced Filter Button --}}
             <button @click="showFilters = true" 
                 class="px-6 py-3 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-600 dark:text-gray-400 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-3">
@@ -71,7 +66,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-ui.page-header>
 
     {{-- ADVANCED FILTER DRAWER --}}
     <template x-teleport="body">

@@ -10,12 +10,18 @@ use App\Livewire\FinanceDashboard;
 use App\Livewire\FinanceSyncHistory;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/', fn () => redirect()->route(auth()->check() ? auth()->user()->homeRoute() : 'login'));
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard Eksekutif (Admin, Editor, Viewer) — PRD halaman 1
+    Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
+        Route::get('eksekutif', \App\Livewire\ExecutiveDashboard::class)->name('executive-dashboard');
+    });
+
     // Marketing Group (Admin, Editor, Viewer)
     Route::middleware(['role:Admin,Editor,Viewer'])->group(function () {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
+        Route::get('data-manajemen', \App\Livewire\DataManajemen::class)->name('data-manajemen');
         Route::get('meta-ads', MetaAdsIndex::class)->name('meta-ads');
     });
 
@@ -54,7 +60,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:Admin,Editor,CS,Leader CS,Viewer'])->group(function () {
         Route::get('sleekflow', \App\Livewire\Sleekflow\Analytics::class)->name('sleekflow.analytics');
         
-        Route::get('customer-service/dashboard', \App\Livewire\CsDashboard::class)->name('cs-dashboard');
+        // Dashboard CS = PRD halaman 3 (pipeline penjualan & closing). Isi lama (CsDashboard: kartu chat Sleekflow)
+        // tidak dipakai lagi; bagian chat menyusul di halaman CS SleekFlow (PRD halaman 2).
+        Route::get('customer-service/dashboard', \App\Livewire\CsSales::class)->name('cs-dashboard');
+        Route::redirect('customer-service/penjualan', '/customer-service/dashboard');
+        Route::get('customer-service/dashboard/export-pdf', [\App\Http\Controllers\CsSalesExportController::class, 'printPdf'])->name('cs-sales.export-pdf');
+        Route::get('customer-service/sleekflow-activity', \App\Livewire\SleekflowActivity::class)->name('cs-sleekflow-activity');
         Route::get('customer-service/chat-masuk', \App\Livewire\SleekflowManager::class)->name('chat-masuk');
         Route::get('customer-service/tracking', \App\Livewire\CsTracking::class)->name('cs-tracking');
         Route::get('customer-service/kpi', \App\Livewire\CsKpi::class)->name('cs-kpi');
