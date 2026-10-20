@@ -4,6 +4,7 @@ namespace App\Livewire\Sleekflow;
 
 use App\Livewire\Concerns\WithDateRange;
 use App\Models\SleekflowDailyAnalytics;
+use App\Services\SleekflowActivityService;
 use App\Services\SleekflowService;
 use App\Services\SyncService;
 use Carbon\Carbon;
@@ -134,9 +135,10 @@ class Analytics extends Component
                 'note' => 'Pesan yang masuk dari pelanggan.',
             ],
             'avg_first_response_time' => [
-                'label' => 'Waktu Balas Pertama', 'value' => $summary['avg_first_response_time'], 'sub' => $summary['avg_first_response_text'], 'tone' => 'rose', 'icon' => 'clock',
-                'note' => 'Lama pelanggan menunggu sampai dibalas pertama kali oleh tim CS. Hari libur CS tidak dihitung.',
+                'label' => 'Waktu Balas Pertama (Staf CS)', 'value' => $summary['avg_first_response_time'], 'sub' => $summary['avg_first_response_text'], 'tone' => 'rose', 'icon' => 'clock',
+                'note' => 'Lama pelanggan menunggu sampai dibalas pertama kali oleh staf CS. Balasan AI greeting tidak dihitung Sleekflow. Hari libur CS tidak dihitung.',
             ],
+            'ai_greeting' => $this->aiGreetingCard(),
             'avg_response_time' => [
                 'label' => 'Rata-rata Waktu Balas', 'value' => $summary['avg_response_time'], 'sub' => $summary['avg_response_text'], 'tone' => 'amber', 'icon' => 'clock',
                 'note' => 'Rata-rata lama tiap pesan pelanggan menunggu balasan tim CS. Hari libur CS tidak dihitung.',
@@ -146,11 +148,44 @@ class Analytics extends Component
         // Tombol "i" hanya untuk Admin; isinya baru dihitung saat diklik (showFormula), supaya halaman tetap ringan
         $isAdmin = auth()->user()?->isAdmin() ?? false;
 
-        foreach ($cards as &$card) {
-            $card['info'] = $isAdmin;
+        foreach ($cards as $key => &$card) {
+            // Kartu AI greeting dari tabel balasan percakapan, bukan analitik harian: belum punya rincian rumus di modal
+            $card['info'] = $isAdmin && $key !== 'ai_greeting';
         }
 
         return $cards;
+    }
+
+    /**
+     * Kartu AI greeting: median waktu balas AI sebagai pembalas pertama, dari API pesan Sleekflow
+     * (tabel sleekflow_conversation_replies, sync:sleekflow-replies). Data tersedia sejak 19 Okt 2026.
+     */
+    protected function aiGreetingCard(): array
+    {
+        $r = app(SleekflowActivityService::class)->replies($this->startDate, $this->endDate);
+        $target = SleekflowActivityService::AI_TARGET_SECONDS;
+
+        if (! $r || $r['ai_median'] === null) {
+            return [
+                'label' => 'Balas Pertama AI Greeting', 'value' => 'Menyusul', 'sub' => $r ? 'Belum ada chat yang dibalas AI lebih dulu' : 'Data balasan AI belum ditarik untuk rentang ini',
+                'tone' => 'cyan', 'icon' => 'sparkles',
+                'note' => "Median waktu balas AI greeting (target < {$target} detik). Data tersedia sejak 19 Okt 2026.",
+            ];
+        }
+
+        $detik = (int) round($r['ai_median']);
+        $persen = $r['persen_ai'] === null ? '–' : number_format($r['persen_ai'], 1, ',', '.') . '%';
+
+        $waktu = sprintf('%02d:%02d:%02d', intdiv($detik, 3600), intdiv($detik % 3600, 60), $detik % 60);
+
+        return [
+            'label' => 'Balas Pertama AI Greeting',
+            'value' => $waktu,
+            'sub' => $this->durationText($waktu) . ' (median) · ' . ($detik < $target ? 'sesuai target' : 'di atas target'),
+            'tone' => 'cyan', 'icon' => 'sparkles',
+            'note' => number_format($r['dibalas_ai'], 0, ',', '.') . ' dari ' . number_format($r['whatsapp'], 0, ',', '.') . " chat WhatsApp ({$persen}) dibalas AI lebih dulu. Target < {$target} detik. Data sejak "
+                . Carbon::parse($r['dari'])->translatedFormat('j M Y') . '.',
+        ];
     }
 
     /**
