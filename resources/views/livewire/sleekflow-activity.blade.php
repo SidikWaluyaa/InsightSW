@@ -43,10 +43,10 @@
             <x-ui.stat-card label="First Response Time" :value="$frt['teks']" icon="clock"
                 :badge="$frt['nilai'] === null ? null : ($slaOk ? 'Sesuai SLA (< 3 menit)' : 'Di atas SLA (< 3 menit)')" :badge-tone="$slaOk ? 'emerald' : 'rose'"
                 :info-call="$showFormula ? 'showFormula(17)' : null"
-                :note="'Rata-rata harian waktu balas pertama, hari libur CS tidak dihitung. Bulan lalu: ' . $frt['teks_lalu'] . ($mom($frt) ? ' (' . $mom($frt) . ').' : '.')" />
+                :note="'Rata-rata harian waktu balas pertama staf CS (balasan AI greeting tidak dihitung Sleekflow), hari libur CS tidak dihitung. Bulan lalu: ' . $frt['teks_lalu'] . ($mom($frt) ? ' (' . $mom($frt) . ').' : '.')" />
             <x-ui.stat-card label="Rasio Otomasi Bot" :value="$bot['rasio'] === null ? '–' : number_format($bot['rasio'], 1, ',', '.') . '%'" icon="sparkles"
                 :note="'Pesan otomatis ÷ semua pesan terkirim (' . $num($bot['automated']) . ' dari ' . $num($bot['sent']) . '). Human CS: ' . ($bot['rasio'] === null ? '–' : number_format(100 - $bot['rasio'], 1, ',', '.') . '%') . '.'"
-                warning="AI greeting aktif kembali (strategi CS). Bila rasio tetap 0%, pesan AI Agent tidak tercatat sebagai pesan otomatis di analitik Sleekflow." />
+                warning="AI greeting aktif sejak 19 Okt 2026, tetapi Sleekflow mencatat 0 pesan otomatis: balasan AI tidak masuk analitik harian, jadi rasio ini belum bisa mengukur AI." />
             <x-ui.stat-card label="Biaya Bubble Chat" value="Menyusul" icon="cash" compact
                 note="Tarif PRD: Rp 356,65 per bubble chat. Jumlah bubble yang ditagih Sleekflow/WhatsApp belum ada sumber datanya." />
         </div>
