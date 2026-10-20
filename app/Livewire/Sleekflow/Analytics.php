@@ -4,6 +4,7 @@ namespace App\Livewire\Sleekflow;
 
 use App\Livewire\Concerns\WithDateRange;
 use App\Models\SleekflowDailyAnalytics;
+use App\Services\SleekflowActivityService;
 use App\Services\SleekflowService;
 use App\Services\SyncService;
 use Carbon\Carbon;
@@ -134,9 +135,10 @@ class Analytics extends Component
                 'note' => 'Pesan yang masuk dari pelanggan.',
             ],
             'avg_first_response_time' => [
-                'label' => 'Waktu Balas Pertama', 'value' => $summary['avg_first_response_time'], 'sub' => $summary['avg_first_response_text'], 'tone' => 'rose', 'icon' => 'clock',
-                'note' => 'Lama pelanggan menunggu sampai dibalas pertama kali oleh tim CS. Hari libur CS tidak dihitung.',
+                'label' => 'Waktu Balas Pertama (Staf CS)', 'value' => $summary['avg_first_response_time'], 'sub' => $summary['avg_first_response_text'], 'tone' => 'rose', 'icon' => 'clock',
+                'note' => 'Lama pelanggan menunggu sampai dibalas pertama kali oleh staf CS. Balasan AI greeting tidak dihitung Sleekflow. Hari libur CS tidak dihitung.',
             ],
+        ] + $this->aiCards() + [
             'avg_response_time' => [
                 'label' => 'Rata-rata Waktu Balas', 'value' => $summary['avg_response_time'], 'sub' => $summary['avg_response_text'], 'tone' => 'amber', 'icon' => 'clock',
                 'note' => 'Rata-rata lama tiap pesan pelanggan menunggu balasan tim CS. Hari libur CS tidak dihitung.',
@@ -151,6 +153,40 @@ class Analytics extends Component
         }
 
         return $cards;
+    }
+
+    /**
+     * Kartu AI greeting dari API pesan Sleekflow (tabel sleekflow_conversation_replies, sync:sleekflow-replies),
+     * karena analitik harian Sleekflow tidak menghitung balasan AI. Data tersedia sejak 19 Okt 2026.
+     */
+    protected function aiCards(): array
+    {
+        $r = app(SleekflowActivityService::class)->replies($this->startDate, $this->endDate);
+        $target = SleekflowActivityService::AI_TARGET_SECONDS;
+        $n = fn ($v) => number_format((int) $v, 0, ',', '.');
+        $belum = $r ? 'Belum ada chat yang dibalas AI lebih dulu' : 'Data balasan AI belum ditarik untuk rentang ini';
+
+        if ($r && $r['ai_median'] !== null) {
+            $detik = (int) round($r['ai_median']);
+            $waktu = sprintf('%02d:%02d:%02d', intdiv($detik, 3600), intdiv($detik % 3600, 60), $detik % 60);
+            $median = ['value' => $waktu, 'sub' => $this->durationText($waktu) . ' (median) · ' . ($detik < $target ? 'sesuai target' : 'di atas target')];
+        } else {
+            $median = ['value' => 'Menyusul', 'sub' => $belum];
+        }
+
+        return [
+            'ai_median' => $median + [
+                'label' => 'Balas Pertama AI Greeting', 'tone' => 'cyan', 'icon' => 'sparkles',
+                'note' => "Lama pelanggan menunggu balasan pertama AI greeting, untuk chat yang dibalas AI lebih dulu dari staf. Target < {$target} detik.",
+            ],
+            'persen_ai' => [
+                'label' => 'Chat Dibalas AI Greeting',
+                'value' => $r && $r['persen_ai'] !== null ? number_format($r['persen_ai'], 1, ',', '.') . '%' : 'Menyusul',
+                'sub' => $r && $r['persen_ai'] !== null ? $n($r['dibalas_ai']) . ' dari ' . $n($r['whatsapp']) . ' chat WhatsApp' : $belum,
+                'tone' => 'emerald', 'icon' => 'sparkles',
+                'note' => 'Porsi chat WhatsApp yang dibalas AI greeting lebih dulu. AI hanya aktif di WhatsApp; sisanya langsung dibalas staf CS.',
+            ],
+        ];
     }
 
     /**
@@ -196,6 +232,13 @@ class Analytics extends Component
     public function showFormula(string $key): void
     {
         abort_unless(auth()->user()?->isAdmin(), 403);
+
+        // Kartu AI greeting tidak dari analitik harian; rumusnya disusun di service yang sama dengan SleekFlow Activity
+        if ($info = app(SleekflowActivityService::class)->explainReplies($key, $this->startDate, $this->endDate)) {
+            $this->dispatch('show-formula', ...$info);
+
+            return;
+        }
 
         $baseQuery = $this->rangeQuery();
         $summary = $this->summary($baseQuery);

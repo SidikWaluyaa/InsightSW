@@ -5,6 +5,16 @@
     $frt = $kpis['frt'];
     $slaOk = $frt['nilai'] !== null && $frt['nilai'] < \App\Services\SleekflowActivityService::SLA_SECONDS;
     $bot = $kpis['bot'];
+    // Detik → teks pendek: "24 detik" / "12 mnt 5 dtk" / "1 jam 13 mnt"
+    $dur = function ($sec) {
+        if ($sec === null) return '–';
+        $sec = (int) round($sec);
+        if ($sec < 60) return $sec . ' detik';
+        if ($sec < 3600) return intdiv($sec, 60) . ' mnt ' . ($sec % 60) . ' dtk';
+        return intdiv($sec, 3600) . ' jam ' . intdiv($sec % 3600, 60) . ' mnt';
+    };
+    // Median dipakai sebagai angka utama: rata-rata mudah terseret chat yang masuk sebelum AI aktif
+    $aiOk = $replies && $replies['ai_median'] !== null && $replies['ai_median'] < \App\Services\SleekflowActivityService::AI_TARGET_SECONDS;
     $th = 'px-4 py-3 whitespace-nowrap';
     $bebanTone = ['Optimal' => 'bg-emerald-500', 'Sibuk' => 'bg-amber-500', 'Overload' => 'bg-rose-500'];
 @endphp
@@ -35,19 +45,44 @@
 
     <div wire:loading.class="opacity-30" wire:target="setDateRange, tarikKontak, tarikBagian" class="space-y-6 transition-opacity">
         {{-- Alur 1: KPI beban kerja & respon --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             <x-ui.stat-card label="Total Chat Masuk" :value="$kpis['chat']['teks']" unit="chat" icon="chat"
                 :badge="$mom($kpis['chat'])" :badge-tone="$tones[$kpis['chat']['status']] ?? 'slate'"
                 :info-call="$showFormula ? 'showFormula(15)' : null"
                 :note="'± ' . $num(($kpis['chat']['nilai'] ?? 0) / max($kpis['days'], 1)) . ' chat/hari (kontak baru). Bulan lalu: ' . $kpis['chat']['teks_lalu'] . '.'" />
-            <x-ui.stat-card label="First Response Time" :value="$frt['teks']" icon="clock"
+
+            {{-- Balasan AI greeting: dari API pesan Sleekflow (analitik harian Sleekflow tidak menghitungnya) --}}
+            <x-ui.stat-card label="First Response AI Greeting (Median)" :value="$replies ? $dur($replies['ai_median']) : 'Menyusul'" icon="sparkles" compact
+                :badge="$replies && $replies['ai_median'] !== null ? ($aiOk ? 'Sesuai target (< 30 detik)' : 'Di atas target (< 30 detik)') : null" :badge-tone="$aiOk ? 'emerald' : 'rose'"
+                :info-call="$showFormula ? 'showFormula(\'ai_median\')' : null"
+                :note="$replies
+                    ? 'Median waktu dari chat masuk ke balasan AI, untuk chat yang dibalas AI lebih dulu dari staf (rata-rata ' . $dur($replies['ai_rata']) . ', terseret chat yang masuk sebelum AI aktif). Data mulai ' . \Carbon\Carbon::parse($replies['dari'])->translatedFormat('j M Y') . '.'
+                    : 'Belum ada data balasan per percakapan untuk rentang ini (sinkron sync:sleekflow-replies). AI greeting aktif sejak 19 Okt 2026.'" />
+
+            <x-ui.stat-card label="Chat Dibalas AI Greeting" :value="$replies && $replies['persen_ai'] !== null ? number_format($replies['persen_ai'], 1, ',', '.') . '%' : 'Menyusul'" icon="chat" compact
+                :info-call="$showFormula ? 'showFormula(\'persen_ai\')' : null"
+                :note="$replies
+                    ? $num($replies['dibalas_ai']) . ' dari ' . $num($replies['whatsapp']) . ' chat WhatsApp dibalas AI lebih dulu dari staf. AI greeting hanya aktif di WhatsApp; sisanya langsung dibalas staf CS.'
+                    : 'Porsi chat WhatsApp yang dibalas AI greeting lebih dulu. Menunggu data balasan per percakapan.'" />
+
+            <x-ui.stat-card label="First Response Staf CS" :value="$frt['teks']" icon="clock"
                 :badge="$frt['nilai'] === null ? null : ($slaOk ? 'Sesuai SLA (< 3 menit)' : 'Di atas SLA (< 3 menit)')" :badge-tone="$slaOk ? 'emerald' : 'rose'"
                 :info-call="$showFormula ? 'showFormula(17)' : null"
-                :note="'Rata-rata harian waktu balas pertama, hari libur CS tidak dihitung. Bulan lalu: ' . $frt['teks_lalu'] . ($mom($frt) ? ' (' . $mom($frt) . ').' : '.')" />
-            <x-ui.stat-card label="Rasio Otomasi Bot" :value="$bot['rasio'] === null ? '–' : number_format($bot['rasio'], 1, ',', '.') . '%'" icon="sparkles"
-                :note="'Pesan otomatis ÷ semua pesan terkirim (' . $num($bot['automated']) . ' dari ' . $num($bot['sent']) . '). Human CS: ' . ($bot['rasio'] === null ? '–' : number_format(100 - $bot['rasio'], 1, ',', '.') . '%') . '.'"
-                warning="AI greeting aktif kembali (strategi CS). Bila rasio tetap 0%, pesan AI Agent tidak tercatat sebagai pesan otomatis di analitik Sleekflow." />
+                :note="'Rata-rata harian waktu balas pertama staf CS dari analitik Sleekflow (balasan AI & pesan otomatis tidak dihitung), hari libur CS tidak dihitung. Bulan lalu: ' . $frt['teks_lalu'] . ($mom($frt) ? ' (' . $mom($frt) . ').' : '.') . ($replies && $replies['staf_median'] !== null ? ' Median per percakapan dari API pesan: ' . $dur($replies['staf_median']) . '.' : '')" />
+
+            @if($replies && $replies['rasio_bot'] !== null)
+                <x-ui.stat-card label="Rasio Otomasi Bot" :value="number_format($replies['rasio_bot'], 1, ',', '.') . '%'" icon="sparkles"
+                    :info-call="$showFormula ? 'showFormula(\'rasio_bot\')' : null"
+                    :note="'Pesan AI + otomatis ÷ semua pesan keluar (AI ' . $num($replies['msg_ai']) . ', otomatis ' . $num($replies['msg_auto']) . ', staf ' . $num($replies['msg_staff']) . '). Human CS: ' . number_format(100 - $replies['rasio_bot'], 1, ',', '.') . '%.'" />
+            @else
+                <x-ui.stat-card label="Rasio Otomasi Bot" :value="$bot['rasio'] === null ? '–' : number_format($bot['rasio'], 1, ',', '.') . '%'" icon="sparkles"
+                    :info-call="$showFormula ? 'showFormula(\'rasio_bot\')' : null"
+                    :note="'Pesan otomatis ÷ semua pesan terkirim (' . $num($bot['automated']) . ' dari ' . $num($bot['sent']) . ') dari analitik harian Sleekflow.'"
+                    warning="Analitik harian Sleekflow tidak menghitung balasan AI & pesan otomatis. Angka akurat muncul setelah data balasan per percakapan tersedia." />
+            @endif
+
             <x-ui.stat-card label="Biaya Bubble Chat" value="Menyusul" icon="cash" compact
+                :info-call="$showFormula ? 'showFormula(\'bubble\')' : null"
                 note="Tarif PRD: Rp 356,65 per bubble chat. Jumlah bubble yang ditagih Sleekflow/WhatsApp belum ada sumber datanya." />
         </div>
 

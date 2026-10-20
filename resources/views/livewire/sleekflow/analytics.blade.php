@@ -25,6 +25,7 @@
             'pink' => ['glow' => 'bg-pink-500/10', 'icon' => 'bg-pink-500/20 text-pink-400'],
             'rose' => ['glow' => 'bg-rose-500/10', 'icon' => 'bg-rose-500/20 text-rose-400'],
             'amber' => ['glow' => 'bg-amber-500/10', 'icon' => 'bg-amber-500/20 text-amber-400'],
+            'cyan' => ['glow' => 'bg-cyan-500/10', 'icon' => 'bg-cyan-500/20 text-cyan-400'],
         ];
         $icons = [
             'users' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
@@ -32,9 +33,10 @@
             'send' => 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8',
             'chat' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
             'clock' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            'sparkles' => 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
         ];
     @endphp
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         @foreach($cards as $key => $card)
             @php $tone = $tones[$card['tone']]; @endphp
             <div wire:key="sf-card-{{ $key }}" class="bg-[#1e2336] rounded-2xl p-5 border border-white/5 relative overflow-hidden group flex flex-col">

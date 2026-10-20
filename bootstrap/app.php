@@ -43,5 +43,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Penyegaran tiap jam: kemarin + hari ini (hari ini masih parsial)
         $schedule->command('sync:sleekflow-analytics --days=2 --include-today')
             ->hourlyAt(20)->between('07:00', '23:59')->withoutOverlapping(30)->appendOutputTo($syncLog);
+
+        // === Sleekflow balasan pertama per percakapan (AI greeting / otomatis / staf) ===
+        // Analitik harian tidak menghitung balasan AI, jadi dihitung dari API pesan (±800 request per hari, beberapa menit)
+        $schedule->command('sync:sleekflow-replies')
+            ->dailyAt('02:15')->withoutOverlapping(120)->appendOutputTo($syncLog);
+        // Penyegaran hari berjalan dua kali sehari
+        $schedule->command('sync:sleekflow-replies --today')
+            ->twiceDaily(13, 19)->withoutOverlapping(120)->appendOutputTo($syncLog);
     })
     ->create();

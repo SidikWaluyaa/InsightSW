@@ -173,12 +173,59 @@ class SleekflowActivity extends Component
         ]);
     }
 
-    public function showFormula(int $no, ManagementMetricsService $metrics): void
+    public function showFormula(int|string $no, ManagementMetricsService $metrics, SleekflowActivityService $activity): void
     {
         abort_unless(auth()->user()?->isAdmin(), 403);
 
-        if (in_array($no, [15, 17], true)) {
-            $this->dispatch('show-formula', ...$metrics->explain($no, $this->startDate, $this->endDate));
+        if (is_numeric($no) && in_array((int) $no, [15, 17], true)) {
+            $this->dispatch('show-formula', ...$metrics->explain((int) $no, $this->startDate, $this->endDate));
+
+            return;
+        }
+
+        if ($no === 'bubble') {
+            $this->dispatch('show-formula', ...[
+                'judul' => 'Biaya Bubble Chat',
+                'sifat' => 'periode',
+                'satuan' => 'rupiah',
+                'definisi' => 'Biaya percakapan WhatsApp yang ditagih Sleekflow/Meta: jumlah bubble chat × tarif PRD Rp 356,65 per bubble. '
+                    . 'Jumlah bubble yang ditagih belum tersedia di API Sleekflow yang dipakai InsightSW, jadi kartu ini menunggu sumber data.',
+                'turunan' => 'biaya = jumlah bubble chat × Rp 356,65',
+                'nilai' => 'Menyusul',
+                'cek' => [['ok' => false, 'teks' => 'Sumber jumlah bubble chat (tagihan Sleekflow/WhatsApp) belum ditentukan']],
+            ]);
+
+            return;
+        }
+
+        // Kartu dari tabel balasan percakapan (sync:sleekflow-replies)
+        $rasioHarian = $no === 'rasio_bot' && ! $activity->replies($this->startDate, $this->endDate);
+        if (! $rasioHarian && ($info = $activity->explainReplies((string) $no, $this->startDate, $this->endDate))) {
+            $this->dispatch('show-formula', ...$info);
+
+            return;
+        }
+
+        if ($rasioHarian) {
+            $bot = $activity->kpis($this->startDate, $this->endDate)['bot'];
+            $n = fn ($v, $dec = 0) => number_format((float) $v, $dec, ',', '.');
+
+            $this->dispatch('show-formula', ...[
+                'judul' => 'Rasio Otomasi Bot (Analitik Harian)',
+                'sifat' => 'periode',
+                'satuan' => '%',
+                'endpoint' => 'Sleekflow GET /analytic?startDate=' . $this->startDate . '&endDate=' . $this->endDate . ' → tabel sleekflow_daily_analytics',
+                'field' => 'numberOfAutomatedMessages → number_of_automated_messages; numberOfMessagesSent → number_of_messages_sent',
+                'definisi' => 'Cadangan bila data balasan per percakapan belum ada: pesan otomatis ÷ pesan terkirim dari analitik harian. '
+                    . 'Analitik harian tidak menghitung balasan AI, jadi angka ini lebih rendah dari kenyataan.',
+                'rumus_db' => "SELECT SUM(number_of_automated_messages), SUM(number_of_messages_sent)\nFROM sleekflow_daily_analytics\nWHERE DATE(date_time) BETWEEN :start AND :end;",
+                'turunan' => 'rasio = otomatis ÷ terkirim × 100',
+                'nilai' => $bot['rasio'] === null ? '–' : $n($bot['rasio'], 1) . '%',
+                'hitung' => ['langkah' => [
+                    ['op' => '÷', 'teks' => 'Pesan otomatis ÷ pesan terkirim, × 100', 'rumus' => $n($bot['automated']) . ' ÷ ' . $n($bot['sent']) . ' × 100', 'hasil' => $bot['rasio'] === null ? '–' : $n($bot['rasio'], 4)],
+                    ['op' => '=', 'teks' => 'Nilai di kartu (dibulatkan)', 'rumus' => null, 'hasil' => $bot['rasio'] === null ? '–' : $n($bot['rasio'], 1) . '%'],
+                ]],
+            ]);
         }
     }
 
@@ -205,6 +252,7 @@ class SleekflowActivity extends Component
         return view('livewire.sleekflow-activity', [
             'kpis' => $kpis,
             'coverage' => $activity->coverage($this->startDate, $this->endDate, $kpis['chat']['nilai']),
+            'replies' => $activity->replies($this->startDate, $this->endDate),
             'agents' => $activity->agents($this->startDate, $this->endDate),
             'lifecycle' => $activity->lifecycle($this->startDate, $this->endDate),
             'dropoff' => $this->dropoff(),
