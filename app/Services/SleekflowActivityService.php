@@ -66,6 +66,52 @@ class SleekflowActivityService
         ];
     }
 
+    /** Target balasan AI greeting (Kamus Metrik): di bawah 30 detik. */
+    public const AI_TARGET_SECONDS = 30;
+
+    /**
+     * Balasan pertama dari API pesan Sleekflow (tabel sleekflow_conversation_replies, sync:sleekflow-replies):
+     * waktu balas AI greeting, % percakapan yang dibalas AI, dan porsi pesan AI/otomatis vs staf.
+     * null = belum ada data untuk rentang ini.
+     */
+    public function replies(string $start, string $end): ?array
+    {
+        $rows = \App\Models\SleekflowConversationReply::whereBetween('tanggal', [$start, $end])
+            ->get(['tanggal', 'channel', 'first_ai_at', 'first_staff_at', 'ai_seconds', 'staff_seconds', 'msg_ai', 'msg_auto', 'msg_staff']);
+
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        $median = function ($values) {
+            $v = $values->filter(fn ($x) => $x !== null)->sort()->values();
+            return $v->isEmpty() ? null : (float) $v[intdiv($v->count() - 1, 2)];
+        };
+
+        // AI greeting = AI yang menjadi pembalas pertama (sebelum staf). Balasan AI yang muncul setelah staf membalas
+        // (mis. chat masuk sebelum AI aktif, atau AI menimpali di tengah percakapan) bukan greeting.
+        $greeting = $rows->filter(fn ($r) => $r->first_ai_at && (! $r->first_staff_at || $r->first_ai_at->lte($r->first_staff_at)));
+        // AI greeting hanya aktif di WhatsApp, jadi persen dihitung dari chat WhatsApp
+        $whatsapp = $rows->where('channel', 'whatsappcloudapi');
+        $outbound = $rows->sum('msg_ai') + $rows->sum('msg_auto') + $rows->sum('msg_staff');
+
+        return [
+            'percakapan' => $rows->count(),
+            'whatsapp' => $whatsapp->count(),
+            'dibalas_ai' => $greeting->count(),
+            'persen_ai' => $whatsapp->count() ? $greeting->where('channel', 'whatsappcloudapi')->count() / $whatsapp->count() * 100 : null,
+            'ai_rata' => $greeting->isEmpty() ? null : (float) $greeting->avg('ai_seconds'),
+            'ai_median' => $median($greeting->pluck('ai_seconds')),
+            'staf_median' => $median($rows->pluck('staff_seconds')),
+            'msg_ai' => (int) $rows->sum('msg_ai'),
+            'msg_auto' => (int) $rows->sum('msg_auto'),
+            'msg_staff' => (int) $rows->sum('msg_staff'),
+            'rasio_bot' => $outbound ? ($rows->sum('msg_ai') + $rows->sum('msg_auto')) / $outbound * 100 : null,
+            'hari' => $rows->pluck('tanggal')->map(fn ($d) => $d->toDateString())->unique()->count(),
+            'dari' => $rows->min('tanggal')->toDateString(),
+        ];
+    }
+
     /**
      * Kelengkapan data kontak: kontak tim CS yang tersimpan dibanding chat masuk baru dari analitik harian.
      */

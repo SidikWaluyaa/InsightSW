@@ -205,6 +205,7 @@ class SleekflowActivity extends Component
         return view('livewire.sleekflow-activity', [
             'kpis' => $kpis,
             'coverage' => $activity->coverage($this->startDate, $this->endDate, $kpis['chat']['nilai']),
+            'replies' => $activity->replies($this->startDate, $this->endDate),
             'agents' => $activity->agents($this->startDate, $this->endDate),
             'lifecycle' => $activity->lifecycle($this->startDate, $this->endDate),
             'dropoff' => $this->dropoff(),
