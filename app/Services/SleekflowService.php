@@ -160,6 +160,12 @@ class SleekflowService
      */
     public function syncContacts(?string $startDate = null, ?string $endDate = null, int $startOffset = 0, ?int $maxPages = null): array
     {
+        @ini_set('memory_limit', '1024M');
+        @ini_set('max_execution_time', '300');
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
         $limit = 100;
         $offset = $startOffset;
         $pages = 0;
@@ -171,6 +177,10 @@ class SleekflowService
         $totalSynced = 0;
 
         while (!$stop) {
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(180);
+            }
+
             try {
                 $response = Http::withHeaders([
                     'X-Sleekflow-Api-Key' => $this->apiKey
@@ -381,6 +391,12 @@ class SleekflowService
      */
     public function syncDailyAnalytics(string $startDate, string $endDate): array
     {
+        @ini_set('memory_limit', '512M');
+        @ini_set('max_execution_time', '300');
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
         $url = (string) config('services.sleekflow.analytics_url', '');
 
         if ($url === '') {
