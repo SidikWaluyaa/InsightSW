@@ -15,6 +15,7 @@
             }, 1000);
         }
      }"
+     x-on:tarik-kontak-lanjut.window="$wire.tarikBagian()"
      class="space-y-6">
 
     {{-- Page Header --}}
@@ -22,12 +23,20 @@
         <x-ui.range-toolbar :start="$startDate" :end="$endDate" :max="now()->toDateString()" :presets="$this->datePresets()" refresh="sync" refresh-label="Tarik Data" />
     </x-ui.page-header>
 
+    {{-- Progress Banner saat Tarik Kontak Bertahap --}}
+    @if($isSyncing)
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-sm text-indigo-300">
+            <span class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shrink-0"></span>
+            <span>Menarik kontak Sleekflow… <strong>{{ number_format($tarikJumlah, 0, ',', '.') }}</strong> kontak tersimpan (halaman API ke-{{ intdiv($tarikOffset, 100) + 1 }}). Mohon jangan tutup halaman ini…</span>
+        </div>
+    @endif
+
     {{-- Range Info & Live Sync Status --}}
     <x-ui.range-info :start="$startDate" :end="$endDate">
         <template x-if="isSyncing">
             <span class="inline-flex items-center gap-2 font-semibold text-indigo-400 animate-pulse">
                 <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-                Sinkronisasi kontak…
+                Sinkronisasi kontak bertahap sedang berjalan…
             </span>
         </template>
         <template x-if="!isSyncing && seconds > 0 && $wire.startDate === '{{ now()->format('Y-m-d') }}'">

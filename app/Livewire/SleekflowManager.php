@@ -26,6 +26,10 @@ class SleekflowManager extends Component
     public $lastSyncTimestamp;
     public $isSyncing = false;
 
+    public int $tarikOffset = 0;
+    public int $tarikJumlah = 0;
+    protected const HALAMAN_PER_BAGIAN = 5;
+
     protected $queryString = ['search', 'startDate', 'endDate', 'statusFilter', 'gapFilter'];
 
     public function mount()
@@ -48,18 +52,17 @@ class SleekflowManager extends Component
             return;
         }
 
-        @ini_set('max_execution_time', '300');
-        if (function_exists('set_time_limit')) {
-            @set_time_limit(300);
+        // Jangan jalankan background sync jika sedang proses tarik manual
+        if ($this->isSyncing) {
+            return;
         }
 
-        $this->isSyncing = true;
         app(SyncService::class)->syncIfAllowed('sleekflow_manager_sync', function() {
-            app(SleekflowService::class)->syncContacts(now()->format('Y-m-d'), now()->format('Y-m-d'));
+            // Tarik 2 halaman terbaru untuk background polling cepat tanpa membebani server
+            app(SleekflowService::class)->syncContacts(now()->format('Y-m-d'), now()->format('Y-m-d'), 0, 2);
         }, 60);
 
         $this->updateSyncState();
-        $this->isSyncing = false;
     }
 
     /** Dipanggil setelah rentang diubah lewat <x-ui.range-toolbar>. */
@@ -77,45 +80,66 @@ class SleekflowManager extends Component
     }
 
     #[On('sync-sleekflow')]
-    public function sync(SleekflowService $service)
+    public function sync(SleekflowService $service): void
     {
-        @ini_set('max_execution_time', '300');
-        if (function_exists('set_time_limit')) {
-            @set_time_limit(300);
+        if ($this->isSyncing) {
+            return;
         }
 
         $this->isSyncing = true;
-        
-        try {
-            $result = $service->syncContacts($this->startDate, $this->endDate);
+        $this->tarikOffset = 0;
+        $this->tarikJumlah = 0;
+        $this->tarikBagian($service);
+    }
 
-            if (($result['synced'] ?? 0) === 0) {
-                $this->dispatch('swal', [
-                    'icon'    => 'info',
-                    'title'   => 'Sudah Mutakhir',
-                    'text'    => $result['message'] ?? 'Tidak ada perubahan data baru dari Sleekflow.',
-                    'timer'   => 3000
-                ]);
-            } else {
-                $this->dispatch('swal', [
-                    'icon'    => 'success',
-                    'title'   => 'Pembaruan Selesai',
-                    'text'    => "Berhasil sinkronisasi {$result['synced']} data terbaru dari Sleekflow.",
-                    'timer'   => 5000
-                ]);
-            }
-            
-            $this->resetPage();
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Sleekflow Sync Error: ' . $e->getMessage());
+    public function tarikBagian(SleekflowService $service): void
+    {
+        if (!$this->isSyncing) {
+            return;
+        }
+
+        try {
+            $result = $service->syncContacts($this->startDate, $this->endDate, $this->tarikOffset, self::HALAMAN_PER_BAGIAN);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SleekflowManager: tarik kontak gagal: ' . $e->getMessage());
+            $this->isSyncing = false;
             $this->dispatch('swal', [
                 'icon'    => 'error',
                 'title'   => 'Gagal Sinkronisasi',
                 'text'    => 'Terjadi kesalahan saat menghubungi API Sleekflow: ' . $e->getMessage(),
             ]);
+            return;
         }
-        
+
+        $this->tarikJumlah += $result['synced'] ?? 0;
+
+        // Jika masih ada halaman berikutnya, request chunk berikutnya lewat event browser
+        if (($result['next_offset'] ?? null) !== null) {
+            $this->tarikOffset = $result['next_offset'];
+            $this->dispatch('tarik-kontak-lanjut');
+            return;
+        }
+
+        // Selesai seluruhnya
         $this->isSyncing = false;
+        $this->updateSyncState();
+        $this->resetPage();
+
+        if ($this->tarikJumlah === 0) {
+            $this->dispatch('swal', [
+                'icon'    => 'info',
+                'title'   => 'Sudah Mutakhir',
+                'text'    => 'Tidak ada perubahan data baru dari Sleekflow.',
+                'timer'   => 3000
+            ]);
+        } else {
+            $this->dispatch('swal', [
+                'icon'    => 'success',
+                'title'   => 'Pembaruan Selesai',
+                'text'    => "Berhasil sinkronisasi " . number_format($this->tarikJumlah, 0, ',', '.') . " data terbaru dari Sleekflow.",
+                'timer'   => 5000
+            ]);
+        }
     }
 
     #[On('set-gap-filter')]
