@@ -20,8 +20,6 @@ return [
         // CS
         'cs-kpi',
         'cs-forecasting',
-        'chat-masuk',
-        'cs-followup',
         'cs-tracking',
     ],
 ];
