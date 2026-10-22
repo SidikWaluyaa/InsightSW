@@ -48,6 +48,11 @@ class SleekflowManager extends Component
             return;
         }
 
+        @ini_set('max_execution_time', '300');
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
         $this->isSyncing = true;
         app(SyncService::class)->syncIfAllowed('sleekflow_manager_sync', function() {
             app(SleekflowService::class)->syncContacts(now()->format('Y-m-d'), now()->format('Y-m-d'));
@@ -74,6 +79,11 @@ class SleekflowManager extends Component
     #[On('sync-sleekflow')]
     public function sync(SleekflowService $service)
     {
+        @ini_set('max_execution_time', '300');
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
         $this->isSyncing = true;
         
         try {

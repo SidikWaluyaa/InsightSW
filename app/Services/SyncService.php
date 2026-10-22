@@ -42,6 +42,11 @@ class SyncService
         $lock = Cache::lock("sync_lock_{$module}", 300);
 
         if ($lock->get()) {
+            @ini_set('max_execution_time', '300');
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(300);
+            }
+
             try {
                 $syncTask();
                 
